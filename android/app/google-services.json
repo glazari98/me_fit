@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1067095163727",
+    "project_id": "mefit-268a7",
+    "storage_bucket": "mefit-268a7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1067095163727:android:9f0eaae5dd6c83800c3b3a",
+        "android_client_info": {
+          "package_name": "com.glazari.MeFit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBBGpLlnsmzl5pqpQlxRrRHWHSFrdc0Ro"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
