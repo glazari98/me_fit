@@ -1,4 +1,3 @@
-import 'package:firestorm/firestorm.dart';
 import 'package:firestorm/fs/fs.dart';
 import '../models/exercise.dart';
 
@@ -9,8 +8,6 @@ final List<Exercise> defaultExercises = [
     description: 'Steady pace running for cardio.',
     bodyPart: 'Whole Body',
     category: 'Cardio',
-    duration: 20,
-    distance: 5,
     userId: 'system',
   ),
   Exercise(
@@ -19,9 +16,6 @@ final List<Exercise> defaultExercises = [
     description: 'Barbell or bodyweight squat for legs.',
     bodyPart: 'Lower Body',
     category: 'Strength',
-    repetitions: 10,
-    sets: 3,
-    restBetweenSets: 60,
     userId: 'system',
   ),
   Exercise(
@@ -30,9 +24,6 @@ final List<Exercise> defaultExercises = [
     description: 'Barbell deadlift for posterior chain.',
     bodyPart: 'Lower Body',
     category: 'Strength',
-    repetitions: 6,
-    sets: 3,
-    restBetweenSets: 90,
     userId: 'system',
   ),
   Exercise(
@@ -41,9 +32,6 @@ final List<Exercise> defaultExercises = [
     description: 'Explosive full-body lift.',
     bodyPart: 'Whole Body',
     category: 'Strength',
-    repetitions: 5,
-    sets: 3,
-    restBetweenSets: 120,
     userId: 'system',
   ),
   Exercise(
@@ -52,9 +40,6 @@ final List<Exercise> defaultExercises = [
     description: 'Strengthens upper back and lats.',
     bodyPart: 'Upper Body',
     category: 'Strength',
-    repetitions: 8,
-    sets: 3,
-    restBetweenSets: 60,
     userId: 'system',
   ),
   Exercise(
@@ -63,9 +48,6 @@ final List<Exercise> defaultExercises = [
     description: 'Overhead pressing movement using legs for momentum.',
     bodyPart: 'Upper Body',
     category: 'Strength',
-    repetitions: 6,
-    sets: 3,
-    restBetweenSets: 90,
     userId: 'system',
   ),
   Exercise(
@@ -74,9 +56,6 @@ final List<Exercise> defaultExercises = [
     description: 'Chest strength exercise with barbell.',
     bodyPart: 'Upper Body',
     category: 'Strength',
-    repetitions: 8,
-    sets: 3,
-    restBetweenSets: 90,
     userId: 'system',
   ),
   Exercise(
@@ -85,9 +64,6 @@ final List<Exercise> defaultExercises = [
     description: 'Chest and back mobility exercise.',
     bodyPart: 'Upper Body',
     category: 'Strength',
-    repetitions: 10,
-    sets: 3,
-    restBetweenSets: 60,
     userId: 'system',
   ),
   Exercise(
@@ -96,7 +72,6 @@ final List<Exercise> defaultExercises = [
     description: 'Static core hold to build stability.',
     bodyPart: 'Whole Body',
     category: 'Core',
-    duration: 2,
     userId: 'system',
   ),
   Exercise(
@@ -105,9 +80,6 @@ final List<Exercise> defaultExercises = [
     description: 'Glute bridge exercise for posterior chain.',
     bodyPart: 'Lower Body',
     category: 'Strength',
-    repetitions: 12,
-    sets: 3,
-    restBetweenSets: 45,
     userId: 'system',
   ),
   Exercise(
@@ -116,9 +88,6 @@ final List<Exercise> defaultExercises = [
     description: 'Chest fly for pectoral muscles.',
     bodyPart: 'Upper Body',
     category: 'Strength',
-    repetitions: 10,
-    sets: 3,
-    restBetweenSets: 60,
     userId: 'system',
   ),
   Exercise(
@@ -127,9 +96,6 @@ final List<Exercise> defaultExercises = [
     description: 'Dynamic push up variation engaging full body.',
     bodyPart: 'Upper Body',
     category: 'Strength',
-    repetitions: 12,
-    sets: 3,
-    restBetweenSets: 60,
     userId: 'system',
   ),
   Exercise(
@@ -138,9 +104,6 @@ final List<Exercise> defaultExercises = [
     description: 'Core exercise targeting obliques.',
     bodyPart: 'Whole Body',
     category: 'Core',
-    repetitions: 20,
-    sets: 3,
-    restBetweenSets: 45,
     userId: 'system',
   ),
   Exercise(
@@ -149,9 +112,6 @@ final List<Exercise> defaultExercises = [
     description: 'Leg strengthening movement.',
     bodyPart: 'Lower Body',
     category: 'Strength',
-    repetitions: 10,
-    sets: 3,
-    restBetweenSets: 60,
     userId: 'system',
   ),
   Exercise(
@@ -160,9 +120,6 @@ final List<Exercise> defaultExercises = [
     description: 'Core exercise for lower abs.',
     bodyPart: 'Lower Body',
     category: 'Core',
-    repetitions: 15,
-    sets: 3,
-    restBetweenSets: 45,
     userId: 'system'
   ),
   Exercise(
@@ -171,7 +128,6 @@ final List<Exercise> defaultExercises = [
     description: 'Cardio exercise using stepper machine or step ups.',
     bodyPart: 'Lower Body',
     category: 'Cardio',
-    duration: 10,
     userId: 'system',
   ),
   Exercise(
@@ -180,9 +136,6 @@ final List<Exercise> defaultExercises = [
     description: 'Abdominal isolation exercise.',
     bodyPart: 'Upper Body',
     category: 'Core',
-    repetitions: 15,
-    sets: 3,
-    restBetweenSets: 45,
     userId: 'system',
   ),
   Exercise(
@@ -191,9 +144,6 @@ final List<Exercise> defaultExercises = [
     description: 'Classic bodyweight chest exercise.',
     bodyPart: 'Upper Body',
     category: 'Strength',
-    repetitions: 12,
-    sets: 3,
-    restBetweenSets: 60,
     userId: 'system',
   ),
   Exercise(
@@ -202,9 +152,6 @@ final List<Exercise> defaultExercises = [
     description: 'Upper body pulling exercise for biceps and lats.',
     bodyPart: 'Upper Body',
     category: 'Strength',
-    repetitions: 6,
-    sets: 3,
-    restBetweenSets: 90,
     userId: 'system',
   ),
   Exercise(
@@ -213,9 +160,6 @@ final List<Exercise> defaultExercises = [
     description: 'Upper body exercise targeting triceps and chest.',
     bodyPart: 'Upper Body',
     category: 'Strength',
-    repetitions: 8,
-    sets: 3,
-    restBetweenSets: 90,
     userId: 'system',
   ),
 ];

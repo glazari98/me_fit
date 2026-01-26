@@ -1,9 +1,9 @@
-import 'package:firestorm/fs/fs.dart';
-import 'package:firestorm/fs/queries/fs_query_result.dart';
 import 'package:flutter/material.dart';
-import 'package:me_fit/models/exercise.dart';
+import 'package:me_fit/screens/my_workouts.dart';
 import '../services/authentication_service.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
+
+
+import 'create_workout_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -15,113 +15,51 @@ class HomeScreen extends StatefulWidget {
 
 class HomeScreenState extends State<HomeScreen> {
   final AuthenticationService authService = AuthenticationService();
-  String? selectedExerciseId;
-  Exercise? selectedExercise;
+  int currentIndex =0;
   void logOut(BuildContext context)async{
     authService.logOutUser();
     Navigator.pushReplacementNamed(context, '/login');
   }
-  Future<List<Exercise>> fetchExercises() async {
-    FSQueryResult<Exercise> result = await FS.list.filter<Exercise>(Exercise)
-        .whereIn('userId', ['system',authService.getCurrentUser()?.uid])
-        .fetch();
+  late final List<Widget> screens =  [
+    const Center(child: Text('Home',style: TextStyle(fontSize: 18))),
+    MyWorkoutsScreen(),
+    CreateWorkoutScreen(),
+  ];
 
-     List<Exercise> exercises = result.items;
-     return exercises;
-  }
+  late final List<String> titles = [
+    'Home', 'My Workouts', 'Create Workouts',
+  ];
+
   @override
   Widget build(BuildContext context){
     final currentUser = authService.getCurrentUser();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        title: Text(titles[currentIndex]),
         actions: [
           IconButton(
               onPressed: () => logOut(context),
               icon: const Icon(Icons.logout),
-              tooltip: 'Logout',
-          ),
+          )
         ],
       ),
-      body: Padding (
-        padding: const EdgeInsets.all(16),
-        child: Column (
-          children: [
-            Text(
-              'Welcome, ${currentUser?.email ?? 'User'}!',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-
-            ),
-            const SizedBox(height: 20),
-            FutureBuilder<List<Exercise>>(
-              future: fetchExercises(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const CircularProgressIndicator();
-                } else if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Text ('No exercises available');
-                }
-                List<Exercise> exercises = snapshot.data!;
-
-                return DropdownButton2<String>(
-                  isExpanded: true,
-                  hint: const Text('Select Exercise'),
-                  value: selectedExerciseId,
-                  items: exercises.map((exercise) {
-                    return DropdownMenuItem<String>(
-                      value: exercise.id,
-                      child: Text(exercise.name),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedExerciseId = value;
-                      selectedExercise = exercises.firstWhere((ex) => ex.id == value);
-                    });
-                  },
-                  dropdownStyleData: DropdownStyleData(
-                    maxHeight: 200,
-                    scrollbarTheme: ScrollbarThemeData(
-                      thumbVisibility: .all(true),
-                      thickness: .all(6),
-                      radius: const Radius.circular(5),
-                    ),
-                  ),
-                );
-              },
-            ),
-        const SizedBox(height: 20),
-
-        if(selectedExercise != null)
-          Card(
-            elevation: 3,
-        child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  selectedExercise!.name,
-                  style: const TextStyle(fontSize: 18,fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text (
-                  'Body part: ${selectedExercise!.bodyPart}',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  selectedExercise!.description,
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ],
-            ),
-        ),
+      body: screens[currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: currentIndex,
+        onTap: (index) => setState(()=> currentIndex = index),
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
           ),
-          ],
-        ),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.list_alt),
+              label: 'My Workouts',
+          ),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.fitness_center),
+              label: 'Create Workouts'),
+        ],
       ),
     );
   }
