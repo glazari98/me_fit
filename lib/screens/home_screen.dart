@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:me_fit/screens/my_workouts.dart';
+import 'package:me_fit/screens/start_workout_screen.dart';
 import '../services/authentication_service.dart';
 
 
@@ -15,27 +16,18 @@ class HomeScreen extends StatefulWidget {
 
 class HomeScreenState extends State<HomeScreen> {
   final AuthenticationService authService = AuthenticationService();
-  int currentIndex =0;
+
   void logOut(BuildContext context)async{
     authService.logOutUser();
     Navigator.pushReplacementNamed(context, '/login');
   }
-  late final List<Widget> screens =  [
-    const Center(child: Text('Home',style: TextStyle(fontSize: 18))),
-    MyWorkoutsScreen(),
-    CreateWorkoutScreen(),
-  ];
-
-  late final List<String> titles = [
-    'Home', 'My Workouts', 'Create Workouts',
-  ];
 
   @override
   Widget build(BuildContext context){
     final currentUser = authService.getCurrentUser();
     return Scaffold(
       appBar: AppBar(
-        title: Text(titles[currentIndex]),
+        title: const Text('Home'),
         actions: [
           IconButton(
               onPressed: () => logOut(context),
@@ -43,22 +35,29 @@ class HomeScreenState extends State<HomeScreen> {
           )
         ],
       ),
-      body: screens[currentIndex],
+      body: const Text('Hello'),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: (index) => setState(()=> currentIndex = index),
+        onTap: (index){
+          if(index == 0){
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_)=> const MyWorkoutsScreen())
+            );
+          }
+          else{
+            Navigator.push(context,
+              MaterialPageRoute(builder: (_) => StartWorkoutScreen())
+            );
+          }
+        },
         items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
-          ),
           BottomNavigationBarItem(
               icon: Icon(Icons.list_alt),
               label: 'My Workouts',
           ),
+
           BottomNavigationBarItem(
-              icon: Icon(Icons.fitness_center),
-              label: 'Create Workouts'),
+              icon: Icon(Icons.play_arrow),
+              label: 'Start Workout'),
         ],
       ),
     );

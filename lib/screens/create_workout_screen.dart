@@ -53,7 +53,9 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
   }
 
   void addExercise() {
-    if(selectedExerciseId == null || addedExercises.length >= 3) return;
+    if(selectedExerciseId == null) return;
+    if(addedExercises.length >= 3) return;
+    if(addedExercises.any((e) => e.exerciseId == selectedExerciseId)) return;
 
     addedExercises.add(
       WorkoutExercises(
@@ -87,8 +89,9 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
     if(workoutNameController.text.isEmpty || addedExercises.isEmpty) return;
 
     final user = authenticationService.getCurrentUser();
-    final workoutId = Firestorm.randomID();
+
     if(user == null) return;
+    final workoutId = Firestorm.randomID();
     final workout = Workout(
       id: workoutId,
       name: workoutNameController.text.trim(),
@@ -97,21 +100,21 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
 
     await FS.create.one(workout);
 
-    for(final we in addedExercises){
+    for(final we in addedExercises) {
       final workoutExercise = WorkoutExercises(
-          id: Firestorm.randomID(),
-          workoutId: workoutId,
-          exerciseId: we.exerciseId,
-          order: we.order,
-          sets: we.sets,
-          repetitions: we.repetitions,
-          restBetweenSets: we.restBetweenSets,
-          duration: we.duration,
-          distance: we.distance,
+        id: Firestorm.randomID(),
+        workoutId: workoutId,
+        exerciseId: we.exerciseId,
+        order: we.order,
+        sets: we.sets,
+        repetitions: we.repetitions,
+        restBetweenSets: we.restBetweenSets,
+        duration: we.duration,
+        distance: we.distance,
       );
 
       await FS.create.one(workoutExercise);
-
+    }
       if(!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -126,7 +129,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
         selectedBodyPart = null;
         selectedExerciseId = null;
       });
-    }
+
   }
 
   @override

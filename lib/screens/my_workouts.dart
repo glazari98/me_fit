@@ -4,12 +4,26 @@ import 'package:me_fit/screens/workout_details_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 
 import '../models/workout.dart';
+import 'create_workout_screen.dart';
 
-class MyWorkoutsScreen extends StatelessWidget{
-  MyWorkoutsScreen ({super.key});
+class MyWorkoutsScreen extends StatefulWidget {
+  const MyWorkoutsScreen({super.key});
 
+  @override
+  State<MyWorkoutsScreen> createState() => MyWorkoutsScreenState();
+}
+class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
   final AuthenticationService authenticationService = AuthenticationService();
+  late Future<List<Workout>> workoutsUpdated;
 
+  @override
+  void initState(){
+    super.initState();
+    refreshWorkouts();
+  }
+  void refreshWorkouts(){
+    workoutsUpdated = fetchWorkouts();
+  }
   Future<List<Workout>> fetchWorkouts () async {
     final user = authenticationService.getCurrentUser();
 
@@ -23,8 +37,23 @@ class MyWorkoutsScreen extends StatelessWidget{
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Workout>>(
-        future: fetchWorkouts(),
+    return Scaffold(
+      appBar: AppBar(title: const Text('My Workouts')),
+        floatingActionButton: FloatingActionButton(
+          child: const Icon(Icons.add),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CreateWorkoutScreen(),
+                ),
+              );
+              setState(() {
+                refreshWorkouts();
+              });
+            }),
+        body:FutureBuilder<List<Workout>>(
+        future: workoutsUpdated,
         builder: (context, snapshot){
           if(snapshot.connectionState == ConnectionState.waiting){
             return const Center(child: CircularProgressIndicator());
@@ -55,6 +84,7 @@ class MyWorkoutsScreen extends StatelessWidget{
               },
           );
         },
+        ),
     );
   }
 }
