@@ -1,10 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
+import 'package:me_fit/data/insert_data_script.dart';
 import 'package:me_fit/screens/home_screen.dart';
 import 'package:me_fit/screens/signup_screen.dart';
 import 'generated/firestorm_models.dart';
-import 'data/initial_exercises.dart';
 import 'screens/login_screen.dart';
 
 void main() async {
@@ -12,8 +12,9 @@ void main() async {
   await Firebase.initializeApp();
   await FS.init(); //Initialize Firestorm to use Firestore
   registerClasses(); //Registers custom classes. Imported from generated file [firestorm_models.dart]
-   seedDefaultExercises();
-  runApp(const MeFitApp());
+  // runApp(const MeFitApp());
+
+
 }
 
 class MeFitApp extends StatelessWidget{

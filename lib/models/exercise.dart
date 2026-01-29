@@ -4,28 +4,22 @@ import 'package:firestorm/annotations/firestorm_object.dart';
 class Exercise {
   String id;
   String name;
-  String bodyPart;
-  String category;
-  String description;
-  String userId;
+  String imageUrl;
+  String bodyPartId;
+  String equipmentId;
+  String exerciseTypeId;
+  String instruction;
+  List<String> keywords;
 
   Exercise({
     required this.id,
     required this.name,
-    required this.bodyPart,
-    required this.category,
-    required this.description,
-    required this.userId
+    required this.imageUrl,
+    required this.bodyPartId,
+    required this.equipmentId,
+    required this.exerciseTypeId,
+    required this.instruction,
+    required this.keywords
   });
 
-  static List<String> bodyParts = [
-    'Upper Body',
-    'Lower Body',
-    'Full Body'
-  ];
-  static List<String> categories = [
-    'Strength',
-    'Cardio',
-    'Core'
-  ];
 }

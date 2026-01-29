@@ -39,6 +39,7 @@ dependencies:
   firebase_auth: ^5.5.1
   build_runner: ^2.5.4
   dropdown_button2: ^2.3.9
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:
