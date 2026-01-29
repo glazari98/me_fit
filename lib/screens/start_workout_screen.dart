@@ -1,8 +1,6 @@
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
-import 'package:me_fit/screens/create_workout_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
-
 import '../models/workout.dart';
 import 'active_workout_screen.dart';
 

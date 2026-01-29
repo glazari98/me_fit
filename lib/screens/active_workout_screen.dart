@@ -117,7 +117,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
               Text(ex!.name, style: const TextStyle(fontSize: 24,fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Text(ex.description),
+              Text(ex.instruction),
               const SizedBox(height:16),
 
               if(we.sets != null) Text('Sets: ${we.sets}'),

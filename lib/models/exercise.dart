@@ -5,7 +5,7 @@ class Exercise {
   String id;
   String name;
   String imageUrl;
-  String bodyPartId;
+  List<String> bodyParts;
   String equipmentId;
   String exerciseTypeId;
   String instruction;
@@ -15,11 +15,10 @@ class Exercise {
     required this.id,
     required this.name,
     required this.imageUrl,
-    required this.bodyPartId,
+    required this.bodyParts,
     required this.equipmentId,
     required this.exerciseTypeId,
     required this.instruction,
     required this.keywords
   });
-
 }

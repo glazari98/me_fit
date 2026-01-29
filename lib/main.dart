@@ -12,7 +12,7 @@ void main() async {
   await Firebase.initializeApp();
   await FS.init(); //Initialize Firestorm to use Firestore
   registerClasses(); //Registers custom classes. Imported from generated file [firestorm_models.dart]
-  // runApp(const MeFitApp());
+  runApp(const MeFitApp());
 
 
 }

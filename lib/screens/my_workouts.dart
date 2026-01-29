@@ -1,5 +1,6 @@
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
+import 'package:me_fit/screens/login_screen.dart';
 import 'package:me_fit/screens/workout_details_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 

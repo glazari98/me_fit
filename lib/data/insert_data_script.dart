@@ -190,7 +190,7 @@ Future<Exercise> mapToExercises(Map<String,dynamic> json) async{
       id: Firestorm.randomID(),
       name: exerciseData['name'],
       imageUrl: exerciseData['imageUrl'],
-      bodyPartId: safeFirst(exerciseData['bodyParts']),
+      bodyParts: safeStringList(exerciseData['bodyParts']),
       equipmentId: safeFirst(exerciseData['equipments']),
       exerciseTypeId: exerciseData['exerciseType'],
       instruction:  safeFirst(exerciseData['equipments']),
@@ -207,17 +207,20 @@ List<String> safeStringList (dynamic value){
     if(value is List){
       return value.map((e)=> e.toString()).toList();
     }
-    
+
     return [];
 }
 Future<void> seedExercises() async {
   final apiExercises = await fetchExercisesFromAPI();
-
+    var count = 0;
   for (final b in apiExercises){
     final exercise = await mapToExercises(b);
     await FS.create.one(exercise);
-
+    debugPrint('Count: ${count}');
   }
 
 }
+
+
+
 
