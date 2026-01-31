@@ -193,7 +193,7 @@ Future<Exercise> mapToExercises(Map<String,dynamic> json) async{
       bodyParts: safeStringList(exerciseData['bodyParts']),
       equipmentId: safeFirst(exerciseData['equipments']),
       exerciseTypeId: exerciseData['exerciseType'],
-      instruction:  safeFirst(exerciseData['equipments']),
+      instruction:  safeFirst(exerciseData['instructions']),
       keywords: safeStringList(exerciseData['keywords']));
 }
 String safeFirst(dynamic value){
@@ -216,6 +216,7 @@ Future<void> seedExercises() async {
   for (final b in apiExercises){
     final exercise = await mapToExercises(b);
     await FS.create.one(exercise);
+    count++;
     debugPrint('Count: ${count}');
   }
 

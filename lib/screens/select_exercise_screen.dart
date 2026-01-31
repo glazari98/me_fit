@@ -6,6 +6,7 @@ import 'package:me_fit/models/exercise.dart';
 
 import '../models/bodyPart.dart';
 import '../models/exerciseType.dart';
+import 'exercise_details_screen.dart';
 
 class SelectExerciseScreen extends StatefulWidget{
   const SelectExerciseScreen({super.key});
@@ -22,8 +23,8 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
   List<ExerciseType> exerciseTypes = [];
 
 
-
-  List<Exercise> allFilteredExercises = [];
+  List<Exercise> allExercises = [];
+  List<Exercise> filteredExercises = [];
   List<Exercise> visibleExercises = [];
 
   int currentVisibleCount = 0;
@@ -32,12 +33,21 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
   bool isLoadingExercises = false;
   bool isLoadingFilters = true;
 
+  String searchQuery = '';
+  final TextEditingController searchController = TextEditingController();
+   late Map<String,String> bodyPartNameById;
+   late Map<String,String> exerciseTypeNameById;
   @override
   void initState() {
     super.initState();
-    fetchFitlers();
+    fetchFitlers().then((_) => loadAllExercises());
   }
+  @override
+  void dispose(){
+    searchController.dispose();
+    super.dispose();
 
+  }
 
   Future<void> fetchFitlers() async {
     final bodyPartsResult = await FS.list.allOfClass<BodyPart>(BodyPart);
@@ -49,53 +59,68 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
     setState(() {
       bodyParts = bodyPartsResult;
       exerciseTypes = exerciseTypesResult;
-      allFilteredExercises.clear();
+      bodyPartNameById = {
+        for(final b in bodyParts) b.id : b.name
+      };
+      exerciseTypeNameById = {
+        for (final t in exerciseTypes) t.id : t.name
+      };
+      filteredExercises.clear();
       visibleExercises.clear();
       isLoadingFilters = false;
     });
   }
-  Future<void> fetchExercises() async{
-    if(selectedBodyPartIds!.isEmpty && selectedExerciseTypeId == null) {
-      setState(() {
-        allFilteredExercises.clear();
-        visibleExercises.clear();
-        currentVisibleCount = 0;
-      });
-      return;
-    }
+  Future<void> loadAllExercises() async{
+    setState(() => isLoadingExercises = true);
+
+    final result = await FS.list.allOfClass<Exercise>(Exercise);
+
     setState(() {
-      isLoadingExercises = true;
-    });
-
-    var query = FS.list.filter<Exercise>(Exercise);
-
-    if(selectedExerciseTypeId != null){
-      query = query.whereEqualTo('exerciseTypeId', selectedExerciseTypeId);
-    }
-    if(selectedBodyPartIds.isNotEmpty){
-      query = query.whereArrayContainsAny('bodyParts', selectedBodyPartIds);
-    }
-
-    FSQueryResult<Exercise> result = await query.fetch();
-    setState(() {
-      allFilteredExercises = result.items;
-
-      currentVisibleCount = allFilteredExercises.length >= pageSize
-      ? pageSize
-      : allFilteredExercises.length;
-      visibleExercises = allFilteredExercises.sublist(0, currentVisibleCount);
+      allExercises = result;
+      applyFiltersAndSearch();
       isLoadingExercises = false;
     });
   }
+  void applyFiltersAndSearch() {
+    List<Exercise> temp = allExercises;
 
+    if(selectedExerciseTypeId != null){
+      temp = temp.where((e) =>
+      e.exerciseTypeId == selectedExerciseTypeId).toList();
+
+    }
+    if(selectedBodyPartIds.isNotEmpty){
+      temp = temp.where((e) =>
+          e.bodyParts.any((bp) => selectedBodyPartIds.contains(bp))
+      ).toList();
+    }
+    if(searchQuery.isNotEmpty){
+      final q = searchQuery.toLowerCase();
+      temp = temp.where((e){
+        final nameMatch = e.name.toLowerCase().contains(q);
+        final keywordMatch = e.keywords.any(
+            (k) => k.toLowerCase().contains(q),
+        );
+        return nameMatch || keywordMatch;
+      }).toList();
+    }
+    filteredExercises = temp.toList();
+    currentVisibleCount = filteredExercises.length > pageSize
+    ? pageSize
+    : filteredExercises.length;
+
+    visibleExercises = filteredExercises.take(currentVisibleCount).toList();
+  }
   Future<void> loadMore() async {
-    final remaining = allFilteredExercises.length - currentVisibleCount;
+    final remaining = filteredExercises.length - currentVisibleCount;
     if(remaining <= 0) return;
 
     final toShow = remaining >= pageSize ? pageSize : remaining;
     setState(() {
       visibleExercises.addAll(
-        allFilteredExercises.sublist(currentVisibleCount,currentVisibleCount + toShow)
+        filteredExercises.sublist(
+            currentVisibleCount,
+            currentVisibleCount + toShow)
       );
       currentVisibleCount += toShow;
     });
@@ -107,6 +132,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
         appBar: AppBar(title: const Text('Select Exercise')),
         body: Column(
           children: [
+            searchField(),
             filters(),
             if(isLoadingExercises)
               const Padding(
@@ -125,15 +151,66 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                 itemBuilder: (context, index) {
                   if (index < visibleExercises.length) {
                     final exercise = visibleExercises[index];
+                    final bodyPartNames = exercise.bodyParts
+                    .map((id) => bodyPartNameById[id])
+                    .whereType<String>()
+                    .join(' , ');
+                    final exerciseTypeName = exerciseTypeNameById[exercise.exerciseTypeId];
                     return ListTile(
                       title: Text(exercise.name),
-                      trailing: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context, exercise);
-                          },
-                          child: const Text('Add')),
-                    );
-                  } else if (currentVisibleCount < allFilteredExercises.length){
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if(exerciseTypeName != null) Text(
+                            'Type: ${exerciseTypeName}',
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 13,
+                            ),
+                          ),
+                          if(bodyPartNames.isNotEmpty)
+                            Text(
+                              'Body parts: ${bodyPartNames}',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 13,
+                              ),
+                            )
+                        ],
+                      ),
+                      trailing: SizedBox(width: 96,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(padding: EdgeInsets.zero),
+                                onPressed: (){
+                                  Navigator.pop(context,exercise);
+                                },
+                                child: const Icon(Icons.add,size: 20)),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 40,height: 40,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(padding: EdgeInsets.zero),
+                                onPressed: (){
+                                Navigator.push(context,
+                                    MaterialPageRoute(
+                                        builder: (_) => ExerciseDetailsScreen(
+                                            exercise: exercise,
+                                            bodyParts: bodyParts,
+                                            exerciseTypes: exerciseTypes)));
+                                },
+                                child: const Icon(Icons.visibility)),
+                          )
+                        ],
+                      ))
+                  );
+                  } else if (currentVisibleCount < filteredExercises.length){
                     return Padding(
                         padding: const EdgeInsets.all(16),
                         child: ElevatedButton(
@@ -152,7 +229,35 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
         )
     );
   }
-
+  Widget searchField(){
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8,vertical: 4),
+      child: TextField(
+        controller: searchController,
+        decoration: InputDecoration(
+          hintText: 'Search exercises',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: searchQuery.isNotEmpty
+            ? IconButton(
+              onPressed: (){
+                searchController.clear();
+                setState(() {
+                  searchQuery = '';
+                  applyFiltersAndSearch();
+                });
+              }, icon: const Icon(Icons.clear))
+              : null,
+            border: const OutlineInputBorder(),
+        ),
+        onChanged: (value){
+          setState(() {
+            searchQuery = value.trim().toLowerCase();
+            applyFiltersAndSearch();
+          });
+        },
+      ),
+    );
+  }
   Widget filters() {
     if (isLoadingFilters) {
       return const Padding(
@@ -219,7 +324,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                 if (selected != null) {
                   setState(() {
                     selectedBodyPartIds = selected;
-                    fetchExercises();
+                    applyFiltersAndSearch();
                   });
                 }
               },
@@ -243,21 +348,26 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: DropdownButtonFormField<String>(
+            child: DropdownButtonFormField<String?>(
               hint: const Text('Exercise Type'),
               value: selectedExerciseTypeId,
-              items: exerciseTypes
+              items: [
+              DropdownMenuItem<String?>(
+                child: Text('Select exercise type'),
+                value: null,
+                ),
+              ...exerciseTypes
                   .map(
                     (t) => DropdownMenuItem(
                   child: Text(t.name),
                   value: t.id,
                 ),
-              )
-                  .toList(),
+              ),
+              ],
               onChanged: (v) {
                 setState(() {
                   selectedExerciseTypeId = v;
-                  fetchExercises();
+                  applyFiltersAndSearch();
                 });
               },
             ),

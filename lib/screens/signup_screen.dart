@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firestorm/fs/fs.dart';
+import 'package:me_fit/models/exercise.dart';
 import '../models/user.dart';
 import '../services/authentication_service.dart';
 
@@ -58,6 +59,11 @@ class SignupScreenState extends State<SignupScreen> {
     } finally {
       setState (() => isLoading = false);
     }
+  }
+
+  Future<void> preLoadExercises() async{
+    final result = await  FS.list.allOfClass<Exercise>(Exercise);
+    debugPrint('Success}');
   }
   void nextStep(){
     switch (currentStep) {

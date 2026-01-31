@@ -81,6 +81,8 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
         selectedExercises.clear();
       });
 
+      Navigator.pop(context,true);
+
   }
 
   @override
