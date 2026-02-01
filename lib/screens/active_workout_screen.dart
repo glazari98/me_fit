@@ -114,17 +114,34 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 style: const TextStyle(fontSize: 18),
               ),
               const SizedBox(height: 20),
+              ClipRect(
+                child: Image.network(ex!.imageUrl,
+                    fit: BoxFit.cover,
+                    height: 300,
+                    width: 400,
+                    loadingBuilder: (context,child,loadingProgress){
+                      if(loadingProgress == null) return child;
+                      return SizedBox(height: 200,child: const Center(child: CircularProgressIndicator()));
+                    },
+                    errorBuilder: (context,error,stackTrace)=> SizedBox(
+                      height: 200,
+                      child: const Center(child: Icon(Icons.broken_image)),
+                    )),
 
-              Text(ex!.name, style: const TextStyle(fontSize: 24,fontWeight: FontWeight.bold)),
+              ),
               const SizedBox(height: 8),
-              Text(ex.instruction),
-              const SizedBox(height:16),
-
-              if(we.sets != null) Text('Sets: ${we.sets}'),
-              if(we.repetitions != null) Text('Reps: ${we.repetitions}'),
-              if(we.restBetweenSets != null) Text ('Rest: ${we.restBetweenSets}'),
-
-              const Spacer(),
+              Table(
+                columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
+                border: TableBorder.all(color: Colors.black,width: 0.5),
+                defaultVerticalAlignment: TableCellVerticalAlignment.fill ,
+                children: [
+                  createTableRow('Exercise name', ex!.name),
+                  createTableRow('Instruction', ex!.instruction),
+                  if(we.sets != null) createTableRow('Sets', we.sets.toString()),
+                  if(we.repetitions != null) createTableRow('Repetitions', we.repetitions.toString()),
+                  if(we.restBetweenSets != null) createTableRow('Rest between sets', we.restBetweenSets.toString()),
+                ],
+              ),
 
               ElevatedButton(
                   onPressed: completeExercise,
@@ -133,6 +150,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   : 'Complete Exercise',
                   ),
               ),
+
             ],
           ) ,
       ),
@@ -140,4 +158,28 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   }
 
+  TableRow createTableRow(String label, String value){
+    return TableRow(
+      children: [
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.fill,
+          child: Container(
+            width: double.infinity,
+          padding: const EdgeInsets.all(8),
+          color: Colors.grey,
+          child: Text(label,style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        TableCell(
+        verticalAlignment: TableCellVerticalAlignment.bottom,
+        child: Container(
+          width: 50,
+          padding: const EdgeInsets.all(8),
+          child: Text(value),
+        ),
+        ),
+      ]
+    );
+  }
 }

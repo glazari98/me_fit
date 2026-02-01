@@ -20,6 +20,8 @@ class WorkoutFeedbackScreen extends StatelessWidget{
     final totalSets = exercises.fold(0,(sum,e) => sum + (e.sets ?? 0));
 
     final totalReps = exercises.fold(0, (sum,e) => sum + (e.repetitions ?? 0));
+    final minutes = durationSeconds ~/ 60;
+    final seconds = durationSeconds % 60;
 
     return Scaffold (
       appBar: AppBar(title: const Text('Workout Complete')),
@@ -34,7 +36,7 @@ class WorkoutFeedbackScreen extends StatelessWidget{
             const SizedBox(height: 12),
             Text('Workout: ${workout.name}'),
             const SizedBox(height:12),
-            Text('Duration: ${durationSeconds ~/ 60} minutes'),
+            Text('Duration: $minutes min ${seconds.toString().padLeft(2,'0')} sec'),
             Text('Total sets: $totalSets'),
             Text('Total reps: $totalReps'),
             const Spacer(),

@@ -141,21 +141,39 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
               },
             ),
           const SizedBox(height: 12),
-          ...selectedExercises.map(
-              (e) => ListTile(
-                title: Text(e.name),
-                subtitle: Text(
-                  'Sets: 3, Reps: 10',
-                ),
-                trailing: IconButton(
-                    onPressed: (){
-                      setState(() {
-                        selectedExercises.remove(e);
-                      });
-                    },
-                    icon: const Icon(Icons.delete)),
-              )
-          )
+          if(selectedExercises.isNotEmpty)
+            SizedBox(
+              height: 220,
+              child: ReorderableListView(
+                  children: [
+                    for (int i =0; i < selectedExercises.length;i++)
+                      ListTile(
+                        key: ValueKey(selectedExercises[i].id),
+                        leading: const Icon(Icons.drag_handle),
+                        title: Text(selectedExercises[i].name),
+                        subtitle: const Text('Sets: 3, Reps: 10'),
+                        trailing: IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: (){
+                              setState(() {
+                                selectedExercises.removeAt(i);
+                              });
+                            },
+                        ),
+
+                      )
+                  ],
+                  onReorder: (oldIndex, newIndex){
+                    setState(() {
+                      if(newIndex >oldIndex){
+                        newIndex -= 1;
+                      }
+                      final item = selectedExercises.removeAt(oldIndex);
+                      selectedExercises.insert(newIndex, item);
+                    });
+                  },
+              ),
+            )
         ]
       ),
     );

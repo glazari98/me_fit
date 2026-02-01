@@ -21,13 +21,24 @@ class HomeScreenState extends State<HomeScreen> {
     authService.logOutUser();
     Navigator.pushReplacementNamed(context, '/login');
   }
-
+  int selectedIndex = 0;
+//Handles bottom navigation selection
+  void onItemTapped (int index) {
+    if (index == 0) {
+      Navigator.push(context, MaterialPageRoute(builder: (context) =>
+          MyWorkoutsScreen()));
+    } else if (index == 1) {
+      Navigator.push(context, MaterialPageRoute(builder: (context) =>
+          StartWorkoutScreen()));
+    }
+  }
   @override
   Widget build(BuildContext context){
     final currentUser = authService.getCurrentUser();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
+        backgroundColor: Colors.white,
         actions: [
           IconButton(
               onPressed: () => logOut(context),
@@ -37,27 +48,16 @@ class HomeScreenState extends State<HomeScreen> {
       ),
       body: const Text('Hello'),
       bottomNavigationBar: BottomNavigationBar(
-        onTap: (index){
-          if(index == 0){
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_)=> const MyWorkoutsScreen())
-            );
-          }
-          else{
-            Navigator.push(context,
-              MaterialPageRoute(builder: (_) => StartWorkoutScreen())
-            );
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.list_alt),
-              label: 'My Workouts',
-          ),
-
-          BottomNavigationBarItem(
-              icon: Icon(Icons.play_arrow),
-              label: 'Start Workout'),
+        currentIndex: selectedIndex,
+        onTap: onItemTapped,
+        backgroundColor: Colors.white,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.black,
+        items: [
+          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: "My Workouts"),
+          BottomNavigationBarItem(icon: Icon(Icons.play_arrow), label: "Start Workout")
         ],
       ),
     );

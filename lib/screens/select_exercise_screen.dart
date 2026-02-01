@@ -37,6 +37,9 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
   final TextEditingController searchController = TextEditingController();
    late Map<String,String> bodyPartNameById;
    late Map<String,String> exerciseTypeNameById;
+
+   bool sortAscending = true;
+
   @override
   void initState() {
     super.initState();
@@ -104,6 +107,12 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
         return nameMatch || keywordMatch;
       }).toList();
     }
+    temp.sort((a,b){
+      final nameA = a.name.toLowerCase();
+      final nameB = b.name.toLowerCase();
+      return sortAscending ? nameA.compareTo(nameB)
+                            : nameB.compareTo(nameA);
+    });
     filteredExercises = temp.toList();
     currentVisibleCount = filteredExercises.length > pageSize
     ? pageSize
@@ -126,10 +135,27 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
     });
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: const Text('Select Exercise')),
+        appBar: AppBar(title: const Text('Select Exercise'),
+          actions: [
+            IconButton(
+              tooltip: sortAscending ? 'Sorted A->Z': 'Sorted Z->A',
+              icon: Icon(
+                sortAscending ? Icons.sort_by_alpha : Icons.sort,
+                color: sortAscending ? Colors.blue : Colors.yellow,
+            ),
+              onPressed: (){
+                setState(() {
+                  sortAscending = !sortAscending;
+                  applyFiltersAndSearch();
+                });
+              },
+            ),
+          ],
+        ),
         body: Column(
           children: [
             searchField(),
@@ -348,22 +374,32 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: DropdownButtonFormField<String?>(
+            child: DropdownButtonFormField<String>(
+              isDense: true,
               hint: const Text('Exercise Type'),
               value: selectedExerciseTypeId,
-              items: [
-              DropdownMenuItem<String?>(
-                child: Text('Select exercise type'),
-                value: null,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12,vertical: 12),
                 ),
-              ...exerciseTypes
-                  .map(
-                    (t) => DropdownMenuItem(
+                icon: selectedExerciseTypeId != null
+                  ? GestureDetector(
+                    onTap: (){
+                      setState(() {
+                        selectedExerciseTypeId = null;
+                        applyFiltersAndSearch();
+                      });
+                    },
+                    child: const Icon(Icons.clear),
+                  )
+                  : const Icon(Icons.arrow_drop_down),
+
+              items: exerciseTypes.map(
+                    (t) => DropdownMenuItem<String>(
                   child: Text(t.name),
                   value: t.id,
                 ),
-              ),
-              ],
+              ).toList(),
               onChanged: (v) {
                 setState(() {
                   selectedExerciseTypeId = v;

@@ -14,7 +14,9 @@ class WorkoutDetailsScreen extends StatelessWidget{
     final result = await FS.list.filter<WorkoutExercises>(WorkoutExercises)
                                 .whereEqualTo('workoutId', workout.id)
                                 .fetch();
-    return result.items;
+    final items= result.items;
+    items.sort((a,b) => a.order.compareTo(b.order));
+    return items;
   }
   Future<Map<String,Exercise>> fetchExercisesMap(
       List<WorkoutExercises> workoutExercises) async {
