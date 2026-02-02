@@ -87,7 +87,8 @@ class SignupScreenState extends State<SignupScreen> {
       final workout = Workout(
           id: Firestorm.randomID(),
           name: 'Workout ${i+1}',
-          createdBy: userId);
+          createdBy: userId,
+          isMyWorkout: false);
       await FS.create.one(workout);
 
       final exercisesForWorkout = (allExercises..shuffle()).take(3).toList();

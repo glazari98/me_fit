@@ -31,6 +31,7 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
     final result = await FS.list
       .filter<Workout>(Workout)
       .whereEqualTo('createdBy', user?.uid)
+      .whereEqualTo('isMyWorkout', true)
       .fetch();
 
     return result.items;

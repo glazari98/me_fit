@@ -5,6 +5,7 @@ import 'package:me_fit/models/WorkoutEvent.dart';
 import 'package:me_fit/models/scheduledWorkout.dart';
 import 'package:me_fit/screens/my_workouts.dart';
 import 'package:me_fit/screens/start_workout_screen.dart';
+import 'package:me_fit/screens/weekly_workouts_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -189,20 +190,46 @@ class HomeScreenState extends State<HomeScreen>{
             ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-          currentIndex: selectedIndex,
-          onTap: onItemTapped,
-          backgroundColor: Colors.white,
-          selectedItemColor: Colors.black,
-          unselectedItemColor: Colors.black,
-          items: const [
-            BottomNavigationBarItem(
-                icon: Icon(Icons.list_alt),
-                label: "My Workouts"),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.play_arrow),
-                label: "Start Workout",)
-          ]),
+      drawer: Drawer(
+        child: Column(
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(
+                color: Colors.black
+              ),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Text('MeFit',
+                style: TextStyle(color: Colors.white,fontSize: 24,fontWeight: FontWeight.bold)),
+              )),
+            ListTile(
+              leading: const Icon(Icons.list_alt),
+              title: const Text('My Workouts'),
+              onTap: (){
+                Navigator.pop(context);
+                Navigator.push(context,MaterialPageRoute(builder: (_) => MyWorkoutsScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_view_week),
+              title: const Text('Weekly Workouts'),
+              onTap: (){
+                Navigator.pop(context);
+                Navigator.push(context,MaterialPageRoute(builder: (_) => WeeklyWorkoutsScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.play_arrow),
+              title: const Text('Start Workout'),
+              onTap: (){
+                Navigator.pop(context);
+                Navigator.push(context,MaterialPageRoute(builder: (_) => StartWorkoutScreen()));
+              },
+            ),
+
+          ],
+        )
+      ),
   );
 }
 }

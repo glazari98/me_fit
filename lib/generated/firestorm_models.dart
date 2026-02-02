@@ -91,6 +91,7 @@ extension WorkoutModel on Workout {
 
 	 Map<String, dynamic> toMap() {
 		 return {
+			 'isMyWorkout': this.isMyWorkout,
 			 'createdBy': this.createdBy,
 			 'name': this.name,
 			 'id': this.id,
@@ -102,6 +103,7 @@ extension WorkoutModel on Workout {
 			id: map['id'] as String,
 			name: map['name'] as String,
 			createdBy: map['createdBy'] as String,
+			isMyWorkout: map['isMyWorkout'] as bool,
 		 );
 		 return object;
 	}
@@ -249,7 +251,7 @@ extension ScheduledWorkoutModel on ScheduledWorkout {
 			id: map['id'] as String,
 			userId: map['userId'] as String,
 			workoutId: map['workoutId'] as String,
-      scheduledDate: (map['scheduledDate'] as Timestamp).toDate(),
+        scheduledDate: (map['scheduledDate'] as Timestamp).toDate(),
 		 );
 		 return object;
 	}

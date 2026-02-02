@@ -5,11 +5,13 @@ class Workout {
   String id;
   String name;
   String createdBy;
+  bool isMyWorkout;
 
   Workout({
     required this.id,
     required this.name,
-    required this.createdBy
+    required this.createdBy,
+    required this.isMyWorkout,
   });
 
 }

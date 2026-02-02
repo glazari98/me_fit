@@ -51,6 +51,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
       id: workoutId,
       name: workoutNameController.text.trim(),
       createdBy: user.uid,
+      isMyWorkout: true
     );
 
     await FS.create.one(workout);
