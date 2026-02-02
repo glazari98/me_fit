@@ -1,6 +1,10 @@
+import 'package:firestorm/firestorm.dart';
 import 'package:flutter/material.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:me_fit/models/exercise.dart';
+import 'package:me_fit/models/scheduledWorkout.dart';
+import 'package:me_fit/models/workout.dart';
+import 'package:me_fit/models/workoutExercises.dart';
 import '../models/user.dart';
 import '../services/authentication_service.dart';
 
@@ -32,22 +36,35 @@ class SignupScreenState extends State<SignupScreen> {
           password: passwordController.text.trim()
       );
 
-      final id = registerUser.user!.uid;
+      final firebaseUser = registerUser.user;
+      if (firebaseUser == null) {
+        throw Exception('User registration failed. Please try again.');
+      }
 
+      final id = firebaseUser.uid;
+      final age = int.tryParse(ageController.text.trim());
+      if (age == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid age')),
+        );
+        return;
+      }
       User user = User(
         id,
         emailController.text.trim(),
         nameController.text.trim(),
-        int.parse(ageController.text),
+        age,
         fitnessLevel,
       );
 
-      FS.create.one(user).then((_) {
+      await FS.create.one(user).then((_) {
         print("User created!");
       })
       .onError((e, st) {
         print("Error $e");
       });
+
+      await assignStarterWorkouts(user.id);
 
       if(!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
@@ -60,7 +77,43 @@ class SignupScreenState extends State<SignupScreen> {
       setState (() => isLoading = false);
     }
   }
+  Future<void> assignStarterWorkouts(String userId) async{
+    final allExercises = await FS.list.allOfClass<Exercise>(Exercise);
 
+    if(allExercises.isEmpty) return;
+    List<Workout> starterWorkouts = [];
+
+    for(int i = 0; i < 3;i++){
+      final workout = Workout(
+          id: Firestorm.randomID(),
+          name: 'Workout ${i+1}',
+          createdBy: userId);
+      await FS.create.one(workout);
+
+      final exercisesForWorkout = (allExercises..shuffle()).take(3).toList();
+      for (int j = 0; j < exercisesForWorkout.length; j++){
+        final we = WorkoutExercises(
+            id: Firestorm.randomID(),
+            workoutId: workout.id,
+            exerciseId: exercisesForWorkout[j].id,
+            order: j+1);
+        await FS.create.one(we);
+      }
+      starterWorkouts.add(workout);
+    }
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday-1));
+    final scheduleDays = [0,2,4];
+    for(int i = 0; i < starterWorkouts.length; i++) {
+      final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
+      final scheduledWorkout = ScheduledWorkout(
+          id: Firestorm.randomID(),
+          userId: userId,
+          workoutId: starterWorkouts[i].id,
+          scheduledDate: scheduledDate);
+      await FS.create.one(scheduledWorkout);
+    }
+  }
   Future<void> preLoadExercises() async{
     final result = await  FS.list.allOfClass<Exercise>(Exercise);
     debugPrint('Success}');

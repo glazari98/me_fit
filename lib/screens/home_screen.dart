@@ -1,65 +1,211 @@
+import 'dart:collection';
+import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
+import 'package:me_fit/models/WorkoutEvent.dart';
+import 'package:me_fit/models/scheduledWorkout.dart';
 import 'package:me_fit/screens/my_workouts.dart';
 import 'package:me_fit/screens/start_workout_screen.dart';
-import '../services/authentication_service.dart';
+import 'package:me_fit/services/authentication_service.dart';
+import 'package:table_calendar/table_calendar.dart';
 
+DateTime normaliseDate(DateTime date) => DateTime(date.year,date.month,date.day);
 
-import 'create_workout_screen.dart';
+LinkedHashMap<DateTime, List<WorkoutEvent>> buildWorkoutEventMap(List<ScheduledWorkout> workouts){
+  final map = LinkedHashMap<DateTime,List<WorkoutEvent>>(
+    equals: isSameDay,
+    hashCode: (date) => normaliseDate(date).hashCode
+  );
 
+  for (final sw in workouts){
+    final day = normaliseDate(sw.scheduledDate);
+    map.putIfAbsent(day, () => []).add(
+      WorkoutEvent('Workout: ${sw.workoutId}', sw),
+    );
+  }
+  return map;
+}
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatefulWidget{
   const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => HomeScreenState();
 }
 
-class HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen>{
   final AuthenticationService authService = AuthenticationService();
+  int selectedIndex = 0;
 
-  void logOut(BuildContext context)async{
+  List<ScheduledWorkout> userSchedule = [];
+  late LinkedHashMap<DateTime,List<WorkoutEvent>> kEvents;
+  late ValueNotifier<List<WorkoutEvent>> selectedEvents;
+
+  DateTime focusedDay = DateTime.now();
+  DateTime? selectedDay;
+  CalendarFormat calendarFormat = CalendarFormat.month;
+
+  @override
+  void initState(){
+    super.initState();
+    selectedDay = focusedDay;
+
+    kEvents = LinkedHashMap<DateTime,List<WorkoutEvent>>(
+      equals: isSameDay,
+      hashCode: (date) => normaliseDate(date).hashCode,
+    );
+    selectedEvents = ValueNotifier([]);
+
+    loadSchedule();
+  }
+
+  Future<void> loadSchedule() async{
+    final currentUser = authService.getCurrentUser();
+    if(currentUser == null) return;
+
+    final result = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
+                              .whereEqualTo('userId', currentUser.uid)
+                              .fetch();
+
+    final tempMap = buildWorkoutEventMap(result.items);
+
+    setState(() {
+      userSchedule = result.items;
+      kEvents.clear();
+      kEvents.addAll(tempMap);
+
+      final normalisedSelectedDay = selectedDay != null ?
+          normaliseDate(selectedDay!) :
+          normaliseDate(DateTime.now());
+      selectedEvents.value = kEvents[normalisedSelectedDay] ?? [];
+    });
+  }
+
+
+  List<WorkoutEvent> getEventsForDay(DateTime day){
+    return kEvents[normaliseDate(day)] ?? [];
+  }
+
+  void onDaySelected(DateTime day,DateTime focused){
+    final normalised = normaliseDate(day);
+    setState(() {
+      selectedDay = normalised;
+      focusedDay = focused;
+      selectedEvents.value = getEventsForDay(normalised);
+    });
+  }
+
+  void logOut(BuildContext context) async{
     authService.logOutUser();
     Navigator.pushReplacementNamed(context, '/login');
   }
-  int selectedIndex = 0;
-//Handles bottom navigation selection
-  void onItemTapped (int index) {
-    if (index == 0) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) =>
-          MyWorkoutsScreen()));
-    } else if (index == 1) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) =>
-          StartWorkoutScreen()));
+
+  void onItemTapped(int index){
+    if(index == 0){
+      Navigator.push(context,MaterialPageRoute(builder: (context) => MyWorkoutsScreen()));
+    }
+    else if (index == 1){
+      Navigator.push(context,MaterialPageRoute(builder: (context) => StartWorkoutScreen()));
     }
   }
+
   @override
   Widget build(BuildContext context){
-    final currentUser = authService.getCurrentUser();
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home'),
-        backgroundColor: Colors.white,
-        actions: [
-          IconButton(
-              onPressed: () => logOut(context),
-              icon: const Icon(Icons.logout),
-          )
+      appBar: AppBar(title: const Text('Home'),backgroundColor: Colors.white,
+      actions: [
+        IconButton(
+            onPressed: () => logOut(context),
+            icon: const Icon(Icons.logout),)
+      ],
+      ),
+      body: Column(
+        children: [
+          TableCalendar<WorkoutEvent>(
+              focusedDay: focusedDay,
+              firstDay: DateTime.now().subtract(const Duration(days: 30)),
+              lastDay: DateTime.now().add(const Duration(days: 90)),
+              selectedDayPredicate: (day) => isSameDay(selectedDay, day),
+              calendarFormat: calendarFormat,
+              eventLoader: getEventsForDay,
+              onDaySelected: onDaySelected,
+              onFormatChanged:(format) => setState(() => calendarFormat = format),
+            calendarStyle: CalendarStyle(
+              isTodayHighlighted: true,
+              cellMargin: EdgeInsets.all(10),
+            ),
+            //rowHeight: 40,
+            daysOfWeekHeight: 30,
+              calendarBuilders: CalendarBuilders(
+                markerBuilder: (context,day,events){
+                  final workoutEvents = events.cast<WorkoutEvent>();
+                  if(workoutEvents.isEmpty) return null;
+                    return Positioned(
+                        bottom: 1,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                              workoutEvents.length > 3 ? 3 : workoutEvents.length,
+                              (index) => Container(
+                                margin: const EdgeInsets.all(0),
+                                width: 8,
+                                height: 7,
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                          ),
+                        ),
+                    );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ValueListenableBuilder<List<WorkoutEvent>>(
+                valueListenable: selectedEvents,
+                builder: (context,value,_){
+                  if(value.isEmpty) return const Center(child: Text('No workouts'));
+                  return ListView.builder(
+                  itemCount: value.length,
+                  itemBuilder: (context,index){
+                    final workout = value[index];
+                    return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 12,vertical: 4),
+                    decoration: BoxDecoration(
+                    border: Border.all(),
+                    borderRadius: BorderRadius.circular(12),
+
+                    ),
+                    child: ListTile(
+                    title: Text(workout.title),
+                    onTap: (){},
+                    ),
+                    );
+                  },
+                  );
+                },
+              ),
+            ),
         ],
       ),
-      body: const Text('Hello'),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: selectedIndex,
-        onTap: onItemTapped,
-        backgroundColor: Colors.white,
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.black,
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: "My Workouts"),
-          BottomNavigationBarItem(icon: Icon(Icons.play_arrow), label: "Start Workout")
-        ],
-      ),
-    );
-  }
+          currentIndex: selectedIndex,
+          onTap: onItemTapped,
+          backgroundColor: Colors.white,
+          selectedItemColor: Colors.black,
+          unselectedItemColor: Colors.black,
+          items: const [
+            BottomNavigationBarItem(
+                icon: Icon(Icons.list_alt),
+                label: "My Workouts"),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.play_arrow),
+                label: "Start Workout",)
+          ]),
+  );
 }
+}
+
+
+

@@ -7,16 +7,18 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:firestorm/rdb/rdb.dart';
 import 'package:firestorm/ls/ls.dart';
 import 'package:me_fit/models/exercise.dart';
+import 'package:me_fit/models/equipment.dart';
 import 'package:me_fit/models/workout.dart';
 import 'package:me_fit/models/bodyPart.dart';
 import 'package:me_fit/models/user.dart';
 import 'package:me_fit/models/workoutExercises.dart';
-import 'package:me_fit/models/equipment.dart';
 import 'package:me_fit/models/exerciseType.dart';
+import 'package:me_fit/models/scheduledWorkout.dart';
 
 // - - - - - - - FirestormObject Exercise - - - - - - -
 
@@ -48,6 +50,32 @@ extension ExerciseModel on Exercise {
 			exerciseTypeId: map['exerciseTypeId'] as String,
 			instruction: map['instruction'] as String,
 			keywords: map['keywords'] != null ? map['keywords'].cast<String>() : [],
+		 );
+		 return object;
+	}
+
+}
+
+// - - - - - - - FirestormObject Equipment - - - - - - -
+
+extension EquipmentModel on Equipment {
+
+	static final bool fsSupport = true;
+	static final bool rdbSupport = true;
+
+	 Map<String, dynamic> toMap() {
+		 return {
+			 'imageUrl': this.imageUrl,
+			 'name': this.name,
+			 'id': this.id,
+		 };
+	 }
+
+	static Equipment fromMap(Map<String, dynamic> map) {
+		Equipment object = Equipment(
+			id: map['id'] as String,
+			name: map['name'] as String,
+			imageUrl: map['imageUrl'] as String,
 		 );
 		 return object;
 	}
@@ -174,32 +202,6 @@ extension WorkoutExercisesModel on WorkoutExercises {
 
 }
 
-// - - - - - - - FirestormObject Equipment - - - - - - -
-
-extension EquipmentModel on Equipment {
-
-	static final bool fsSupport = true;
-	static final bool rdbSupport = true;
-
-	 Map<String, dynamic> toMap() {
-		 return {
-			 'imageUrl': this.imageUrl,
-			 'name': this.name,
-			 'id': this.id,
-		 };
-	 }
-
-	static Equipment fromMap(Map<String, dynamic> map) {
-		Equipment object = Equipment(
-			id: map['id'] as String,
-			name: map['name'] as String,
-			imageUrl: map['imageUrl'] as String,
-		 );
-		 return object;
-	}
-
-}
-
 // - - - - - - - FirestormObject ExerciseType - - - - - - -
 
 extension ExerciseTypeModel on ExerciseType {
@@ -226,26 +228,56 @@ extension ExerciseTypeModel on ExerciseType {
 
 }
 
+// - - - - - - - FirestormObject ScheduledWorkout - - - - - - -
+
+extension ScheduledWorkoutModel on ScheduledWorkout {
+
+	static final bool fsSupport = true;
+	static final bool rdbSupport = false;
+
+	 Map<String, dynamic> toMap() {
+		 return {
+			 'scheduledDate': this.scheduledDate,
+			 'workoutId': this.workoutId,
+			 'userId': this.userId,
+			 'id': this.id,
+		 };
+	 }
+
+	static ScheduledWorkout fromMap(Map<String, dynamic> map) {
+		ScheduledWorkout object = ScheduledWorkout(
+			id: map['id'] as String,
+			userId: map['userId'] as String,
+			workoutId: map['workoutId'] as String,
+      scheduledDate: (map['scheduledDate'] as Timestamp).toDate(),
+		 );
+		 return object;
+	}
+
+}
+
 
 // - - - - - - - Registry - - - - - - -
 final Map<Type, Map<String, dynamic> Function(dynamic)> toMapRegistry = {
 	Exercise: (object) => (object as Exercise).toMap(),
+	Equipment: (object) => (object as Equipment).toMap(),
 	Workout: (object) => (object as Workout).toMap(),
 	BodyPart: (object) => (object as BodyPart).toMap(),
 	User: (object) => (object as User).toMap(),
 	WorkoutExercises: (object) => (object as WorkoutExercises).toMap(),
-	Equipment: (object) => (object as Equipment).toMap(),
 	ExerciseType: (object) => (object as ExerciseType).toMap(),
+	ScheduledWorkout: (object) => (object as ScheduledWorkout).toMap(),
 };
 
 final Map<Type, dynamic Function(Map<String, dynamic>)> fromMapRegistry = {
 	Exercise: (map) => ExerciseModel.fromMap(map),
+	Equipment: (map) => EquipmentModel.fromMap(map),
 	Workout: (map) => WorkoutModel.fromMap(map),
 	BodyPart: (map) => BodyPartModel.fromMap(map),
 	User: (map) => UserModel.fromMap(map),
 	WorkoutExercises: (map) => WorkoutExercisesModel.fromMap(map),
-	Equipment: (map) => EquipmentModel.fromMap(map),
 	ExerciseType: (map) => ExerciseTypeModel.fromMap(map),
+	ScheduledWorkout: (map) => ScheduledWorkoutModel.fromMap(map),
 };
 
 Map<String, dynamic> convertToMap(dynamic object) {
@@ -267,6 +299,8 @@ T convertFromMap<T>(Map<String, dynamic> map) {
 registerClasses() {
 	FS.registerSerializer<Exercise>((object) => object.toMap());
 	FS.registerDeserializer<Exercise>((map) => ExerciseModel.fromMap(map));
+	FS.registerSerializer<Equipment>((object) => object.toMap());
+	FS.registerDeserializer<Equipment>((map) => EquipmentModel.fromMap(map));
 	FS.registerSerializer<Workout>((object) => object.toMap());
 	FS.registerDeserializer<Workout>((map) => WorkoutModel.fromMap(map));
 	FS.registerSerializer<BodyPart>((object) => object.toMap());
@@ -275,12 +309,14 @@ registerClasses() {
 	FS.registerDeserializer<User>((map) => UserModel.fromMap(map));
 	FS.registerSerializer<WorkoutExercises>((object) => object.toMap());
 	FS.registerDeserializer<WorkoutExercises>((map) => WorkoutExercisesModel.fromMap(map));
-	FS.registerSerializer<Equipment>((object) => object.toMap());
-	FS.registerDeserializer<Equipment>((map) => EquipmentModel.fromMap(map));
 	FS.registerSerializer<ExerciseType>((object) => object.toMap());
 	FS.registerDeserializer<ExerciseType>((map) => ExerciseTypeModel.fromMap(map));
+	FS.registerSerializer<ScheduledWorkout>((object) => object.toMap());
+	FS.registerDeserializer<ScheduledWorkout>((map) => ScheduledWorkoutModel.fromMap(map));
 	RDB.registerSerializer<Exercise>((object) => object.toMap());
 	RDB.registerDeserializer<Exercise>((map) => ExerciseModel.fromMap(map));
+	RDB.registerSerializer<Equipment>((object) => object.toMap());
+	RDB.registerDeserializer<Equipment>((map) => EquipmentModel.fromMap(map));
 	RDB.registerSerializer<Workout>((object) => object.toMap());
 	RDB.registerDeserializer<Workout>((map) => WorkoutModel.fromMap(map));
 	RDB.registerSerializer<BodyPart>((object) => object.toMap());
@@ -289,12 +325,12 @@ registerClasses() {
 	RDB.registerDeserializer<User>((map) => UserModel.fromMap(map));
 	RDB.registerSerializer<WorkoutExercises>((object) => object.toMap());
 	RDB.registerDeserializer<WorkoutExercises>((map) => WorkoutExercisesModel.fromMap(map));
-	RDB.registerSerializer<Equipment>((object) => object.toMap());
-	RDB.registerDeserializer<Equipment>((map) => EquipmentModel.fromMap(map));
 	RDB.registerSerializer<ExerciseType>((object) => object.toMap());
 	RDB.registerDeserializer<ExerciseType>((map) => ExerciseTypeModel.fromMap(map));
 	LS.registerSerializer<Exercise>((object) => object.toMap());
 	LS.registerDeserializer<Exercise>((map) => ExerciseModel.fromMap(map));
+	LS.registerSerializer<Equipment>((object) => object.toMap());
+	LS.registerDeserializer<Equipment>((map) => EquipmentModel.fromMap(map));
 	LS.registerSerializer<Workout>((object) => object.toMap());
 	LS.registerDeserializer<Workout>((map) => WorkoutModel.fromMap(map));
 	LS.registerSerializer<BodyPart>((object) => object.toMap());
@@ -303,10 +339,10 @@ registerClasses() {
 	LS.registerDeserializer<User>((map) => UserModel.fromMap(map));
 	LS.registerSerializer<WorkoutExercises>((object) => object.toMap());
 	LS.registerDeserializer<WorkoutExercises>((map) => WorkoutExercisesModel.fromMap(map));
-	LS.registerSerializer<Equipment>((object) => object.toMap());
-	LS.registerDeserializer<Equipment>((map) => EquipmentModel.fromMap(map));
 	LS.registerSerializer<ExerciseType>((object) => object.toMap());
 	LS.registerDeserializer<ExerciseType>((map) => ExerciseTypeModel.fromMap(map));
+	LS.registerSerializer<ScheduledWorkout>((object) => object.toMap());
+	LS.registerDeserializer<ScheduledWorkout>((map) => ScheduledWorkoutModel.fromMap(map));
 }
 
 
