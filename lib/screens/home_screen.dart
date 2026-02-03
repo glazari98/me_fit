@@ -213,9 +213,9 @@ class HomeScreenState extends State<HomeScreen>{
             ListTile(
               leading: const Icon(Icons.calendar_view_week),
               title: const Text('Weekly Workouts'),
-              onTap: (){
+              onTap: () async{
                 Navigator.pop(context);
-                Navigator.push(context,MaterialPageRoute(builder: (_) => WeeklyWorkoutsScreen()));
+                await Navigator.push(context,MaterialPageRoute(builder: (_) => WeeklyWorkoutsScreen(onWorkoutUpdated: (){ loadSchedule();})));
               },
             ),
             ListTile(

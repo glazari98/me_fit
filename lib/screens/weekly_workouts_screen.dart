@@ -2,6 +2,9 @@ import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/scheduledWorkout.dart';
 import 'package:me_fit/models/workout.dart';
+import 'package:me_fit/screens/edit_workout_screen.dart';
+import 'package:me_fit/screens/home_screen.dart';
+import 'package:me_fit/screens/workout_details_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 
 
@@ -12,7 +15,8 @@ DateTime endOfWeek(DateTime date){
   return startOfWeek(date).add(const Duration(days: 6));
 }
 class WeeklyWorkoutsScreen extends StatefulWidget{
-  const WeeklyWorkoutsScreen({super.key});
+  final VoidCallback? onWorkoutUpdated;
+  const WeeklyWorkoutsScreen({super.key, this.onWorkoutUpdated});
 
   @override
   State<WeeklyWorkoutsScreen> createState() => WeeklyWorkoutScreenState();
@@ -21,7 +25,7 @@ class WeeklyWorkoutsScreen extends StatefulWidget{
 class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
   final AuthenticationService authenticationService = AuthenticationService();
 
-  late Future<Map<DateTime,Workout>> weeklyWorkouts;
+  late Future<List<ScheduledWorkout>> weeklyWorkouts;
 
   @override
   void initState(){
@@ -29,38 +33,33 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
     weeklyWorkouts = fetchWeeklyWorkouts();
   }
 
-  Future<Map<DateTime,Workout>> fetchWeeklyWorkouts() async {
+  Future<List<ScheduledWorkout>> fetchWeeklyWorkouts() async {
     final user = authenticationService.getCurrentUser();
-    if(user == null) return{};
+    if(user == null) return [];
 
     final now = DateTime.now();
     final start = startOfWeek(now);
     final end = endOfWeek(now);
 
-    final scheduled = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
+    final result = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
                                     .whereEqualTo('userId', user.uid)
                                     .fetch();
 
-    final weekly = scheduled.items.where((sw) =>
-        !sw.scheduledDate.isBefore(start) &&
-        !sw.scheduledDate.isAfter(end));
-
-    final Map<DateTime,Workout> result = {};
-
-    for (final sw in weekly){
-      final workout = await FS.get.one<Workout>(sw.workoutId);
-      if(workout != null){
-        result[sw.scheduledDate] = workout;
-      }
-    }
-    return result;
+      return result.items.where((sw){
+        final date = DateTime(
+          sw.scheduledDate.year,
+          sw.scheduledDate.month,
+          sw.scheduledDate.day
+        );
+        return !date.isBefore(start) && !date.isAfter(end);
+      }).toList();
   }
 
   @override
   Widget build (BuildContext context) {
     return Scaffold(
         appBar: AppBar(title: const Text('Weekly Workouts')),
-        body: FutureBuilder<Map<DateTime, Workout>>(
+        body: FutureBuilder<List<ScheduledWorkout>>(
           future: weeklyWorkouts,
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
@@ -70,30 +69,87 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
               return const Center(child: Text('No workouts scheduled'));
             }
 
-            final entries = snapshot.data!.entries.toList()
-              ..sort((a, b) => a.key.compareTo(b.key));
+            final scheduled = snapshot.data!
+              ..sort((a, b) => a.scheduledDate.compareTo(b.scheduledDate));
 
             return ListView.builder(
-                itemCount: entries.length,
+                itemCount: scheduled.length,
                 itemBuilder: (context, index) {
-                  final date = entries[index].key;
-                  final workout = entries[index].value;
+                  final sw = scheduled[index];
+                  return FutureBuilder<Workout?>(
+                    future: FS.get.one<Workout>(sw.workoutId),
+                    builder: (context,workoutSnapshot){
+                      if(!workoutSnapshot.hasData){
+                        return const SizedBox();
+                      }
 
-                  return ListTile(
-                    title: Text(
-                        workout.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold)
-                    ),
-                    subtitle: Text(weekdayLabel(date),
-                    ),
-                    leading: const Icon(Icons.fitness_center),
+                      final workout = workoutSnapshot.data!;
+
+                      return ListTile(
+                        leading: const Icon(Icons.fitness_center),
+                        title:Text(workout.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(weekdayLabel(sw.scheduledDate)),
+                        trailing: SizedBox(width: 110,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            SizedBox(
+                              width: 36,height: 36,
+                              child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(padding: EdgeInsets.zero),
+                                  onPressed: (){
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => WorkoutDetailsScreen(workout: workout))
+                                    );
+                                  }, 
+                                  child: const Icon(Icons.visibility,size: 20),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 36,height: 36,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    backgroundColor: normaliseDate(sw.scheduledDate).isBefore(
+                                        normaliseDate(DateTime.now()))
+                                        ? Colors.grey
+                                        : null,
+                                ),
+                                  onPressed:normaliseDate(sw.scheduledDate).isBefore(
+                                      normaliseDate(DateTime.now()))
+                                      ? null
+                                      :  ()async{
+                                  final updated = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => EditWeeklyWorkoutScreen(scheduledWorkout: sw))
+                                  );
+                                  if(updated == true){
+                                    setState(() {
+                                      weeklyWorkouts = fetchWeeklyWorkouts();
+                                    });
+                                    if(widget.onWorkoutUpdated != null){
+                                      widget.onWorkoutUpdated!();
+                                    }
+                                  }
+                                  },
+                                  child: const Icon(Icons.edit,size: 20)),
+                            ),
+
+                        ],
+                      ),
+                      ),
+                      );
+                    },
                   );
-                });
+                },
+            );
           },
-        )
+        ),
     );
   }
-
     String weekdayLabel(DateTime date) {
       const days = ['Monday', 'Tuesday', 'Wednesday',
       'Thursday', 'Friday', 'Saturday', 'Sunday'];

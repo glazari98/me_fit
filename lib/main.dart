@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +29,7 @@ class MeFitApp extends StatelessWidget{
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      initialRoute: '/login',
+      initialRoute: FirebaseAuth.instance.currentUser != null ? '/home' : '/login',
       routes: {
         '/login': (context) => const LoginScreen(),
         '/signUp': (context) => const SignupScreen(),
