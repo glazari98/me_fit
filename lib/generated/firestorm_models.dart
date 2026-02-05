@@ -145,7 +145,10 @@ extension UserModel on User {
 
 	 Map<String, dynamic> toMap() {
 		 return {
-			 'fitnessLevel': this.fitnessLevel,
+			 'aerobicType': this.aerobicType,
+			 'preferredWorkoutsPerWeek': this.preferredWorkoutsPerWeek,
+			 'hasAccessToGym': this.hasAccessToGym,
+			 'trainingType': this.trainingType,
 			 'age': this.age,
 			 'username': this.username,
 			 'emailAddress': this.emailAddress,
@@ -155,11 +158,14 @@ extension UserModel on User {
 
 	static User fromMap(Map<String, dynamic> map) {
 		User object = User(
-			map['id'] as String,
-			map['emailAddress'] as String,
-			map['username'] as String,
-			map['age'] as int,
-			map['fitnessLevel'] as String,
+			id: map['id'] as String,
+			emailAddress: map['emailAddress'] as String,
+			username: map['username'] as String,
+			age: map['age'] as int,
+			trainingType: map['trainingType'] as String,
+			hasAccessToGym: map['hasAccessToGym'] as bool,
+			preferredWorkoutsPerWeek: map['preferredWorkoutsPerWeek'] as int,
+			aerobicType: map['aerobicType'] as String?,
 		 );
 		 return object;
 	}
@@ -197,7 +203,7 @@ extension WorkoutExercisesModel on WorkoutExercises {
 			sets: map['sets'] as int?,
 			restBetweenSets: map['restBetweenSets'] as int?,
 			duration: map['duration'] as int?,
-			distance: map['distance'] as int?,
+			distance: map['distance'] as double?,
 		 );
 		 return object;
 	}
@@ -251,7 +257,7 @@ extension ScheduledWorkoutModel on ScheduledWorkout {
 			id: map['id'] as String,
 			userId: map['userId'] as String,
 			workoutId: map['workoutId'] as String,
-        scheduledDate: (map['scheduledDate'] as Timestamp).toDate(),
+      scheduledDate: (map['scheduledDate'] as Timestamp).toDate(),
 		 );
 		 return object;
 	}

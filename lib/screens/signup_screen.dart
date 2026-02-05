@@ -1,6 +1,9 @@
+
+
 import 'package:firestorm/firestorm.dart';
 import 'package:flutter/material.dart';
 import 'package:firestorm/fs/fs.dart';
+import 'package:me_fit/models/bodyPart.dart';
 import 'package:me_fit/models/exercise.dart';
 import 'package:me_fit/models/scheduledWorkout.dart';
 import 'package:me_fit/models/workout.dart';
@@ -24,12 +27,17 @@ class SignupScreenState extends State<SignupScreen> {
   final nameController = TextEditingController();
   final ageController = TextEditingController();
 
-  String fitnessLevel = 'Beginner';
+  String? trainingType;
+  bool? hasAccessToGym;
+  int? preferredWorkoutsPerWeek;
+  String? aerobicType;
+  double? aerobicDistance;
+  final aerobicDistanceController = TextEditingController();
 
   final AuthenticationService authService = AuthenticationService();
 
   Future<void> signup() async {
-    try{
+    try {
       setState(() => isLoading = true);
       final registerUser = await authService.registerUser(
           email: emailController.text.trim(),
@@ -50,76 +58,312 @@ class SignupScreenState extends State<SignupScreen> {
         return;
       }
       User user = User(
-        id,
-        emailController.text.trim(),
-        nameController.text.trim(),
-        age,
-        fitnessLevel,
+          id: id,
+          emailAddress: emailController.text.trim(),
+          username: nameController.text.trim(),
+          age: age,
+          trainingType: trainingType!,
+          hasAccessToGym: hasAccessToGym!,
+          preferredWorkoutsPerWeek: preferredWorkoutsPerWeek!,
+          aerobicType: aerobicType,
+          aerobicDistance: aerobicDistance
       );
 
       await FS.create.one(user).then((_) {
         print("User created!");
       })
-      .onError((e, st) {
+          .onError((e, st) {
         print("Error $e");
       });
 
       await assignStarterWorkouts(user.id);
 
-      if(!mounted) return;
+      if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
     }
-    catch (e){
+    catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),
       );
     } finally {
-      setState (() => isLoading = false);
+      setState(() => isLoading = false);
     }
   }
-  Future<void> assignStarterWorkouts(String userId) async{
+
+  Future<void> assignStarterWorkouts(String userId) async {
     final allExercises = await FS.list.allOfClass<Exercise>(Exercise);
 
-    if(allExercises.isEmpty) return;
+    if (allExercises.isEmpty) return;
     List<Workout> starterWorkouts = [];
+    if(trainingType == 'Strength') {
+      List<BodyPart> bodyParts = await FS.list.allOfClass<BodyPart>(BodyPart);
+      final Map<String, String> bodyPartNameToId = {
+        for (final bp in bodyParts) bp.name : bp.id
+      };
+      List<List<String>> workoutPlanBodyParts = [];
+      if(preferredWorkoutsPerWeek == 2){
+        workoutPlanBodyParts = [
+        ['CHEST', 'CHEST', 'BACK','BACK','BICEPS','BICEPS','TRICEPS', 'SHOULDERS', "FULL BODY"],
+        ['THIGHS', 'THIGHS', 'HAMSTRINGS','QUADRICEPS','QUADRICEPS','HIPS','HIPS','CALVES', "FULL BODY"],
+      ];
+      }else if(preferredWorkoutsPerWeek == 3){
+          workoutPlanBodyParts = [
+          ['CHEST','CHEST','TRICEPS','TRICEPS','SHOULDERS','SHOULDERS','FULL BODY'],
+          ['BACK','BACK','BACK','BACK','BICEPS','BICEPS','FULL BODY'],
+          ['THIGHS','THIGHS','HAMSTRINGS','QUADRICEPS','HIPS','WAIST','CALVES','FULL BODY']
+        ];
+      }else if(preferredWorkoutsPerWeek == 4){
+        workoutPlanBodyParts = [
+          ['CHEST','CHEST','TRICEPS','TRICEPS','SHOULDERS','SHOULDERS','FULL BODY'],
+          ['BACK','BACK','BACK','BACK','BICEPS','BICEPS','FULL BODY'],
+          ['THIGHS','THIGHS','HAMSTRINGS','QUADRICEPS','HIPS','WAIST','CALVES','FULL BODY'],
+          ['CHEST','TRICEPS','SHOULDERS','UPPER ARMS','QUADRICEPS','HIPS','THIGHS','CALVES','FULL BODY']
+        ];
+      }
+      for(int i =0; i < workoutPlanBodyParts.length; i++){
+        final workout = Workout(
+            id: Firestorm.randomID(),
+            name: 'Workout ${i + 1}',
+            createdBy: userId,
+            isMyWorkout: false);
 
-    for(int i = 0; i < 3;i++){
-      final workout = Workout(
-          id: Firestorm.randomID(),
-          name: 'Workout ${i+1}',
-          createdBy: userId,
-          isMyWorkout: false);
-      await FS.create.one(workout);
+        await FS.create.one(workout);
+        for (int j = 0; j < workoutPlanBodyParts[i].length; j++) {
+          final isLastExercise = j == workoutPlanBodyParts[i].length - 1;
 
-      final exercisesForWorkout = (allExercises..shuffle()).take(3).toList();
-      for (int j = 0; j < exercisesForWorkout.length; j++){
+          final exercisesForType = allExercises.where((e) {
+            final equipmentMatch = hasAccessToGym! ||
+                e.equipmentId == '20260129-1024-8a43-b037-3d29faa316f7';
+
+            if (isLastExercise){
+              return e.exerciseTypeId ==
+                  '20260129-1023-8223-a819-4e81b08f7f14' && //stretching
+                  equipmentMatch;
+             }
+            final bodyPartId = bodyPartNameToId[workoutPlanBodyParts[i][j]];
+            final bodyPartMatch = e.bodyParts.contains(bodyPartId);
+
+
+            return bodyPartMatch && equipmentMatch &&
+                e.exerciseTypeId ==
+                    '20260129-1023-8922-8643-a9a2984d73d5'; //strength
+          }).toList();
+
+
+
+
+          if(exercisesForType.isEmpty) continue;
+
+          final exercise = (exercisesForType..shuffle()).first;
+
+          final we = WorkoutExercises(
+              id: Firestorm.randomID(),
+              workoutId: workout.id,
+              exerciseId: exercise.id,
+              order: j + 1,
+              sets: isLastExercise ? null : 3,
+              repetitions: isLastExercise ? null : 12,
+              restBetweenSets: isLastExercise ? null : 60,
+              duration: isLastExercise ? 300 : null,
+          );
+          await FS.create.one(we);
+        }
+        starterWorkouts.add(workout);
+      }
+
+      final now = DateTime.now();
+      final monday = now.subtract(Duration(days: now.weekday - 1));
+      List<int> scheduleDays;
+      if(preferredWorkoutsPerWeek == 2){
+        scheduleDays = [0,3];
+      }else if(preferredWorkoutsPerWeek == 3){
+        scheduleDays = [0,2,4];
+      }else{
+        scheduleDays = [0,1,3,5];
+      }
+      for (int i = 0; i < starterWorkouts.length; i++) {
+        final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
+        final scheduledWorkout = ScheduledWorkout(
+            id: Firestorm.randomID(),
+            userId: userId,
+            workoutId: starterWorkouts[i].id,
+            scheduledDate: scheduledDate);
+        await FS.create.one(scheduledWorkout);
+      }
+    }
+    if(trainingType == 'Cardio') {
+      List<List<String>> workoutPlanExerciseTypes = [];
+      if(preferredWorkoutsPerWeek == 2){
+        workoutPlanExerciseTypes = [
+          ['CARDIO', 'CARDIO' 'CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
+          ['PLYOMETRICS', 'PLYOMETRICS' 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+        ];
+      }else if(preferredWorkoutsPerWeek == 3){
+        workoutPlanExerciseTypes = [
+          ['CARDIO','CARDIO','CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
+          ['PLYOMETRICS', 'PLYOMETRICS', 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+        ];
+      }else if(preferredWorkoutsPerWeek == 4){
+        workoutPlanExerciseTypes = [
+          ['CARDIO','CARDIO','CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          ['PLYOMETRICS', 'PLYOMETRICS' 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+        ];
+      }
+      for(int i =0; i < workoutPlanExerciseTypes.length; i++) {
+        final workout = Workout(
+            id: Firestorm.randomID(),
+            name: 'Workout ${i + 1}',
+            createdBy: userId,
+            isMyWorkout: false);
+
+        await FS.create.one(workout);
+
+        for (int j = 0; j < workoutPlanExerciseTypes[i].length; j++){
+          final type = workoutPlanExerciseTypes[i][j];
+
+          String exerciseTypeId ;
+          if(type == 'CARDIO'){
+            exerciseTypeId = '20260129-1023-8c23-9480-a118b95f118c';
+          } else if (type == 'PLYOMETRICS'){
+            exerciseTypeId = '20260129-1023-8923-b650-e37111665694';
+          } else{
+            exerciseTypeId = '20260129-1023-8223-a819-4e81b08f7f14';
+          }
+
+          final exerciseForType = allExercises.where((e) {
+            final typeMatch = e.exerciseTypeId == exerciseTypeId;
+            final equipmentMatch = hasAccessToGym! || e.equipmentId == '20260129-1024-8a43-b037-3d29faa316f7';
+            return typeMatch && equipmentMatch;
+          }).toList();
+
+          if(exerciseForType.isEmpty) continue;
+
+          final exercise = (exerciseForType..shuffle()).first;
+          WorkoutExercises we;
+
+          if(type == 'CARDIO'){
+            we = WorkoutExercises(
+                id: Firestorm.randomID(),
+                workoutId: workout.id,
+                exerciseId: exercise.id,
+                order: j+1,
+                duration: 300,
+                restBetweenSets: 120);
+          }else if (type == 'PLYOMETRICS'){
+            we = WorkoutExercises(
+                id: Firestorm.randomID(),
+                workoutId: workout.id,
+                exerciseId: exercise.id,
+                order: j + 1,
+                sets: 2,
+                duration: 30,
+                restBetweenSets: 20);
+          }else{
+            we = WorkoutExercises(
+                id: Firestorm.randomID(),
+                workoutId: workout.id,
+                exerciseId: exercise.id,
+                order: j + 1,
+                duration: 300);
+          }
+          await FS.create.one(we);
+        }
+        starterWorkouts.add(workout);
+      }
+      final now = DateTime.now();
+      final monday = now.subtract(Duration(days: now.weekday - 1));
+      List<int> scheduleDays;
+      if(preferredWorkoutsPerWeek == 2){
+        scheduleDays = [0,3];
+      }else if(preferredWorkoutsPerWeek == 3){
+        scheduleDays = [0,2,4];
+      }else{
+        scheduleDays = [0,1,3,5];
+      }
+      for (int i = 0; i < starterWorkouts.length; i++) {
+        final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
+        final scheduledWorkout = ScheduledWorkout(
+            id: Firestorm.randomID(),
+            userId: userId,
+            workoutId: starterWorkouts[i].id,
+            scheduledDate: scheduledDate);
+        await FS.create.one(scheduledWorkout);
+      }
+    }
+    if(trainingType == 'Aerobic'){
+      const aerobicExerciseTypeId = '20260129-1023-8024-a295-ced66eef7c9c';
+
+      List<double> distanceSplits;
+      if(preferredWorkoutsPerWeek == 2){
+        distanceSplits = [0.4,0.6];
+      }else if (preferredWorkoutsPerWeek == 3){
+        distanceSplits = [0.25,0.30,0.45];
+      }else{
+        distanceSplits = [0.2,0.25,0.25,0.30];
+      }
+
+      for (int i =0 ; i< distanceSplits.length; i++){
+        final workout = Workout(
+            id: Firestorm.randomID(),
+            name: 'Workout ${i + 1}',
+            createdBy: userId,
+            isMyWorkout: false);
+
+        await FS.create.one(workout);
+        starterWorkouts.add(workout);
+
+        final workoutDistance = aerobicDistance! * distanceSplits[i];
+
+        final matchingExercises = allExercises.where((e) {
+          final typeMatch = e.exerciseTypeId == aerobicExerciseTypeId;
+          final aerobicTypeMatch = e.name == aerobicType!;
+          return typeMatch && aerobicTypeMatch;
+        }).toList();
+
+        if(matchingExercises.isEmpty) continue;
+        final exercise = (matchingExercises..shuffle()).first;
+
         final we = WorkoutExercises(
             id: Firestorm.randomID(),
             workoutId: workout.id,
-            exerciseId: exercisesForWorkout[j].id,
-            order: j+1);
+            exerciseId: exercise.id,
+            order: 1,
+            distance: workoutDistance);
         await FS.create.one(we);
       }
-      starterWorkouts.add(workout);
-    }
-    final now = DateTime.now();
-    final monday = now.subtract(Duration(days: now.weekday-1));
-    final scheduleDays = [0,2,4];
-    for(int i = 0; i < starterWorkouts.length; i++) {
-      final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
-      final scheduledWorkout = ScheduledWorkout(
-          id: Firestorm.randomID(),
-          userId: userId,
-          workoutId: starterWorkouts[i].id,
-          scheduledDate: scheduledDate);
-      await FS.create.one(scheduledWorkout);
+
+      final now = DateTime.now();
+      final monday = now.subtract(Duration(days: now.weekday - 1));
+      List<int> scheduleDays;
+      if(preferredWorkoutsPerWeek == 2){
+        scheduleDays = [0,3];
+      }else if(preferredWorkoutsPerWeek == 3){
+        scheduleDays = [0,2,4];
+      }else{
+        scheduleDays = [0,1,3,5];
+      }
+      for (int i = 0; i < starterWorkouts.length; i++) {
+        final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
+        final scheduledWorkout = ScheduledWorkout(
+            id: Firestorm.randomID(),
+            userId: userId,
+            workoutId: starterWorkouts[i].id,
+            scheduledDate: scheduledDate);
+        await FS.create.one(scheduledWorkout);
+      }
+
     }
   }
-  Future<void> preLoadExercises() async{
-    final result = await  FS.list.allOfClass<Exercise>(Exercise);
+
+  Future<void> preLoadExercises() async {
+    final result = await FS.list.allOfClass<Exercise>(Exercise);
     debugPrint('Success}');
   }
-  void nextStep(){
+
+  void nextStep() {
     switch (currentStep) {
       case 0: //Account
         if (emailController.text
@@ -149,16 +393,53 @@ class SignupScreenState extends State<SignupScreen> {
         }
         setState(() => currentStep++);
         break;
-      case 2: //Fitness
-        if (fitnessLevel.isEmpty) {
+      case 2:
+        if (trainingType == null || preferredWorkoutsPerWeek == null ||
+            hasAccessToGym == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text(
-                  'Please select a fitness level'))
+              const SnackBar(
+                  content: Text('Please complete all training preferences'))
           );
           return;
         }
-        signup();
-        break;
+        if (trainingType == 'Aerobic'){
+          if(aerobicType == null){
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please select an aerobic type'))
+          );
+          return;
+        }
+        final distance = double.tryParse(aerobicDistanceController.text.trim());
+        if (distance == null || distance <= 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text(
+                'Please enter a valid distance for your aerobic workout')),
+          );
+          return;
+        }
+        bool validDistance = false;
+        switch (aerobicType) {
+          case 'Running':
+            validDistance = distance >= 5 && distance <= 80;
+            break;
+          case 'Cycling':
+            validDistance = distance >= 20 && distance <= 300;
+            break;
+          case 'Swimming':
+            validDistance = distance >= 1 && distance <= 15;
+            break;
+        }
+        if (!validDistance) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(
+                  'Distance for $aerobicType must within a normal range'))
+          );
+          return;
+        }
+        aerobicDistance = distance;
+      }
+      signup();
+      break;
     }
   }
 
@@ -231,24 +512,54 @@ class SignupScreenState extends State<SignupScreen> {
               ),
           ),
           Step(
-            title: const Text('Fitness'),
-            content: DropdownButtonFormField<String>(
-              initialValue: fitnessLevel,
-              decoration: const InputDecoration(labelText: 'Fitness Level'),
-              items: const [
-                DropdownMenuItem(
-                    value: 'Beginner',
-                    child: Text('Beginner')),
-                DropdownMenuItem(
-                    value: 'Intermediate',
-                    child: Text('Intermediate')),
-                DropdownMenuItem(
-                    value: 'Advanced',
-                    child: Text('Advanced')),
-              ],
-              onChanged: (value) => setState(() => fitnessLevel = value!),
-            ),
-          ),
+              title: const Text('Training Setup'),
+              content: Column(
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: trainingType,
+                    decoration: const InputDecoration(labelText: 'Training Type'),
+                    items:
+                      const [
+                        DropdownMenuItem(value: 'Strength',child: const Text('Strength')),
+                        DropdownMenuItem(value: 'Cardio',child: const Text('Cardio')),
+                        DropdownMenuItem(value: 'Aerobic',child: const Text('Aerobic')),
+                      ],
+                    onChanged: (v) => setState(() => trainingType = v!),
+                  ),
+                  CheckboxListTile(
+                      value: hasAccessToGym ?? false,
+                      title: const Text('I have access to a gym'),
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (v) => setState(() => hasAccessToGym = v ?? false)),
+                  DropdownButtonFormField<int>(
+                    value: preferredWorkoutsPerWeek,
+                    decoration: const InputDecoration(labelText: 'Workouts per Week'),
+                    items: const [
+                      DropdownMenuItem(value: 2,child: Text('2 days')),
+                      DropdownMenuItem(value: 3,child: Text('3 days')),
+                      DropdownMenuItem(value: 4,child: Text('4 days')),
+                    ],
+                    onChanged: (v) => setState(() => preferredWorkoutsPerWeek = v!),
+                  ),
+                  if(trainingType == 'Aerobic')...[
+                  DropdownButtonFormField(
+                      value: aerobicType,
+                      decoration: const InputDecoration(labelText: 'Aerobic type'),
+                      items: const [
+                        DropdownMenuItem(value: 'Running',child: Text('Running')),
+                        DropdownMenuItem(value: 'Cycling',child: Text('Cycling')),
+                        DropdownMenuItem(value: 'Swimming',child: Text('Swimming')),
+                      ],
+                      onChanged: (v) => setState(() => aerobicType = v),
+                  ),
+                    TextField(
+                      controller: aerobicDistanceController,
+                      decoration: const InputDecoration(labelText: 'Weekly Distance (km)'),
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    )
+                  ],
+                ],
+              ))
         ],
       ),
     );

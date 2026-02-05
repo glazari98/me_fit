@@ -7,8 +7,25 @@ class User {
   String emailAddress;
   String username;
   int age;
-  String fitnessLevel;
 
-  User(this.id, this.emailAddress, this.username, this.age, this.fitnessLevel);
+  String trainingType;
+  bool hasAccessToGym;
+  int preferredWorkoutsPerWeek;
+  String? aerobicType;
+  double? aerobicDistance;
+
+
+
+ User({
+    required this.id,
+    required this.emailAddress,
+    required this.username,
+    required this.age,
+    required this.trainingType,
+    required this.hasAccessToGym,
+    required this.preferredWorkoutsPerWeek,
+    this.aerobicType,
+    this.aerobicDistance,
+});
 
 }
