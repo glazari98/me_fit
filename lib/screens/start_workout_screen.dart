@@ -22,7 +22,7 @@ class StartWorkoutScreen extends StatefulWidget {
 class StartWorkoutScreenState extends State<StartWorkoutScreen>{
 
   final AuthenticationService authenticationService = AuthenticationService();
-  late Future<Map<DateTime,List<Workout>>> weeklyWorkouts;
+  late Future<Map<DateTime,List<ScheduledWorkout>>> weeklyWorkouts;
 
   @override
   void initState(){
@@ -30,7 +30,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
     weeklyWorkouts = fetchWeeklyWorkouts();
   }
 
-  Future<Map<DateTime,List<Workout>>> fetchWeeklyWorkouts() async {
+  Future<Map<DateTime,List<ScheduledWorkout>>> fetchWeeklyWorkouts() async {
     final user = authenticationService.getCurrentUser();
     if (user == null) return {};
 
@@ -47,29 +47,37 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
       return !date.isBefore(start) && !date.isAfter(end);
     }).toList();
 
-    Map<String, Workout> workoutMap = {};
-    for (final sw in weeklyScheduled) {
-      final workout = await FS.get.one<Workout>(sw.workoutId);
-      if (workout != null) {
-        workoutMap[sw.id] = workout;
-      }
-    }
-
-    Map<DateTime, List<Workout>> grouped = {};
+    Map<DateTime, List<ScheduledWorkout>> grouped = {};
     for (final sw in weeklyScheduled) {
       final date = normaliseDate(sw.scheduledDate);
-      final workout = workoutMap[sw.id];
-      if (workout != null) {
-        grouped.putIfAbsent(date, () => []).add(workout);
+      grouped.putIfAbsent(date, () => []).add(sw);
       }
+    return Map.fromEntries(
+      grouped.entries.toList()..sort((a,b) => a.key.compareTo(b.key))
+      );
     }
 
-    final sortedGroup = Map.fromEntries(
-      grouped.entries.toList()
-        ..sort((a, b) => a.key.compareTo(b.key)),
-    );
-    return sortedGroup;
+  bool isFutureWorkout(ScheduledWorkout sw){
+    return sw.scheduledDate.isAfter(DateTime.now());
   }
+  Color workoutButtonColor(ScheduledWorkout sw){
+    if(sw.isCompleted) return Colors.green;
+    if(isFutureWorkout(sw)) return Colors.red;
+    return Colors.yellow;
+  }
+
+  bool isButtonEnabled(ScheduledWorkout sw){
+    if(sw.isCompleted) return false;
+    if(isFutureWorkout(sw)) return false;
+    return true;
+  }
+  
+  String buttonLabel(ScheduledWorkout sw){
+    if(sw.isCompleted) return 'Completed';
+    if(isFutureWorkout(sw)) return 'Locked';
+    return 'Start';
+  }
+
   String weekdayLabel(DateTime date) {
     const days = ['Monday', 'Tuesday', 'Wednesday',
       'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -78,7 +86,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
     @override
     Widget build(BuildContext context) {
       return Scaffold( appBar: AppBar(title: const Text('Start Workout')),
-      body:  FutureBuilder<Map<DateTime,List<Workout>>>(
+      body:  FutureBuilder<Map<DateTime,List<ScheduledWorkout>>>(
             future: weeklyWorkouts,
             builder: (context, snapshot){
               if(!snapshot.hasData){
@@ -103,30 +111,45 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ),
-                      ...workouts.map((workout) => Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: ListTile(
-                      title: Text(workout.name),
-                      trailing: ElevatedButton(
-                        onPressed: () {
-                        Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                        builder: (_) => ActiveWorkoutScreen(workout: workout)),
-                        );
-                        },
-                      child: const Text('Start'),
+                      ...workouts.map((sw){
+                      return FutureBuilder<Workout?>(
+                      future: FS.get.one<Workout>(sw.workoutId),
+                      builder: (context,snapshot){
+                        if(!snapshot.hasData){
+                        return const SizedBox.shrink();
+                        }
+                        
+                        final workout = snapshot.data!;
+                        final enabled = isButtonEnabled(sw);
+                        
+                        return Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 16,vertical: 4),
+                            child: ListTile(
+                              title: Text(workout.name),
+                              trailing: ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: workoutButtonColor(sw),
+                              ),
+                              onPressed: enabled ? () {
+                                Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ActiveWorkoutScreen(workout: workout))
+                                );
+                                }
+                                : null,
+                              child: Text(buttonLabel(sw)),
                               ),
                             ),
-                           ),
-                        ),
-                       ],
-                    );
-                  }),
-                ],
-              );
+                        );
+                      },
+                      );
+                      }).toList(),
+                    ],
+                  );
+                }).toList(),
+              ]);
             },
-        ),
+      ),
       );
     }
 }

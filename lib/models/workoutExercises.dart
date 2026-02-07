@@ -10,8 +10,13 @@ class WorkoutExercises {
   int? repetitions;
   int? sets;
   int? restBetweenSets; //seconds
-  int? duration; //minutes
+  int? duration; //seconds
   double? distance; //km
+  int? setsCompleted;
+  int? repsCompleted;
+  double? distanceCovered;
+  int? timeForDistanceCovered;
+  bool? stretchingCompleted;
 
   WorkoutExercises({
     required this.id,
@@ -22,7 +27,12 @@ class WorkoutExercises {
     this.sets,
     this.restBetweenSets,
     this.duration,
-    this.distance
+    this.distance,
+    this.setsCompleted,
+    this.repsCompleted,
+    this.distanceCovered,
+    this.timeForDistanceCovered,
+    this.stretchingCompleted
   });
 
 }

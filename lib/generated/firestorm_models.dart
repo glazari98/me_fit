@@ -19,6 +19,7 @@ import 'package:me_fit/models/user.dart';
 import 'package:me_fit/models/workoutExercises.dart';
 import 'package:me_fit/models/exerciseType.dart';
 import 'package:me_fit/models/scheduledWorkout.dart';
+import 'package:me_fit/screens/active_workout_screen.dart';
 
 // - - - - - - - FirestormObject Exercise - - - - - - -
 
@@ -145,6 +146,7 @@ extension UserModel on User {
 
 	 Map<String, dynamic> toMap() {
 		 return {
+			 'aerobicDistance': this.aerobicDistance,
 			 'aerobicType': this.aerobicType,
 			 'preferredWorkoutsPerWeek': this.preferredWorkoutsPerWeek,
 			 'hasAccessToGym': this.hasAccessToGym,
@@ -166,6 +168,7 @@ extension UserModel on User {
 			hasAccessToGym: map['hasAccessToGym'] as bool,
 			preferredWorkoutsPerWeek: map['preferredWorkoutsPerWeek'] as int,
 			aerobicType: map['aerobicType'] as String?,
+			aerobicDistance: map['aerobicDistance'] as double?,
 		 );
 		 return object;
 	}
@@ -181,6 +184,11 @@ extension WorkoutExercisesModel on WorkoutExercises {
 
 	 Map<String, dynamic> toMap() {
 		 return {
+			 'stretchingCompleted': this.stretchingCompleted,
+			 'timeForDistanceCovered': this.timeForDistanceCovered,
+			 'distanceCovered': this.distanceCovered,
+			 'repsCompleted': this.repsCompleted,
+			 'setsCompleted': this.setsCompleted,
 			 'distance': this.distance,
 			 'duration': this.duration,
 			 'restBetweenSets': this.restBetweenSets,
@@ -204,6 +212,11 @@ extension WorkoutExercisesModel on WorkoutExercises {
 			restBetweenSets: map['restBetweenSets'] as int?,
 			duration: map['duration'] as int?,
 			distance: map['distance'] as double?,
+			setsCompleted: map['setsCompleted'] as int?,
+			repsCompleted: map['repsCompleted'] as int?,
+			distanceCovered: map['distanceCovered'] as double?,
+			timeForDistanceCovered: map['timeForDistanceCovered'] as int?,
+			stretchingCompleted: map['stretchingCompleted'] as bool?,
 		 );
 		 return object;
 	}
@@ -245,6 +258,8 @@ extension ScheduledWorkoutModel on ScheduledWorkout {
 
 	 Map<String, dynamic> toMap() {
 		 return {
+			 'totalDuration': this.totalDuration,
+			 'isCompleted': this.isCompleted,
 			 'scheduledDate': this.scheduledDate,
 			 'workoutId': this.workoutId,
 			 'userId': this.userId,
@@ -258,7 +273,9 @@ extension ScheduledWorkoutModel on ScheduledWorkout {
 			userId: map['userId'] as String,
 			workoutId: map['workoutId'] as String,
       scheduledDate: (map['scheduledDate'] as Timestamp).toDate(),
+			isCompleted: map['isCompleted'] as bool,
 		 );
+			object.totalDuration = map['totalDuration'] as int?;
 		 return object;
 	}
 

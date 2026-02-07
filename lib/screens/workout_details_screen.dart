@@ -28,6 +28,20 @@ class WorkoutDetailsScreen extends StatelessWidget{
 
     return {for (var e in result.items) e.id: e};
   }
+
+  String showDuration(int totalSeconds){
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    
+    if(minutes == 0){
+      return '$seconds s';
+    }
+    if(seconds == 0){
+      return '$minutes min';
+    }
+    
+    return '$minutes min $seconds s';
+  }
     @override
     Widget build(BuildContext context){
     return Scaffold(
@@ -65,12 +79,14 @@ class WorkoutDetailsScreen extends StatelessWidget{
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Sets: ${we.sets ?? '-'}'),
-                                Text('Reps: ${we.repetitions ?? '-'}'),
-                                if(we.restBetweenSets != null)
-                                  Text('Rest: ${we.restBetweenSets} s'),
+                                if(we.sets != null)
+                                  Text('Sets: ${we.sets}'),
+                                if(we.repetitions != null)
+                                  Text('Reps: ${we.repetitions ?? '-'}'),
                                 if(we.duration != null)
-                                  Text('Duration: ${we.duration} min'),
+                                    Text('Duration: ${showDuration(we.duration!)}'),
+                                if(we.restBetweenSets != null)
+                                  Text('Rest between sets: ${showDuration(we.restBetweenSets!)}'),
                                 if(we.distance != null)
                                   Text('Distance: ${we.distance} km'),
                               ],

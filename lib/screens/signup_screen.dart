@@ -28,7 +28,7 @@ class SignupScreenState extends State<SignupScreen> {
   final ageController = TextEditingController();
 
   String? trainingType;
-  bool? hasAccessToGym;
+  bool hasAccessToGym = false;
   int? preferredWorkoutsPerWeek;
   String? aerobicType;
   double? aerobicDistance;
@@ -163,8 +163,8 @@ class SignupScreenState extends State<SignupScreen> {
               order: j + 1,
               sets: isLastExercise ? null : 3,
               repetitions: isLastExercise ? null : 12,
-              restBetweenSets: isLastExercise ? null : 60,
-              duration: isLastExercise ? 300 : null,
+              restBetweenSets: isLastExercise ? null : 5,
+              duration: isLastExercise ? 5 : null,
           );
           await FS.create.one(we);
         }
@@ -187,7 +187,8 @@ class SignupScreenState extends State<SignupScreen> {
             id: Firestorm.randomID(),
             userId: userId,
             workoutId: starterWorkouts[i].id,
-            scheduledDate: scheduledDate);
+            scheduledDate: scheduledDate,
+            isCompleted: false);
         await FS.create.one(scheduledWorkout);
       }
     }
@@ -208,7 +209,7 @@ class SignupScreenState extends State<SignupScreen> {
         workoutPlanExerciseTypes = [
           ['CARDIO','CARDIO','CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
           ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
-          ['PLYOMETRICS', 'PLYOMETRICS' 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          ['PLYOMETRICS', 'PLYOMETRICS', 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
           ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
         ];
       }
@@ -250,8 +251,9 @@ class SignupScreenState extends State<SignupScreen> {
                 workoutId: workout.id,
                 exerciseId: exercise.id,
                 order: j+1,
-                duration: 300,
-                restBetweenSets: 120);
+                sets: 1,
+                duration: 5,
+                restBetweenSets: 5);
           }else if (type == 'PLYOMETRICS'){
             we = WorkoutExercises(
                 id: Firestorm.randomID(),
@@ -259,15 +261,15 @@ class SignupScreenState extends State<SignupScreen> {
                 exerciseId: exercise.id,
                 order: j + 1,
                 sets: 2,
-                duration: 30,
-                restBetweenSets: 20);
+                duration: 5,
+                restBetweenSets: 5);
           }else{
             we = WorkoutExercises(
                 id: Firestorm.randomID(),
                 workoutId: workout.id,
                 exerciseId: exercise.id,
                 order: j + 1,
-                duration: 300);
+                duration: 5);
           }
           await FS.create.one(we);
         }
@@ -289,7 +291,8 @@ class SignupScreenState extends State<SignupScreen> {
             id: Firestorm.randomID(),
             userId: userId,
             workoutId: starterWorkouts[i].id,
-            scheduledDate: scheduledDate);
+            scheduledDate: scheduledDate,
+            isCompleted: false);
         await FS.create.one(scheduledWorkout);
       }
     }
@@ -351,7 +354,8 @@ class SignupScreenState extends State<SignupScreen> {
             id: Firestorm.randomID(),
             userId: userId,
             workoutId: starterWorkouts[i].id,
-            scheduledDate: scheduledDate);
+            scheduledDate: scheduledDate,
+            isCompleted: false);
         await FS.create.one(scheduledWorkout);
       }
 

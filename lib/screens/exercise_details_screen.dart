@@ -76,32 +76,29 @@ class ExerciseDetailsScreenState extends State<ExerciseDetailsScreen>{
           children: [
             ClipRect(
               child: Image.network(widget.exercise.imageUrl,
-                fit: BoxFit.cover,
-                height: 300,
-                width: 200,
-              loadingBuilder: (context,child,loadingProgress){
-                if(loadingProgress == null) return child;
-                return SizedBox(height: 200,child: const Center(child: CircularProgressIndicator()));
-              },
-              errorBuilder: (context,error,stackTrace)=> SizedBox(
-                height: 200,
-                  child: const Center(child: Icon(Icons.broken_image)),
-              )),
+                  fit: BoxFit.cover,
+                  height: 300,
+                  width: 400,
+                  loadingBuilder: (context,child,loadingProgress){
+                    if(loadingProgress == null) return child;
+                    return SizedBox(height: 200,child: const Center(child: CircularProgressIndicator()));
+                  },
+                  errorBuilder: (context,error,stackTrace)=> SizedBox(
+                    height: 200,
+                    child: const Center(child: Icon(Icons.broken_image)),
+                  )),
 
             ),
-            const SizedBox(height: 16),
-            isLoadingEquipment ? const Center(child: CircularProgressIndicator())
-            :Table(
-              columnWidths: const {
-                0: IntrinsicColumnWidth(),
-                1: FlexColumnWidth(),
-              },
-              border: TableBorder.all(color: Colors.grey,width: 0.5),
+            const SizedBox(height: 8),
+            Table(
+              columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
+              border: TableBorder.all(color: Colors.black,width: 0.5),
+              defaultVerticalAlignment: TableCellVerticalAlignment.fill ,
               children: [
-                  createTableRow('Exercise Type', exerciseTypeName),
-                  createTableRow('Body Parts', bodyPartNames),
-                  createTableRow('Equipment', equipmentName ),
-                createTableRow('Instruction', widget.exercise.instruction),
+                createTableRow('Exercise name', widget.exercise.name!),
+                createTableRow('Body Parts', bodyPartNames),
+                createTableRow('Equipment', equipmentName ),
+                createTableRow('Instruction', widget.exercise.instruction!),
               ],
             ),
           ],
@@ -112,20 +109,26 @@ class ExerciseDetailsScreenState extends State<ExerciseDetailsScreen>{
 
   TableRow createTableRow(String label, String value){
     return TableRow(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          color: Colors.grey,
-          child: Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+        children: [
+          TableCell(
+            verticalAlignment: TableCellVerticalAlignment.fill,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              color: Colors.grey,
+              child: Text(label,style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
-        ),
-        Container(
-          padding: const EdgeInsets.all(8),
-          child: Text(value),
-        )
-      ]
+          TableCell(
+            verticalAlignment: TableCellVerticalAlignment.bottom,
+            child: Container(
+              width: 50,
+              padding: const EdgeInsets.all(8),
+              child: Text(value),
+            ),
+          ),
+        ]
     );
   }
 }
