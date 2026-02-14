@@ -7,7 +7,11 @@ import 'package:me_fit/screens/home_screen.dart';
 import 'package:me_fit/screens/workout_details_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 
-
+Color workoutCardColor(ScheduledWorkout sw){
+  if(sw.isCompleted) return Colors.green.shade200;
+  if(isFutureWorkout(sw)) return Colors.red.shade200;
+  return Colors.yellow;
+}
 DateTime startOfWeek(DateTime date){
   return DateTime(date.year,date.month,date.day).subtract(Duration(days: date.weekday -1 ));
 }
@@ -85,43 +89,57 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
 
                       final workout = workoutSnapshot.data!;
 
-                      return ListTile(
-                        leading: const Icon(Icons.fitness_center),
-                        title:Text(workout.name,
+                      return Card(
+                        color: workoutCardColor(sw),
+                        margin: const EdgeInsets.symmetric(horizontal: 12,vertical: 6),
+                        child: ListTile(leading: const Icon (Icons.fitness_center),
+                        title: Text(workout.name,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text(weekdayLabel(sw.scheduledDate)),
                         trailing: SizedBox(width: 110,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                        child: Row(mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             SizedBox(
                               width: 36,height: 36,
                               child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(padding: EdgeInsets.zero),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: EdgeInsets.zero
+                                  ),
                                   onPressed: (){
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (_) => WorkoutDetailsScreen(workout: workout))
-                                    );
-                                  }, 
-                                  child: const Icon(Icons.visibility,size: 20),
-                              ),
+                                    Navigator.push(context,MaterialPageRoute(
+                                        builder: (_) => WorkoutDetailsScreen(workout: workout,isEditable: false)));
+                                  },
+                                  child: const Icon (Icons.visibility,size: 20)),
                             ),
-                            const SizedBox(width: 8),
                             SizedBox(
                               width: 36,height: 36,
                               child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                      padding: EdgeInsets.zero
+                                  ),
+                                  onPressed: sw.isCompleted ? null : () async {
+                                    final updated = await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => WorkoutDetailsScreen(workout: workout,isEditable: true))
+                                    );
+                                    if(updated == true){
+                                      setState(() {
+                                        weeklyWorkouts = fetchWeeklyWorkouts();
+                                      });
+                                    }
+                                    if(widget.onWorkoutUpdated != null){
+                                      widget.onWorkoutUpdated!();
+                                    }
+                                  },
+                                  child: const Icon (Icons.edit,size: 20)),
+                            ),
+                            const SizedBox(width: 2),
+                            SizedBox(width: 36,height: 36,
+                            child:  ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                    backgroundColor: normaliseDate(sw.scheduledDate).isBefore(
-                                        normaliseDate(DateTime.now()))
-                                        ? Colors.grey
-                                        : null,
+                                  padding: EdgeInsets.zero,
                                 ),
-                                  onPressed:normaliseDate(sw.scheduledDate).isBefore(
-                                      normaliseDate(DateTime.now()))
-                                      ? null
-                                      :  ()async{
+                            onPressed: sw.isCompleted ? null : () async {
                                   final updated = await Navigator.push(
                                     context,
                                     MaterialPageRoute(builder: (_) => EditWeeklyWorkoutScreen(scheduledWorkout: sw))
@@ -130,17 +148,16 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
                                     setState(() {
                                       weeklyWorkouts = fetchWeeklyWorkouts();
                                     });
-                                    if(widget.onWorkoutUpdated != null){
-                                      widget.onWorkoutUpdated!();
-                                    }
                                   }
-                                  },
-                                  child: const Icon(Icons.edit,size: 20)),
+                                  if(widget.onWorkoutUpdated != null){
+                                    widget.onWorkoutUpdated!();
+                                  }
+                            },
+                            child: const Icon (Icons.swap_horiz,size: 20))
                             ),
+                          ],
+                        ))),
 
-                        ],
-                      ),
-                      ),
                       );
                     },
                   );

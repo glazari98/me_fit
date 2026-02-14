@@ -60,7 +60,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
   bool isFutureWorkout(ScheduledWorkout sw){
     return sw.scheduledDate.isAfter(DateTime.now());
   }
-  Color workoutButtonColor(ScheduledWorkout sw){
+  Color workoutCardColor(ScheduledWorkout sw){
     if(sw.isCompleted) return Colors.green;
     if(isFutureWorkout(sw)) return Colors.red;
     return Colors.yellow;
@@ -123,21 +123,20 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
                         final enabled = isButtonEnabled(sw);
                         
                         return Card(
+                            color: workoutCardColor(sw),
                             margin: const EdgeInsets.symmetric(horizontal: 16,vertical: 4),
                             child: ListTile(
-                              title: Text(workout.name),
+                              title: Text(workout.name,
+                              style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)),
                               trailing: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: workoutButtonColor(sw),
+                                  onPressed: enabled ? () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: workout))
+                                    );
+                                  } : null,
+                                child: Text(buttonLabel(sw),
                               ),
-                              onPressed: enabled ? () {
-                                Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ActiveWorkoutScreen(workout: workout))
-                                );
-                                }
-                                : null,
-                              child: Text(buttonLabel(sw)),
                               ),
                             ),
                         );

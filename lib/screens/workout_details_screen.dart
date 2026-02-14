@@ -2,17 +2,33 @@ import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/exercise.dart';
 import 'package:me_fit/models/workoutExercises.dart';
+import 'package:me_fit/screens/replaceExerciseScreen.dart';
+import 'package:me_fit/screens/select_exercise_screen.dart';
 
 import '../models/workout.dart';
 
-class WorkoutDetailsScreen extends StatelessWidget{
+class WorkoutDetailsScreen extends StatefulWidget {
   final Workout workout;
+  final bool isEditable;
 
-  const WorkoutDetailsScreen({super.key, required this.workout});
+  const WorkoutDetailsScreen(
+      {super.key, required this.workout, required this.isEditable});
+
+  @override
+  State<WorkoutDetailsScreen> createState() => WorkoutDetailsScreenState();
+}
+class WorkoutDetailsScreenState extends State<WorkoutDetailsScreen>{
+  late Future<List<WorkoutExercises>> workoutExercisesFuture;
+
+  @override
+  void initState(){
+    super.initState();
+    workoutExercisesFuture = fetchWorkoutExercises();
+  }
 
   Future<List<WorkoutExercises>> fetchWorkoutExercises() async {
     final result = await FS.list.filter<WorkoutExercises>(WorkoutExercises)
-                                .whereEqualTo('workoutId', workout.id)
+                                .whereEqualTo('workoutId', widget.workout.id)
                                 .fetch();
     final items= result.items;
     items.sort((a,b) => a.order.compareTo(b.order));
@@ -42,10 +58,18 @@ class WorkoutDetailsScreen extends StatelessWidget{
     
     return '$minutes min $seconds s';
   }
+
+  Future<void> replaceExercise(WorkoutExercises we, Exercise newExercise) async{
+    we.exerciseId = newExercise.id;
+    await FS.update.one(we);
+    setState(() {
+      workoutExercisesFuture = fetchWorkoutExercises();
+    });
+  }
     @override
     Widget build(BuildContext context){
     return Scaffold(
-      appBar: AppBar(title: Text(workout.name)),
+      appBar: AppBar(title: Text(widget.workout.name)),
       body: FutureBuilder<List<WorkoutExercises>>(
           future: fetchWorkoutExercises(),
           builder: (context,weSnapshot){
@@ -91,6 +115,24 @@ class WorkoutDetailsScreen extends StatelessWidget{
                                   Text('Distance: ${we.distance} km'),
                               ],
                             ),
+                            trailing: widget.isEditable
+                            ? SizedBox(
+                            width: 36,height: 36,
+                            child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                    padding: EdgeInsets.zero
+                                ),
+                                onPressed: () async {
+                                  final selected = await Navigator.push<Exercise>(context,MaterialPageRoute(
+                                      builder: (_) => ReplaceExerciseScreen()));
+
+                                  if(selected != null) {}
+                                      await replaceExercise(we, selected!);
+                                },
+                                child: const Icon (Icons.change_circle,size: 20)
+                            ),
+                            )
+                                : null,
                           ),
                         );
                       },

@@ -86,7 +86,7 @@ class EditWeeklyWorkoutScreenState extends State<EditWeeklyWorkoutScreen>{
     @override
     Widget build(BuildContext context){
       return Scaffold(
-        appBar: AppBar(title: const Text('Edit Weekly Workout')),
+        appBar: AppBar(title: const Text('Change date/Replace Workout')),
         body: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

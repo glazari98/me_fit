@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:firestorm/firestorm.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/bodyPart.dart';
 import 'package:me_fit/models/exercise.dart';
 import 'package:me_fit/models/exerciseType.dart';
+import 'package:me_fit/models/scheduledWorkout.dart';
+import 'package:me_fit/models/workoutExerciseFeedback.dart';
 import 'package:me_fit/models/workoutExercises.dart';
 import 'package:me_fit/screens/workout_feedback_screen.dart';
 
@@ -115,17 +118,37 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       finishWorkout();
     }
   }
-  void finishWorkout(){
+  Future<void> finishWorkout() async {
     workoutTimer?.cancel();
     phaseTimer?.cancel();
 
+    for(var we in workoutExercises){
+      final feedback = WorkoutExerciseFeedback(
+          id: Firestorm.randomID(),
+          workoutExerciseId: we.id,
+          setsCompleted: we.setsCompleted,
+          repsCompleted: we.repsCompleted,
+          distanceCovered: we.distanceCovered,
+          timeForDistanceCovered: we.timeForDistanceCovered,
+          stretchingCompleted: we.stretchingCompleted);
+        await FS.create.one(feedback);
+    }
+    final scheduled = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
+                              .whereEqualTo('workoutId', widget.workout.id)
+                              .fetch();
+    if(scheduled.items.isNotEmpty){
+      final sw = scheduled.items.first;
+      sw.isCompleted = true;
+      sw.totalDuration = elapsedSeconds;
+
+      await FS.update.one(sw);
+    }
     Navigator.pushReplacement(
         context,
         MaterialPageRoute(
             builder: (_) => WorkoutFeedbackScreen(
               workout: widget.workout,
               exercises: workoutExercises,
-              durationSeconds: elapsedSeconds,
             ),
         ),
     );

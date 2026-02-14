@@ -78,7 +78,7 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
                   onTap: (){
                     Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => WorkoutDetailsScreen(workout: workout),
+                        MaterialPageRoute(builder: (_) => WorkoutDetailsScreen(workout: workout,isEditable: false),
                         ),
                     );
                   },

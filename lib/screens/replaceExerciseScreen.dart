@@ -6,14 +6,14 @@ import '../models/bodyPart.dart';
 import '../models/exerciseType.dart';
 import 'exercise_details_screen.dart';
 
-class SelectExerciseScreen extends StatefulWidget{
-  const SelectExerciseScreen({super.key});
+class ReplaceExerciseScreen extends StatefulWidget{
+  const ReplaceExerciseScreen({super.key});
 
   @override
-  State<SelectExerciseScreen> createState() => SelectExerciseScreenState();
+  State<ReplaceExerciseScreen> createState() => ReplaceExerciseScreenState();
 }
 
-class SelectExerciseScreenState extends State<SelectExerciseScreen> {
+class ReplaceExerciseScreenState extends State<ReplaceExerciseScreen> {
   List<String> selectedBodyPartIds = [];
   String? selectedExerciseTypeId;
 
@@ -33,10 +33,10 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
 
   String searchQuery = '';
   final TextEditingController searchController = TextEditingController();
-   late Map<String,String> bodyPartNameById;
-   late Map<String,String> exerciseTypeNameById;
+  late Map<String,String> bodyPartNameById;
+  late Map<String,String> exerciseTypeNameById;
 
-   bool sortAscending = true;
+  bool sortAscending = true;
 
   @override
   void initState() {
@@ -100,7 +100,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
       temp = temp.where((e){
         final nameMatch = e.name.toLowerCase().contains(q);
         final keywordMatch = e.keywords.any(
-            (k) => k.toLowerCase().contains(q),
+              (k) => k.toLowerCase().contains(q),
         );
         return nameMatch || keywordMatch;
       }).toList();
@@ -109,12 +109,12 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
       final nameA = a.name.toLowerCase();
       final nameB = b.name.toLowerCase();
       return sortAscending ? nameA.compareTo(nameB)
-                            : nameB.compareTo(nameA);
+          : nameB.compareTo(nameA);
     });
     filteredExercises = temp.toList();
     currentVisibleCount = filteredExercises.length > pageSize
-    ? pageSize
-    : filteredExercises.length;
+        ? pageSize
+        : filteredExercises.length;
 
     visibleExercises = filteredExercises.take(currentVisibleCount).toList();
   }
@@ -125,9 +125,9 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
     final toShow = remaining >= pageSize ? pageSize : remaining;
     setState(() {
       visibleExercises.addAll(
-        filteredExercises.sublist(
-            currentVisibleCount,
-            currentVisibleCount + toShow)
+          filteredExercises.sublist(
+              currentVisibleCount,
+              currentVisibleCount + toShow)
       );
       currentVisibleCount += toShow;
     });
@@ -144,7 +144,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
               icon: Icon(
                 sortAscending ? Icons.sort_by_alpha : Icons.sort,
                 color: sortAscending ? Colors.blue : Colors.yellow,
-            ),
+              ),
               onPressed: (){
                 setState(() {
                   sortAscending = !sortAscending;
@@ -161,85 +161,85 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
             if(isLoadingExercises)
               const Padding(
                   padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator()),
+                  child: CircularProgressIndicator()),
             Expanded(
               child: visibleExercises.isEmpty
-              ? Center (
+                  ? Center (
                 child: isLoadingExercises
-                ? const CircularProgressIndicator()
-                : const Text('No exercises to show'),
+                    ? const CircularProgressIndicator()
+                    : const Text('No exercises to show'),
               )
-              :
+                  :
               ListView.builder(
                 itemCount: visibleExercises.length + 1,
                 itemBuilder: (context, index) {
                   if (index < visibleExercises.length) {
                     final exercise = visibleExercises[index];
                     final bodyPartNames = exercise.bodyParts
-                    .map((id) => bodyPartNameById[id])
-                    .whereType<String>()
-                    .join(' , ');
+                        .map((id) => bodyPartNameById[id])
+                        .whereType<String>()
+                        .join(' , ');
                     final exerciseTypeName = exerciseTypeNameById[exercise.exerciseTypeId];
                     return ListTile(
-                      title: Text(exercise.name),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if(exerciseTypeName != null) Text(
-                            'Type: ${exerciseTypeName}',
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 13,
-                            ),
-                          ),
-                          if(bodyPartNames.isNotEmpty)
-                            Text(
-                              'Body parts: ${bodyPartNames}',
+                        title: Text(exercise.name),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if(exerciseTypeName != null) Text(
+                              'Type: ${exerciseTypeName}',
                               style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 13,
                               ),
-                            )
-                        ],
-                      ),
-                      trailing: SizedBox(width: 96,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(padding: EdgeInsets.zero),
-                                onPressed: (){
-                                  Navigator.pop(context,exercise);
-                                },
-                                child: const Icon(Icons.add,size: 20)),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 40,height: 40,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(padding: EdgeInsets.zero),
-                                onPressed: (){
-                                Navigator.push(context,
-                                    MaterialPageRoute(
-                                        builder: (_) => ExerciseDetailsScreen(
-                                            exercise: exercise,
-                                            bodyParts: bodyParts,
-                                            exerciseTypes: exerciseTypes)));
-                                },
-                                child: const Icon(Icons.visibility)),
-                          )
-                        ],
-                      ))
-                  );
+                            ),
+                            if(bodyPartNames.isNotEmpty)
+                              Text(
+                                'Body parts: ${bodyPartNames}',
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 13,
+                                ),
+                              )
+                          ],
+                        ),
+                        trailing: SizedBox(width: 96,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                SizedBox(
+                                  width: 40,
+                                  height: 40,
+                                  child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(padding: EdgeInsets.zero),
+                                      onPressed: (){
+                                        Navigator.pop(context,exercise);
+                                      },
+                                      child: const Icon(Icons.add,size: 20)),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 40,height: 40,
+                                  child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(padding: EdgeInsets.zero),
+                                      onPressed: (){
+                                        Navigator.push(context,
+                                            MaterialPageRoute(
+                                                builder: (_) => ExerciseDetailsScreen(
+                                                    exercise: exercise,
+                                                    bodyParts: bodyParts,
+                                                    exerciseTypes: exerciseTypes)));
+                                      },
+                                      child: const Icon(Icons.visibility)),
+                                )
+                              ],
+                            ))
+                    );
                   } else if (currentVisibleCount < filteredExercises.length){
                     return Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: ElevatedButton(
-                            onPressed: loadMore, child: const Text('Load More'),
-                        ),
+                      padding: const EdgeInsets.all(16),
+                      child: ElevatedButton(
+                        onPressed: loadMore, child: const Text('Load More'),
+                      ),
                     );
                   } else {
                     return const SizedBox.shrink();
@@ -262,7 +262,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
           hintText: 'Search exercises',
           prefixIcon: const Icon(Icons.search),
           suffixIcon: searchQuery.isNotEmpty
-            ? IconButton(
+              ? IconButton(
               onPressed: (){
                 searchController.clear();
                 setState(() {
@@ -271,7 +271,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                 });
               }, icon: const Icon(Icons.clear))
               : null,
-            border: const OutlineInputBorder(),
+          border: const OutlineInputBorder(),
         ),
         onChanged: (value){
           setState(() {
@@ -379,17 +379,17 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(horizontal: 12,vertical: 12),
-                ),
-                icon: selectedExerciseTypeId != null
+              ),
+              icon: selectedExerciseTypeId != null
                   ? GestureDetector(
-                    onTap: (){
-                      setState(() {
-                        selectedExerciseTypeId = null;
-                        applyFiltersAndSearch();
-                      });
-                    },
-                    child: const Icon(Icons.clear),
-                  )
+                onTap: (){
+                  setState(() {
+                    selectedExerciseTypeId = null;
+                    applyFiltersAndSearch();
+                  });
+                },
+                child: const Icon(Icons.clear),
+              )
                   : const Icon(Icons.arrow_drop_down),
 
               items: exerciseTypes.map(

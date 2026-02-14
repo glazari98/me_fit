@@ -10,6 +10,10 @@ import 'package:me_fit/services/authentication_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 DateTime normaliseDate(DateTime date) => DateTime(date.year,date.month,date.day);
+bool isFutureWorkout(ScheduledWorkout sw){
+  return normaliseDate(sw.scheduledDate).isAfter(normaliseDate(DateTime.now()));
+}
+
 
 LinkedHashMap<DateTime, List<WorkoutEvent>> buildWorkoutEventMap(List<ScheduledWorkout> workouts){
   final map = LinkedHashMap<DateTime,List<WorkoutEvent>>(

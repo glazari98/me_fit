@@ -18,6 +18,7 @@ import 'package:me_fit/models/bodyPart.dart';
 import 'package:me_fit/models/user.dart';
 import 'package:me_fit/models/workoutExercises.dart';
 import 'package:me_fit/models/exerciseType.dart';
+import 'package:me_fit/models/workoutExerciseFeedback.dart';
 import 'package:me_fit/models/scheduledWorkout.dart';
 import 'package:me_fit/screens/active_workout_screen.dart';
 
@@ -249,6 +250,42 @@ extension ExerciseTypeModel on ExerciseType {
 
 }
 
+// - - - - - - - FirestormObject WorkoutExerciseFeedback - - - - - - -
+
+extension WorkoutExerciseFeedbackModel on WorkoutExerciseFeedback {
+
+	static final bool fsSupport = true;
+	static final bool rdbSupport = true;
+
+	 Map<String, dynamic> toMap() {
+		 return {
+			 'stretchingCompleted': this.stretchingCompleted,
+			 'pace': this.pace,
+			 'timeForDistanceCovered': this.timeForDistanceCovered,
+			 'distanceCovered': this.distanceCovered,
+			 'repsCompleted': this.repsCompleted,
+			 'setsCompleted': this.setsCompleted,
+			 'workoutExerciseId': this.workoutExerciseId,
+			 'id': this.id,
+		 };
+	 }
+
+	static WorkoutExerciseFeedback fromMap(Map<String, dynamic> map) {
+		WorkoutExerciseFeedback object = WorkoutExerciseFeedback(
+			id: map['id'] as String,
+			workoutExerciseId: map['workoutExerciseId'] as String,
+			setsCompleted: map['setsCompleted'] as int?,
+			repsCompleted: map['repsCompleted'] as int?,
+			distanceCovered: map['distanceCovered'] as double?,
+			timeForDistanceCovered: map['timeForDistanceCovered'] as int?,
+			pace: map['pace'] as double?,
+			stretchingCompleted: map['stretchingCompleted'] as bool?,
+		 );
+		 return object;
+	}
+
+}
+
 // - - - - - - - FirestormObject ScheduledWorkout - - - - - - -
 
 extension ScheduledWorkoutModel on ScheduledWorkout {
@@ -291,6 +328,7 @@ final Map<Type, Map<String, dynamic> Function(dynamic)> toMapRegistry = {
 	User: (object) => (object as User).toMap(),
 	WorkoutExercises: (object) => (object as WorkoutExercises).toMap(),
 	ExerciseType: (object) => (object as ExerciseType).toMap(),
+	WorkoutExerciseFeedback: (object) => (object as WorkoutExerciseFeedback).toMap(),
 	ScheduledWorkout: (object) => (object as ScheduledWorkout).toMap(),
 };
 
@@ -302,6 +340,7 @@ final Map<Type, dynamic Function(Map<String, dynamic>)> fromMapRegistry = {
 	User: (map) => UserModel.fromMap(map),
 	WorkoutExercises: (map) => WorkoutExercisesModel.fromMap(map),
 	ExerciseType: (map) => ExerciseTypeModel.fromMap(map),
+	WorkoutExerciseFeedback: (map) => WorkoutExerciseFeedbackModel.fromMap(map),
 	ScheduledWorkout: (map) => ScheduledWorkoutModel.fromMap(map),
 };
 
@@ -338,6 +377,8 @@ registerClasses() {
 	FS.registerDeserializer<ExerciseType>((map) => ExerciseTypeModel.fromMap(map));
 	FS.registerSerializer<ScheduledWorkout>((object) => object.toMap());
 	FS.registerDeserializer<ScheduledWorkout>((map) => ScheduledWorkoutModel.fromMap(map));
+	FS.registerSerializer<WorkoutExerciseFeedback>((object) => object.toMap());
+	FS.registerDeserializer<WorkoutExerciseFeedback>((map) => WorkoutExerciseFeedbackModel.fromMap(map));
 	RDB.registerSerializer<Exercise>((object) => object.toMap());
 	RDB.registerDeserializer<Exercise>((map) => ExerciseModel.fromMap(map));
 	RDB.registerSerializer<Equipment>((object) => object.toMap());
@@ -352,6 +393,8 @@ registerClasses() {
 	RDB.registerDeserializer<WorkoutExercises>((map) => WorkoutExercisesModel.fromMap(map));
 	RDB.registerSerializer<ExerciseType>((object) => object.toMap());
 	RDB.registerDeserializer<ExerciseType>((map) => ExerciseTypeModel.fromMap(map));
+	RDB.registerSerializer<WorkoutExerciseFeedback>((object) => object.toMap());
+	RDB.registerDeserializer<WorkoutExerciseFeedback>((map) => WorkoutExerciseFeedbackModel.fromMap(map));
 	LS.registerSerializer<Exercise>((object) => object.toMap());
 	LS.registerDeserializer<Exercise>((map) => ExerciseModel.fromMap(map));
 	LS.registerSerializer<Equipment>((object) => object.toMap());
@@ -368,6 +411,8 @@ registerClasses() {
 	LS.registerDeserializer<ExerciseType>((map) => ExerciseTypeModel.fromMap(map));
 	LS.registerSerializer<ScheduledWorkout>((object) => object.toMap());
 	LS.registerDeserializer<ScheduledWorkout>((map) => ScheduledWorkoutModel.fromMap(map));
+	LS.registerSerializer<WorkoutExerciseFeedback>((object) => object.toMap());
+	LS.registerDeserializer<WorkoutExerciseFeedback>((map) => WorkoutExerciseFeedbackModel.fromMap(map));
 }
 
 
