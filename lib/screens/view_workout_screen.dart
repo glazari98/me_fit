@@ -2,22 +2,23 @@ import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/exercise.dart';
 import 'package:me_fit/models/workoutExercises.dart';
-import 'package:me_fit/screens/replaceExerciseScreen.dart';
+import 'package:me_fit/screens/exercise_details_screen.dart';
 import 'package:me_fit/screens/select_exercise_screen.dart';
 
+import '../models/bodyPart.dart';
+import '../models/exerciseType.dart';
 import '../models/workout.dart';
 
-class WorkoutDetailsScreen extends StatefulWidget {
+class ViewWorkoutScreen extends StatefulWidget {
   final Workout workout;
-  final bool isEditable;
 
-  const WorkoutDetailsScreen(
-      {super.key, required this.workout, required this.isEditable});
+  const ViewWorkoutScreen(
+      {super.key, required this.workout});
 
   @override
-  State<WorkoutDetailsScreen> createState() => WorkoutDetailsScreenState();
+  State<ViewWorkoutScreen> createState() => ViewWorkoutScreenState();
 }
-class WorkoutDetailsScreenState extends State<WorkoutDetailsScreen>{
+class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
   late Future<List<WorkoutExercises>> workoutExercisesFuture;
 
   @override
@@ -115,24 +116,23 @@ class WorkoutDetailsScreenState extends State<WorkoutDetailsScreen>{
                                   Text('Distance: ${we.distance} km'),
                               ],
                             ),
-                            trailing: widget.isEditable
-                            ? SizedBox(
-                            width: 36,height: 36,
-                            child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                    padding: EdgeInsets.zero
-                                ),
+                            trailing: IconButton(
+                              tooltip: 'View Exercise',
+                              icon: const Icon (Icons.visibility, color: Colors.green),
                                 onPressed: () async {
-                                  final selected = await Navigator.push<Exercise>(context,MaterialPageRoute(
-                                      builder: (_) => ReplaceExerciseScreen()));
-
-                                  if(selected != null) {}
-                                      await replaceExercise(we, selected!);
+                                  final bodyPartsResult = await FS.list.allOfClass<BodyPart>(BodyPart);
+                                  final exerciseTypesResult = await FS.list.allOfClass<ExerciseType>(
+                                  ExerciseType);
+                                  if(!mounted) return;
+                                  Navigator.push(
+                                    context,
+                                MaterialPageRoute(builder: (_) => ExerciseDetailsScreen(exercise: exercise,
+                                    bodyParts: bodyPartsResult, exerciseTypes: exerciseTypesResult
+                                  ),
+                                  ),
+                                  );
                                 },
-                                child: const Icon (Icons.change_circle,size: 20)
                             ),
-                            )
-                                : null,
                           ),
                         );
                       },

@@ -1,10 +1,12 @@
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
+import 'package:me_fit/screens/edit_workout_screen.dart';
 import 'package:me_fit/screens/login_screen.dart';
-import 'package:me_fit/screens/workout_details_screen.dart';
+import 'package:me_fit/screens/view_workout_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 
 import '../models/workout.dart';
+import '../models/workoutExercises.dart';
 import 'create_workout_screen.dart';
 
 class MyWorkoutsScreen extends StatefulWidget {
@@ -36,7 +38,38 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
 
     return result.items;
   }
+  void deleteWorkout(Workout workout) async {
+    final confirm = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Delete workout'),
+          content: Text('Are you sure you want to delete ${workout.name}'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context,false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(onPressed: () => Navigator.pop(context,true),
+                child: const Text('Delete')),
+          ],
+        ));
+    if(confirm != true) return;
 
+    final exercises = await FS.list.filter<WorkoutExercises>(WorkoutExercises)
+                      .whereEqualTo('workoutId', workout.id)
+                        .fetch();
+
+    for (final we in exercises.items){
+      await FS.delete.one(we);
+    }
+    await FS.delete.one(workout);
+
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Workout deleted')));
+
+    setState(() {
+      refreshWorkouts();
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,19 +102,44 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
               itemCount: workouts.length,
               itemBuilder: (context, index){
                 final workout = workouts[index];
-                return ListTile(
-                  title: Text(
-                    workout.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                return Card (
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: ListTile(
+                    title: Text(
+                      workout.name, style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    trailing: SizedBox(
+                      child:Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'View Workout',
+                              onPressed: (){
+                            Navigator.push(
+                              context,MaterialPageRoute(builder: (_) => ViewWorkoutScreen(workout: workout))
+                            );
+                            },
+                          icon: const Icon (Icons.visibility, color: Colors.green)
+                          ),
+                          IconButton(
+                            tooltip: 'Edit Workout',
+                            icon: const Icon (Icons.edit, color: Colors.blue),
+                            onPressed: (){
+                              Navigator.push(
+                                  context,MaterialPageRoute(builder: (_) => EditWorkoutScreen(workout: workout))
+                              );
+                            },
+
+                          ),
+                          IconButton(
+                            tooltip: 'Delete Workout',
+                              onPressed: () => deleteWorkout(workout),
+                              icon: const Icon (Icons.delete, color: Colors.red)
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: (){
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => WorkoutDetailsScreen(workout: workout,isEditable: false),
-                        ),
-                    );
-                  },
                 );
               },
           );

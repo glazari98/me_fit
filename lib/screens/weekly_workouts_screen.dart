@@ -2,9 +2,10 @@ import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/scheduledWorkout.dart';
 import 'package:me_fit/models/workout.dart';
+import 'package:me_fit/screens/edit_weekly _workout_screen.dart';
 import 'package:me_fit/screens/edit_workout_screen.dart';
 import 'package:me_fit/screens/home_screen.dart';
-import 'package:me_fit/screens/workout_details_screen.dart';
+import 'package:me_fit/screens/view_workout_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 
 Color workoutCardColor(ScheduledWorkout sw){
@@ -96,50 +97,35 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
                         title: Text(workout.name,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text(weekdayLabel(sw.scheduledDate)),
-                        trailing: SizedBox(width: 110,
-                        child: Row(mainAxisAlignment: MainAxisAlignment.end,
+                        trailing: SizedBox(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            SizedBox(
-                              width: 36,height: 36,
-                              child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    padding: EdgeInsets.zero
-                                  ),
-                                  onPressed: (){
-                                    Navigator.push(context,MaterialPageRoute(
-                                        builder: (_) => WorkoutDetailsScreen(workout: workout,isEditable: false)));
-                                  },
-                                  child: const Icon (Icons.visibility,size: 20)),
-                            ),
-                            SizedBox(
-                              width: 36,height: 36,
-                              child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                      padding: EdgeInsets.zero
-                                  ),
-                                  onPressed: sw.isCompleted ? null : () async {
-                                    final updated = await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (_) => WorkoutDetailsScreen(workout: workout,isEditable: true))
-                                    );
-                                    if(updated == true){
-                                      setState(() {
-                                        weeklyWorkouts = fetchWeeklyWorkouts();
-                                      });
-                                    }
-                                    if(widget.onWorkoutUpdated != null){
-                                      widget.onWorkoutUpdated!();
-                                    }
-                                  },
-                                  child: const Icon (Icons.edit,size: 20)),
-                            ),
-                            const SizedBox(width: 2),
-                            SizedBox(width: 36,height: 36,
-                            child:  ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                ),
-                            onPressed: sw.isCompleted ? null : () async {
+                            IconButton(
+                                onPressed: () {
+                                  Navigator.push(context,MaterialPageRoute(builder: (_) => ViewWorkoutScreen(workout: workout)));
+                                },
+                                icon: const Icon (Icons.visibility, color: Colors.green)),
+                            IconButton(
+                                onPressed: sw.isCompleted ? null
+                                : () async {
+                                  final updated = await Navigator.push(
+                                    context,MaterialPageRoute(builder: (_) => EditWorkoutScreen(workout: workout))
+                                  );
+                                  if(updated == true){
+                                    setState(() {
+                                      weeklyWorkouts = fetchWeeklyWorkouts();
+                                    });
+                                  }
+                                  if(widget.onWorkoutUpdated != null){
+                                    widget.onWorkoutUpdated!();
+                                  }
+                                },
+                                icon: Icon (Icons.edit, color: sw.isCompleted ? Colors.grey
+                                    :Colors.blue)),
+                            IconButton(
+                                onPressed: sw.isCompleted ? null
+                                : () async {
                                   final updated = await Navigator.push(
                                     context,
                                     MaterialPageRoute(builder: (_) => EditWeeklyWorkoutScreen(scheduledWorkout: sw))
@@ -152,9 +138,9 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
                                   if(widget.onWorkoutUpdated != null){
                                     widget.onWorkoutUpdated!();
                                   }
-                            },
-                            child: const Icon (Icons.swap_horiz,size: 20))
-                            ),
+                                },
+                                icon: Icon (Icons.swap_horiz, color: sw.isCompleted ? Colors.grey
+                                    :Colors.purple))
                           ],
                         ))),
 
