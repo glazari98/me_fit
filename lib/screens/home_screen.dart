@@ -2,12 +2,14 @@ import 'dart:collection';
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/WorkoutEvent.dart';
-import 'package:me_fit/models/scheduledWorkout.dart';
+import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/screens/my_workouts.dart';
 import 'package:me_fit/screens/start_workout_screen.dart';
 import 'package:me_fit/screens/weekly_workouts_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 import 'package:table_calendar/table_calendar.dart';
+
+import 'completed_workouts_screen.dart';
 
 DateTime normaliseDate(DateTime date) => DateTime(date.year,date.month,date.day);
 bool isFutureWorkout(ScheduledWorkout sw){
@@ -228,6 +230,14 @@ class HomeScreenState extends State<HomeScreen>{
               onTap: (){
                 Navigator.pop(context);
                 Navigator.push(context,MaterialPageRoute(builder: (_) => StartWorkoutScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.done),
+              title: const Text('Completed Workouts'),
+              onTap: (){
+                Navigator.pop(context);
+                Navigator.push(context,MaterialPageRoute(builder: (_) => CompletedWorkoutsScreen()));
               },
             ),
 

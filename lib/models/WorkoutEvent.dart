@@ -1,4 +1,4 @@
-import 'package:me_fit/models/scheduledWorkout.dart';
+import 'package:me_fit/models/scheduled_workout.dart';
 
 class WorkoutEvent {
   final String title;

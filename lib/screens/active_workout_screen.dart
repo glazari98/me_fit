@@ -4,15 +4,16 @@ import 'package:firestorm/firestorm.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/bodyPart.dart';
+import 'package:me_fit/models/workout.dart';
 import 'package:me_fit/models/exercise.dart';
 import 'package:me_fit/models/exerciseType.dart';
-import 'package:me_fit/models/scheduledWorkout.dart';
+import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/models/workoutExerciseFeedback.dart';
 import 'package:me_fit/models/workoutExercises.dart';
 import 'package:me_fit/screens/workout_feedback_screen.dart';
+import 'package:me_fit/screens/exercise_details_screen.dart';
 
-import '../models/workout.dart';
-import 'exercise_details_screen.dart';
+
 
 class ActiveWorkoutScreen extends StatefulWidget{
   final Workout workout;
@@ -140,6 +141,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       final sw = scheduled.items.first;
       sw.isCompleted = true;
       sw.totalDuration = elapsedSeconds;
+      sw.completedDate = DateTime.now();
 
       await FS.update.one(sw);
     }

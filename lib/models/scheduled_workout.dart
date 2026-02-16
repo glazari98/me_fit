@@ -1,5 +1,5 @@
 import 'package:firestorm/annotations/firestorm_object.dart';
-import 'package:flutter/cupertino.dart';
+
 
 @FirestormObject()
 class ScheduledWorkout {
@@ -8,6 +8,7 @@ class ScheduledWorkout {
   String workoutId;
   DateTime scheduledDate;
   bool isCompleted;
+  DateTime? completedDate;
   int? totalDuration;
 
   ScheduledWorkout({
@@ -16,6 +17,8 @@ class ScheduledWorkout {
     required this.workoutId,
     required this.scheduledDate,
     required this.isCompleted,
+    this.completedDate,
+    this.totalDuration
 });
 
 }

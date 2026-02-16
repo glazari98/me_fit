@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:me_fit/models/bodyPart.dart';
 import 'package:me_fit/models/exercise.dart';
-import 'package:me_fit/models/scheduledWorkout.dart';
+import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/models/workout.dart';
 import 'package:me_fit/models/workoutExercises.dart';
 import '../models/user.dart';

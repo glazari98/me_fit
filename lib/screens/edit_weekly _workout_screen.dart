@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
-import 'package:me_fit/models/scheduledWorkout.dart';
+import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/screens/home_screen.dart';
 import 'package:me_fit/screens/weekly_workouts_screen.dart';
 
