@@ -2,11 +2,15 @@ import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/models/workout.dart';
+import 'package:me_fit/models/workoutExerciseFeedback.dart';
 import 'package:me_fit/screens/edit_weekly _workout_screen.dart';
 import 'package:me_fit/screens/edit_workout_screen.dart';
 import 'package:me_fit/screens/home_screen.dart';
 import 'package:me_fit/screens/view_workout_screen.dart';
+import 'package:me_fit/screens/workout_feedback_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
+
+import '../models/workoutExercises.dart';
 
 Color workoutCardColor(ScheduledWorkout sw){
   if(sw.isCompleted) return Colors.green.shade200;
@@ -102,9 +106,23 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                                onPressed: () {
-                                  Navigator.push(context,MaterialPageRoute(builder: (_) => ViewWorkoutScreen(workout: workout)));
-                                },
+
+                                onPressed: () async {
+                                  if(sw.isCompleted) {
+                                    final exerciseResult = await FS.list.filter<WorkoutExercises>(WorkoutExercises)
+                                                                        .whereEqualTo('workoutId', workout.id)
+                                                                        .fetch();
+
+                                    Navigator.push(context, MaterialPageRoute(
+                                        builder: (_) =>
+                                            WorkoutFeedbackScreen(
+                                                workout: workout,
+                                                exercises: exerciseResult.items)));
+                                }
+                                  else{
+                                    Navigator.push(context,MaterialPageRoute(builder: (_)=>ViewWorkoutScreen(workout: workout)));
+                                  }
+                                  },
                                 icon: const Icon (Icons.visibility, color: Colors.green)),
                             IconButton(
                                 onPressed: sw.isCompleted ? null
