@@ -125,7 +125,7 @@ class SignupScreenState extends State<SignupScreen> {
             id: Firestorm.randomID(),
             name: 'Workout ${i + 1}',
             createdBy: userId,
-            isMyWorkout: false);
+            isMyWorkout: false, createdOn: DateTime.now());
 
         await FS.create.one(workout);
         for (int j = 0; j < workoutPlanBodyParts[i].length; j++) {
@@ -218,7 +218,7 @@ class SignupScreenState extends State<SignupScreen> {
             id: Firestorm.randomID(),
             name: 'Workout ${i + 1}',
             createdBy: userId,
-            isMyWorkout: false);
+            isMyWorkout: false, createdOn: DateTime.now());
 
         await FS.create.one(workout);
 
@@ -313,7 +313,7 @@ class SignupScreenState extends State<SignupScreen> {
             id: Firestorm.randomID(),
             name: 'Workout ${i + 1}',
             createdBy: userId,
-            isMyWorkout: false);
+            isMyWorkout: false, createdOn: DateTime.now());
 
         await FS.create.one(workout);
         starterWorkouts.add(workout);

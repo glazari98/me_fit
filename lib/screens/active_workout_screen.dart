@@ -41,6 +41,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   //workout timer
   int elapsedSeconds = 0;
   Timer? workoutTimer;
+  int aerobicStartSeconds = 0;
   bool workoutTimerStarted = false;
   //exercise state
   ExercisePhase phase = ExercisePhase.idle;
@@ -127,6 +128,12 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     } else {
       finishWorkout();
     }
+  }
+  String formatDuration(int seconds) {
+    final hours = seconds ~/ 3600;
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '${hours.toString().padLeft(2,'0')}:${minutes.toString().padLeft(2,'0')}:${secs.toString().padLeft(2,'0')}';
   }
   Future<void> finishWorkout() async {
     workoutTimer?.cancel();
@@ -219,7 +226,12 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   //aerobic logic
   Future<void> startAerobicTracking() async {
     startWorkoutTimer();
+    await positionStream?.cancel();
+    route.clear();
+    currentPosition = null;
+    aerobicStartSeconds = elapsedSeconds;
     phase = ExercisePhase.activeSet;
+
     bool locationServiceEnabled = await Geolocator.isLocationServiceEnabled();
 
     if(!locationServiceEnabled){
@@ -273,7 +285,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
     we.distanceCovered = distance / 1000;
 
-    we.timeForDistanceCovered = elapsedSeconds;
+    we.timeForDistanceCovered = elapsedSeconds - aerobicStartSeconds;
 
     we.routePoints = route.map((e) => '${e.latitude},${e.longitude}').toList();
     fitRouteOnMap();
@@ -370,7 +382,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         title: Text(widget.workout.name),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(context,true),
               child: const Text('Cancel',style: TextStyle(color: Colors.white)),
           )
         ],
@@ -390,7 +402,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                     style: const TextStyle(fontSize: 13, letterSpacing: 2),
                   ),
                   Text(
-                    '${elapsedSeconds ~/ 60}:${(elapsedSeconds % 60).toString().padLeft(2,'0')}',
+                    formatDuration(elapsedSeconds),
                     style: const TextStyle(fontSize:34,fontWeight: FontWeight.bold)),
                 ],
               ),

@@ -231,38 +231,6 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen>{
     }
     return '';
   }
-  Future<void> saveChanges() async {
-    final originalResult = await FS.list.filter<WorkoutExercises>(WorkoutExercises)
-                                  .whereEqualTo('workoutId', widget.workout.id)
-                                  .fetch();
-
-    final originalItems = originalResult.items;
-
-    final currentIds = exercises.map((e) => e.workoutExercise.id).toSet();
-
-    for(var original in originalItems){
-      if(!currentIds.contains(original.id)){
-        await FS.delete.one(original);
-      }
-    }
-
-    for(int i = 0; i<exercises.length; i++){
-      final instance = exercises[i];
-
-      instance.applyToWorkoutExercise();
-      instance.workoutExercise.order =  i+1;
-
-      final exists = originalItems.any((original) => original.id ==  instance.workoutExercise.id);
-      if(exists) {
-        await FS.update.one(instance.workoutExercise);
-      }else {
-        await FS.create.one(instance.workoutExercise);
-      }
-    }
-    if(!mounted) return;
-    Navigator.pop(context,true);
-
-  }
   Future<void> addExerciseFlow() async {
     if(exercises.length >= 50){
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('You can add up to 50 exercises')),
@@ -292,6 +260,8 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen>{
     final altered = await showExerciseAlterDialog(instance);
 
     if(altered != null){
+      altered.applyToWorkoutExercise();
+      await FS.create.one(altered.workoutExercise);
       setState(() {
         exercises.add(altered);
       });
@@ -313,10 +283,16 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen>{
           children: [
             Expanded(
               child: ReorderableListView(
-                  onReorder: (oldIndex, newIndex){
+                  onReorder: (oldIndex, newIndex) async{
                     if(newIndex > oldIndex) newIndex--;
+
                     final item = exercises.removeAt(oldIndex);
                     exercises.insert(newIndex, item);
+
+                    for (int i = 0; i < exercises.length; i++){
+                      exercises[i].workoutExercise.order = i + 1;
+                      await FS.update.one(exercises[i].workoutExercise);
+                    }
                     setState((){});
                   },
                 children: [
@@ -324,6 +300,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen>{
                     Card(
                       key: ValueKey(exercises[i].workoutExercise.id),
                       child: ListTile(
+                        leading: const Icon(Icons.drag_handle),
                         title: Text(exercises[i].exercise.name),
                         subtitle: Text(buildSummary(exercises[i])),
                         trailing: Row(
@@ -332,14 +309,46 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen>{
                             IconButton(
                                 onPressed: () async {
                                   final updated = await showExerciseAlterDialog(exercises[i]);
-                                  if(updated != null) setState(() {});
+                                  if(updated != null){
+                                    updated.applyToWorkoutExercise();
+
+                                    await FS.update.one(updated.workoutExercise);
+                                    setState((){});
+                                  }
                                 },
                                 icon: const Icon (Icons.edit,color: Colors.blue)),
                             IconButton(
-                                onPressed: () {
-                                  setState((){
-                                    exercises.removeAt(i);
-                                  });
+                                onPressed: () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (context) => AlertDialog(
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(16)),
+                                      title: const Row(children: [
+                                        Icon(Icons.warning_amber_rounded,color: Colors.red),
+                                        SizedBox(width: 8),Text('Delete Exercise'),
+                                      ],),
+                                      content: Text('Are you sure you want to remove ${exercises[i].exercise.name}'),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(context),
+                                            child: Text('Cancel')),
+                                        ElevatedButton(
+                                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                            onPressed: () => Navigator.pop(context,true), child: Text('Delete',style: TextStyle(color: Colors.white)))
+
+                                      ],
+                                    )
+                                  );
+                                  if(confirm != true) return;
+
+                                  final removed = exercises.removeAt(i);
+
+                                  await FS.delete.one(removed.workoutExercise);
+                                  for(int i = 0; i < exercises.length; i++){
+                                    exercises[i].workoutExercise.order = i + 1;
+                                    await FS.update.one(exercises[i].workoutExercise);
+                                  }
+                                  setState((){});
                                 },
                                 icon: const Icon (Icons.delete,color: Colors.red)
                             ),
@@ -350,8 +359,6 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen>{
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            ElevatedButton(onPressed: saveChanges, child: const Text ('Save changes'))
           ],
         ),
       )

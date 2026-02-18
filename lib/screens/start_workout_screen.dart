@@ -129,11 +129,14 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
                               title: Text(workout.name,
                               style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)),
                               trailing: ElevatedButton(
-                                  onPressed: enabled ? () {
+                                  onPressed: enabled ? () async {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: workout))
                                     );
+                                    setState(() {
+                                      weeklyWorkouts = fetchWeeklyWorkouts();
+                                    });
                                   } : null,
                                 child: Text(buttonLabel(sw),
                               ),

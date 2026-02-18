@@ -69,9 +69,10 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
   }
 
   String formatDuration(int seconds) {
+    final hours = seconds ~/ 3600;
     final minutes = seconds ~/ 60;
     final secs = seconds % 60;
-    return '$minutes:${secs.toString().padLeft(2,'0')}';
+    return '${hours.toString().padLeft(2,'0')}:${minutes.toString().padLeft(2,'0')}:${secs.toString().padLeft(2,'0')}';
   }
 
   String getExerciseType(WorkoutExercises we) {
@@ -102,6 +103,18 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
         southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng));
     mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 20));
   }
+
+  String calculatePace(double? distanceKm, int? timeSeconds){
+    if(distanceKm == null || timeSeconds == null || distanceKm == 0){
+      return '--';
+    }
+    final paceSecondsPerKm = timeSeconds / distanceKm;
+
+    final minutes = paceSecondsPerKm ~/ 60;
+    final seconds = (paceSecondsPerKm % 60).round();
+
+    return '$minutes:${seconds.toString().padLeft(2,'0')} min/km';
+  }
   @override
   Widget build(BuildContext context) {
     if(scheduledWorkout == null) {
@@ -112,34 +125,53 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Workout Summary'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context,true),
+              child: const Text('Cancel',style: TextStyle(color: Colors.white)),
+            )
+          ],
           centerTitle: true,
         ),
         body: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.green.shade200),
                 ),
-                child: Padding(padding: const EdgeInsets.all(20),
-                child: Column(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.workout.name,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    Container( padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: Colors.green,borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.emoji_events_rounded,color: Colors.white,
+                        size: 20,
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    Text('Total Duration: ${formatDuration(scheduledWorkout!.totalDuration ?? 0)}',
-                    style: const TextStyle(fontSize: 16)),
-                    const SizedBox(height: 6),
-                    const Text(
-                      "Completed Successfully!!",
-                      style: TextStyle(color: Colors.green,fontWeight: FontWeight.bold),
-                    )
+                    const SizedBox(width: 14),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(widget.workout.name,
+                            style: const TextStyle(fontSize: 16,fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text('Duration: ${formatDuration(scheduledWorkout!.totalDuration ?? 0)}',
+                            style: TextStyle(fontSize: 13,color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
-                )),
+                ),
               ),
               const SizedBox(height: 20),
               Expanded(child: ListView.builder(
@@ -149,7 +181,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
                   final feedback = feedbackMap[we.id];
                   final type = getExerciseType(we);
 
-                  return buildExerciseCard(we,feedback,type);
+                  return buildExercisesCard(we,feedback,type);
                   }))
             ],
           )
@@ -157,29 +189,31 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
       );
 
   }
-
-  Widget buildExerciseCard(WorkoutExercises we, WorkoutExerciseFeedback? feedback, String type){
+  Widget buildExercisesCard(WorkoutExercises we, WorkoutExerciseFeedback? feedback, String type){
     final exerciseName = exerciseMap[we.exerciseId]?.name ?? 'Exercise';
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-               exerciseName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            buildExerciseDetails(type, we, feedback),
-          ],
+    final symbol = getExerciseStatusSymbol(we, feedback, type);
+    return Container (width: double.infinity,padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08),blurRadius: 15,offset: const Offset(0,8)),],
+        border: Border.all(color: Colors.grey,width: 1.2),
+      ),
+      child: Column(
+        children: [
+        Text(
+          '$exerciseName $symbol',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
+        const Divider(height: 10),
+        buildExerciseDetails(type, we, feedback),
+      ],
       ),
     );
   }
+
+
 
   Widget buildExerciseDetails(String type,WorkoutExercises we,WorkoutExerciseFeedback? feedback,
       )
@@ -187,7 +221,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
     switch (type){
       case 'STRENGTH':
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text('Sets: ${feedback?.setsCompleted ?? 0} / ${we.sets ?? 0}'),
             Text('Reps completed: ${we.repsCompleted ?? 0}'),
@@ -196,7 +230,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
 
       case 'CARDIO_PLYO':
         return Column (
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text('Sets: ${feedback?.setsCompleted ?? 0} / ${we.sets ?? 0 }'),
           ],
@@ -220,12 +254,17 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
             // };
 
           return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text('Target distance: ${we.distance ?? 0} km'),
-              Text('Distance covered: ${feedback?.distanceCovered ?? 0} km'),
-              Text('Time ${formatDuration(
+              Text('Distance covered: ${(feedback?.distanceCovered ?? 0).toStringAsFixed(2)} km'),
+              Text('Moving time: ${formatDuration(
                   feedback?.timeForDistanceCovered ?? 0)}'),
+              Text(
+                'Pace: ${calculatePace(feedback?.distanceCovered,feedback?.timeForDistanceCovered,
+                )}',
+              ),
+
               if(we.routePoints != null && we.routePoints!.isNotEmpty)
                 SizedBox(
                   height: 200, child: GoogleMap(
@@ -256,7 +295,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
           );
         }else{
           return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text('Target distance: ${we.distance ?? 0} km'),
               Text('Distance covered: ${feedback?.distanceCovered ?? 0} km'),
@@ -267,7 +306,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
 
       case 'STRETCHING':
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text('Completed: ${feedback?.stretchingCompleted == true ? 'Yes' : 'No'}'),
           ],
@@ -282,5 +321,31 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
       double.parse(parts[0]),
       double.parse(parts[1]),
     );
+  }
+  String getExerciseStatusSymbol(WorkoutExercises we, WorkoutExerciseFeedback? feedback, String type){
+    switch(type){
+      case 'STRENGTH':
+      case 'CARDIO_PLYO':
+        final totalSets = we.sets ?? 0;
+        final completed = feedback?.setsCompleted ?? 0;
+        if(totalSets == 0) return '';
+        final percent = completed / totalSets * 100;
+        if(percent <= 33.333) return '❌';
+        if(percent > 33.333 && percent <= 70) return '⚠️';
+        return '✅';
+
+      case 'STRETCHING':
+        return feedback?.stretchingCompleted == true ? '✅' : '❌';
+      case 'AEROBIC':
+        final target = we.distance ?? 0;
+        final covered = feedback?.distanceCovered ?? 0;
+        if(target == 0) return '';
+        final percent = covered / target * 100;
+        if(percent >= 100) return '✅';
+        if(percent >= 70 && percent < 100) return '⚠️';
+        return '❌';
+      default:
+        return '';
+    }
   }
 }

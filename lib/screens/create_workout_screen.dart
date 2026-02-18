@@ -54,7 +54,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
         id: workoutId,
         name: nameController.text.trim(),
         createdBy: authService.getCurrentUser()!.uid,
-        isMyWorkout: true
+        isMyWorkout: true, createdOn: DateTime.now()
       )
     );
 
@@ -74,7 +74,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
             distance: draftExercise.distance,)
       );
     }
-    Navigator.pop(context);
+    Navigator.pop(context,true);
   }
 
   //add exercise

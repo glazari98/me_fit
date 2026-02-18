@@ -148,7 +148,7 @@ class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
 
             return ListTile(
             title: Text(workout?.name ?? 'Unknown Workout'),
-            subtitle: Text(sw.completedDate != null ? 'Completed at: ${formatDate(sw.completedDate!)}' : '',
+            subtitle: Text(sw.completedDate != null ? 'Completed on: ${formatDate(sw.completedDate!)}' : '',
             ),
             leading: const Icon(Icons.check_circle,color: Colors.green),
             onTap: () => navigateToFeedbackScreen(sw),

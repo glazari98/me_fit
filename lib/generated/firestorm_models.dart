@@ -126,6 +126,7 @@ extension WorkoutModel on Workout {
     return {
       'isMyWorkout': this.isMyWorkout,
       'createdBy': this.createdBy,
+      'createdOn': this.createdOn?.toIso8601String(),
       'name': this.name,
       'id': this.id,
     };
@@ -136,6 +137,7 @@ extension WorkoutModel on Workout {
       id: map['id'] as String,
       name: map['name'] as String,
       createdBy: map['createdBy'] as String,
+      createdOn: DateTime.parse(map['createdOn'] as String),
       isMyWorkout: map['isMyWorkout'] as bool,
     );
     return object;
