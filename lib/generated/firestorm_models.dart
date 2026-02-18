@@ -218,6 +218,7 @@ extension WorkoutExercisesModel on WorkoutExercises {
     return {
       'stretchingCompleted': this.stretchingCompleted,
       'timeForDistanceCovered': this.timeForDistanceCovered,
+      'routePoints': this.routePoints,
       'distanceCovered': this.distanceCovered,
       'repsCompleted': this.repsCompleted,
       'setsCompleted': this.setsCompleted,
@@ -250,10 +251,12 @@ extension WorkoutExercisesModel on WorkoutExercises {
       timeForDistanceCovered: map['timeForDistanceCovered'] as int?,
       stretchingCompleted: map['stretchingCompleted'] as bool?,
     );
+    object.routePoints =  map['routePoints'] != null ? map['routePoints'].cast<String>() : [];
     return object;
   }
 
 }
+
 
 // - - - - - - - FirestormObject WorkoutExerciseFeedback - - - - - - -
 
@@ -416,5 +419,6 @@ void registerClasses() {
   LS.registerSerializer<ScheduledWorkout>((object) => object.toMap());
   LS.registerDeserializer<ScheduledWorkout>((map) => ScheduledWorkoutModel.fromMap(map));
 }
+
 
 

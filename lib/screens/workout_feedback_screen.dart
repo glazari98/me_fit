@@ -1,8 +1,10 @@
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/models/workoutExerciseFeedback.dart';
 import 'package:me_fit/models/workoutExercises.dart';
+
 
 import '../models/exercise.dart';
 import '../models/workout.dart';
@@ -27,7 +29,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
 
   Map<String, WorkoutExerciseFeedback> feedbackMap = {};
   Map<String, Exercise> exerciseMap = {};
-
+  GoogleMapController? mapController;
   @override
   void initState(){
     super.initState();
@@ -77,6 +79,28 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
     if(we.duration != null && we.sets != null) return 'CARDIO_PLYO';
     if(we.duration != null && we.sets == null) return 'STRETCHING';
     return 'STRENGTH';
+  }
+
+  void fitRouteOnMap(List<LatLng> points){
+    if(points.isEmpty || mapController == null) return;
+    if(points.length < 2) return;
+
+
+    double minLat = points.first.latitude;
+    double maxLat = points.first.latitude;
+    double minLng = points.first.longitude;
+    double maxLng = points.first.longitude;
+
+    for(var point in points){
+      if(point.latitude < minLat) minLat = point.latitude;
+      if(point.latitude > maxLat) maxLat = point.latitude;
+      if(point.longitude < minLng) minLng = point.longitude;
+      if(point.longitude > maxLng) maxLng = point.longitude;
+    }
+
+    final bounds = LatLngBounds(
+        southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng));
+    mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 20));
   }
   @override
   Widget build(BuildContext context) {
@@ -179,14 +203,67 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
         );
 
       case 'AEROBIC':
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Target distance: ${we.distance ?? 0} km'),
-            Text('Distance covered: ${feedback?.distanceCovered ?? 0} km'),
-            Text('Time ${formatDuration(feedback?.timeForDistanceCovered ?? 0)}')
-          ],
-        );
+        if(we.routePoints != null && we.routePoints!.isNotEmpty) {
+          final routePoints = we.routePoints!
+              .map((p) => parseLatLng(p))
+              .toList();
+            //bug regarding markers
+            // final Set<Marker> markers = <Marker> {
+            //   Marker(markerId:  MarkerId('start'),
+            //       position: routePoints.first,
+            //       infoWindow:  InfoWindow(title: 'Start')
+            //       ),
+            //   Marker(markerId:  MarkerId('end'),
+            //       position: routePoints.last,
+            //       infoWindow:  InfoWindow(title: 'End'),
+            //       ),
+            // };
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Target distance: ${we.distance ?? 0} km'),
+              Text('Distance covered: ${feedback?.distanceCovered ?? 0} km'),
+              Text('Time ${formatDuration(
+                  feedback?.timeForDistanceCovered ?? 0)}'),
+              if(we.routePoints != null && we.routePoints!.isNotEmpty)
+                SizedBox(
+                  height: 200, child: GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                      target: parseLatLng(we.routePoints!.first), zoom: 15),
+                  polylines: {Polyline(
+                    polylineId: const PolylineId('route'),
+                    color: Colors.blue,
+                    width: 5,
+                    points: we.routePoints!.map((p) => parseLatLng(p)).toList(),
+                  ),
+                  },
+                  //markers: markers,
+                  zoomControlsEnabled: false,
+                  myLocationEnabled: false,
+                  onMapCreated: (controller) {
+                    mapController = controller;
+                    Future.delayed(const Duration(milliseconds: 300), () {
+                      final points = we.routePoints!
+                          .map((p) => parseLatLng(p))
+                          .toList();
+                      fitRouteOnMap(points);
+                    });
+                  },
+                ),
+                ),
+            ],
+          );
+        }else{
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Target distance: ${we.distance ?? 0} km'),
+              Text('Distance covered: ${feedback?.distanceCovered ?? 0} km'),
+              Text('Time ${formatDuration(feedback?.timeForDistanceCovered ?? 0)}'),
+            ],
+          );
+        }
 
       case 'STRETCHING':
         return Column(
@@ -198,5 +275,12 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
       default:
         return const SizedBox();
     }
+  }
+  LatLng parseLatLng(String value) {
+    final parts = value.split(',');
+    return LatLng(
+      double.parse(parts[0]),
+      double.parse(parts[1]),
+    );
   }
 }

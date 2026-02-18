@@ -12,6 +12,8 @@ import 'package:me_fit/models/workoutExerciseFeedback.dart';
 import 'package:me_fit/models/workoutExercises.dart';
 import 'package:me_fit/screens/workout_feedback_screen.dart';
 import 'package:me_fit/screens/exercise_details_screen.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 
 
 
@@ -49,6 +51,11 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   List<BodyPart> bodyParts = [];
   List<ExerciseType> exerciseTypes = [];
+  List<LatLng> route = [];
+  bool hasLocationPermission = false;
+  LatLng? currentPosition;
+  StreamSubscription<Position>? positionStream;
+  GoogleMapController? mapController;
 
   @override
   void initState(){
@@ -209,7 +216,71 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
 
-  //aerobic login
+  //aerobic logic
+  Future<void> startAerobicTracking() async {
+    startWorkoutTimer();
+    phase = ExercisePhase.activeSet;
+    bool locationServiceEnabled = await Geolocator.isLocationServiceEnabled();
+
+    if(!locationServiceEnabled){
+      setState(() {
+        hasLocationPermission = false;
+      });
+      return;
+    }
+    LocationPermission permission = await Geolocator.requestPermission();
+    if(permission == LocationPermission.denied){
+      permission = await Geolocator.requestPermission();
+    }
+    if(permission == LocationPermission.deniedForever || permission ==LocationPermission.denied){
+      setState(() {
+        hasLocationPermission = false;
+      });
+      return;
+    }
+    setState(() {
+      hasLocationPermission = true;
+    });
+    route.clear();
+    final position = await Geolocator.getCurrentPosition();
+    final point = LatLng(position.latitude, position.longitude);
+
+    setState(() {
+      currentPosition = point;
+      route.add(point);
+    });
+    mapController?.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: point,zoom: 15)));
+
+
+    positionStream = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high, distanceFilter: 5
+      )
+    ).listen((Position position){
+      final newPoint = LatLng(position.latitude, position.longitude);
+      setState(() {
+        route.add(newPoint);
+      });
+      mapController?.animateCamera(CameraUpdate.newLatLng(newPoint));
+    });
+    setState(() {});
+  }
+  Future<void> finishAerobicTracking() async {
+    positionStream?.cancel();
+
+    final distance = await Geolocator.distanceBetween(
+        route.first.latitude, route.first.longitude, route.last.latitude, route.last.longitude);
+
+    we.distanceCovered = distance / 1000;
+
+    we.timeForDistanceCovered = elapsedSeconds;
+
+    we.routePoints = route.map((e) => '${e.latitude},${e.longitude}').toList();
+    fitRouteOnMap();
+    await FS.update.one(we);
+    moveToNextExercise();
+  }
+
   void completeAerobic(double distanceCovered) async {
     we.distanceCovered = distanceCovered;
     we.timeForDistanceCovered = elapsedSeconds;
@@ -217,7 +288,25 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     await FS.update.one(we);
     moveToNextExercise();
   }
+  void fitRouteOnMap(){
+    if(route.isEmpty || mapController == null) return;
 
+    double minLat = route.first.latitude;
+    double maxLat = route.first.latitude;
+    double minLng = route.first.longitude;
+    double maxLng = route.first.longitude;
+
+    for(var point in route){
+      if(point.latitude < minLat) minLat = point.latitude;
+      if(point.latitude > maxLat) maxLat = point.latitude;
+      if(point.longitude < minLng) minLng = point.longitude;
+      if(point.longitude > maxLng) maxLng = point.longitude;
+    }
+
+    final bounds = LatLngBounds(
+        southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng));
+    mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
+  }
   //stretching logic
   void startStretching(){
     startWorkoutTimer();
@@ -560,36 +649,58 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                       elevation: 6,shadowColor: Colors.green.withOpacity(0.4),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    onPressed: startStrengthSet, child: const Text('Start Exercise',style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,letterSpacing: 1,color: Colors.black))))
+                    onPressed: startAerobicTracking, child: const Text('Start Exercise',style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,letterSpacing: 1,color: Colors.black))))
           ],
         );
       }
       if(phase == ExercisePhase.activeSet) {
         return Column(
-          children: [
-            Image.asset("assets/images/triathlon-athletic.gif",height: 150,
-            ),
-            buildExerciseInfoCard(
-            children: [
-              Text('Exercise ${currentIndex + 1} / ${workoutExercises.length}',
-                  style: TextStyle(fontSize: 13,letterSpacing: 2,color: Colors.grey)),
-              const SizedBox(height: 6),
-              Text(ex.name,textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 22,fontWeight: FontWeight.bold)),
-              const Divider(height: 30),
-              Text('Target distance: ${we.distance} km'),
-            ],
-            ),
-            const SizedBox(height: 12),
-            SizedBox(width: double.infinity,height: 60,
-                child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green,
-                      elevation: 6,shadowColor: Colors.green.withOpacity(0.4),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                    onPressed: showAerobicDistanceDialog, child: const Text('Complete Exercise',style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,letterSpacing: 1,color: Colors.black))))
-          ],
-        );
+              children: [
+                      buildExerciseInfoCard(
+                      children: [
+                      Text('Exercise ${currentIndex + 1} / ${workoutExercises.length}',
+                      style: TextStyle(fontSize: 13,letterSpacing: 2,color: Colors.grey)),
+                      const SizedBox(height: 6),
+                      Text(ex.name,textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 22,fontWeight: FontWeight.bold)),
+                      const Divider(height: 30),
+                      Text('Target distance: ${we.distance} km'),
+                ],
+                ),
+                const SizedBox(height: 12),
+                hasLocationPermission ?
+                SizedBox(height:250,width: double.infinity,
+                  child: ClipRect(
+                  child: GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                          target: currentPosition ?? const LatLng(0, 0),zoom: 15),
+                  onMapCreated: (controller){
+                        mapController = controller;
+                  },
+                  polylines: {Polyline(
+                      polylineId: const PolylineId('route'),
+                      color: Colors.blue,
+                      width: 6,
+                      points: route
+                  ),
+                  },
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: true,
+                  ),
+                )) : const SizedBox(),
+                const SizedBox(height: 12),
+                SizedBox(width: double.infinity,height: 60,
+                    child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        ),
+                        onPressed: finishAerobicTracking,
+                        child: const Text('Finish Exercise',
+                        style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold, color: Colors.black))))
+              ],
+            );
       }
       return const SizedBox();
     case 'STRETCHING':

@@ -15,6 +15,7 @@ class WorkoutExercises {
   int? setsCompleted;
   int? repsCompleted;
   double? distanceCovered;
+  List<String>? routePoints;
   int? timeForDistanceCovered;
   bool? stretchingCompleted;
 
