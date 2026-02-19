@@ -271,6 +271,11 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
   Widget build(BuildContext context){
     return Scaffold(
       appBar: AppBar(title: const Text('Create Workout')),
+      floatingActionButton: FloatingActionButton(
+        foregroundColor: Colors.black,
+        backgroundColor: Colors.amberAccent,
+          onPressed: addExerciseFlow,
+          child: const Icon (Icons.add)),
       body: Padding(
         padding:const EdgeInsets.all(16),
         child: Column(
@@ -309,23 +314,46 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
                                 setState(() {});
                               }
                             },
-                            icon: const Icon (Icons.edit)),
-                        IconButton(onPressed: () {
+                            icon: const Icon (Icons.edit,color: Colors.blue)),
+                        IconButton(onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (context) => AlertDialog(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(16)),
+                                title: const Row(children: [
+                                  Icon(Icons.warning_amber_rounded,color: Colors.red),
+                                  SizedBox(width: 8),Text('Remove Exercise'),
+                                ],),
+                                content: Text('Are you sure you want to remove ${selectedExercises[i].exercise.name}?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(context),
+                                      child: Text('Cancel')),
+                                  ElevatedButton(
+                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                      onPressed: () => Navigator.pop(context,true), child: Text('Remove',style: TextStyle(color: Colors.white)))
+
+                                ],
+                              )
+                          );
+                          if(confirm != true) return;
                           setState(() {
                             selectedExercises.removeAt(i);
                           });
-                        }, icon: const Icon (Icons.delete))
+                        }, icon: const Icon (Icons.delete,color: Colors.red))
                       ],
                     ),
                   ),
                 )
             ],)),
-            ElevatedButton.icon(
-                onPressed: addExerciseFlow,
-                icon: const Icon(Icons.add),
-                label: const Text('Add Exercise')),
-            const SizedBox(height: 12),
-            ElevatedButton(onPressed: saveWorkout, child: const Text('Save Workout'))
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green,
+              elevation: 6,shadowColor: Colors.green.withOpacity(0.4),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ), onPressed: saveWorkout, child: const Text('Save Workout',
+              style: TextStyle(fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,color: Colors.white)),)
           ],
         )
       ),

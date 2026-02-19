@@ -125,12 +125,6 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Workout Summary'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context,true),
-              child: const Text('Cancel',style: TextStyle(color: Colors.white)),
-            )
-          ],
           centerTitle: true,
         ),
         body: Padding(

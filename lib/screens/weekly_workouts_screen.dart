@@ -15,7 +15,7 @@ import '../models/workoutExercises.dart';
 Color workoutCardColor(ScheduledWorkout sw){
   if(sw.isCompleted) return Colors.green.shade200;
   if(isFutureWorkout(sw)) return Colors.red.shade200;
-  return Colors.yellow;
+  return Colors.yellow.shade300;
 }
 DateTime startOfWeek(DateTime date){
   return DateTime(date.year,date.month,date.day).subtract(Duration(days: date.weekday -1 ));
@@ -97,7 +97,24 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
                       return Card(
                         color: workoutCardColor(sw),
                         margin: const EdgeInsets.symmetric(horizontal: 12,vertical: 6),
-                        child: ListTile(leading: const Icon (Icons.fitness_center),
+                        child: ListTile(
+                        onTap: () async {
+                          if(sw.isCompleted) {
+                            final exerciseResult = await FS.list.filter<WorkoutExercises>(WorkoutExercises)
+                                .whereEqualTo('workoutId', workout.id)
+                                .fetch();
+
+                            Navigator.push(context, MaterialPageRoute(
+                                builder: (_) =>
+                                    WorkoutFeedbackScreen(
+                                        workout: workout,
+                                        exercises: exerciseResult.items)));
+                          }
+                          else{
+                            Navigator.push(context,MaterialPageRoute(builder: (_)=>ViewWorkoutScreen(workout: workout)));
+                          }
+                        },
+                        leading: const Icon (Icons.fitness_center),
                         title: Text(workout.name,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text(weekdayLabel(sw.scheduledDate)),
@@ -105,26 +122,7 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-
-                                onPressed: () async {
-                                  if(sw.isCompleted) {
-                                    final exerciseResult = await FS.list.filter<WorkoutExercises>(WorkoutExercises)
-                                                                        .whereEqualTo('workoutId', workout.id)
-                                                                        .fetch();
-
-                                    Navigator.push(context, MaterialPageRoute(
-                                        builder: (_) =>
-                                            WorkoutFeedbackScreen(
-                                                workout: workout,
-                                                exercises: exerciseResult.items)));
-                                }
-                                  else{
-                                    Navigator.push(context,MaterialPageRoute(builder: (_)=>ViewWorkoutScreen(workout: workout)));
-                                  }
-                                  },
-                                icon: const Icon (Icons.visibility, color: Colors.green)),
-                            IconButton(
+                            ?!sw.isCompleted ? IconButton(
                                 onPressed: sw.isCompleted ? null
                                 : () async {
                                   final updated = await Navigator.push(
@@ -139,26 +137,27 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
                                     widget.onWorkoutUpdated!();
                                   }
                                 },
-                                icon: Icon (Icons.edit, color: sw.isCompleted ? Colors.grey
-                                    :Colors.blue)),
-                            IconButton(
+                                icon:Icon (Icons.edit, color: Colors.blue),
+                            ) : null,
+                            ?!sw.isCompleted ?IconButton(
                                 onPressed: sw.isCompleted ? null
                                 : () async {
-                                  final updated = await Navigator.push(
+                                  await Navigator.push(
                                     context,
                                     MaterialPageRoute(builder: (_) => EditWeeklyWorkoutScreen(scheduledWorkout: sw))
                                   );
-                                  if(updated == true){
+
                                     setState(() {
                                       weeklyWorkouts = fetchWeeklyWorkouts();
                                     });
-                                  }
-                                  if(widget.onWorkoutUpdated != null){
-                                    widget.onWorkoutUpdated!();
-                                  }
+
+                                    if (widget.onWorkoutUpdated != null) {
+                                      widget.onWorkoutUpdated!();
+                                    }
+
                                 },
-                                icon: Icon (Icons.swap_horiz, color: sw.isCompleted ? Colors.grey
-                                    :Colors.purple))
+                                icon: Icon (Icons.swap_horiz, color: Colors.purple))
+                                : null
                           ],
                         ))),
 

@@ -271,11 +271,12 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen>{
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Workout'),
-        actions: [
-          IconButton(
-              onPressed: addExerciseFlow,
-              icon: const Icon (Icons.add))
-        ],),
+        ),
+      floatingActionButton: FloatingActionButton(
+          onPressed: addExerciseFlow,
+          foregroundColor: Colors.black,
+          backgroundColor: Colors.amberAccent,
+        child: const Icon(Icons.add)),
       body: isLoading ? const Center (child: CircularProgressIndicator())
           : Padding(
         padding: const EdgeInsets.all(16),

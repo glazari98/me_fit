@@ -61,9 +61,9 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
     return sw.scheduledDate.isAfter(DateTime.now());
   }
   Color workoutCardColor(ScheduledWorkout sw){
-    if(sw.isCompleted) return Colors.green;
-    if(isFutureWorkout(sw)) return Colors.red;
-    return Colors.yellow;
+    if(sw.isCompleted) return Colors.green.shade200;
+    if(isFutureWorkout(sw)) return Colors.red.shade200;
+    return Colors.yellow.shade300;
   }
 
   bool isButtonEnabled(ScheduledWorkout sw){
@@ -130,7 +130,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
                               style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)),
                               trailing: ElevatedButton(
                                   onPressed: enabled ? () async {
-                                    Navigator.push(
+                                     await Navigator.push(
                                       context,
                                       MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: workout))
                                     );

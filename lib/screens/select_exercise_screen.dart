@@ -142,8 +142,8 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
             IconButton(
               tooltip: sortAscending ? 'Sorted A->Z': 'Sorted Z->A',
               icon: Icon(
-                sortAscending ? Icons.sort_by_alpha : Icons.sort,
-                color: sortAscending ? Colors.blue : Colors.yellow,
+                Icons.sort_by_alpha,
+                color: sortAscending ? Colors.blue : Colors.black,
             ),
               onPressed: (){
                 setState(() {
@@ -180,7 +180,17 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                     .whereType<String>()
                     .join(' , ');
                     final exerciseTypeName = exerciseTypeNameById[exercise.exerciseTypeId];
-                    return ListTile(
+                    return Card(
+                      key: ValueKey(exercise.id),
+                      child: ListTile(
+                        onTap: (){
+                          Navigator.push(context,
+                              MaterialPageRoute(
+                                  builder: (_) => ExerciseDetailsScreen(
+                                      exercise: exercise,
+                                      bodyParts: bodyParts,
+                                      exerciseTypes: exerciseTypes)));
+                        },
                       title: Text(exercise.name),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,44 +212,24 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                             )
                         ],
                       ),
-                      trailing: SizedBox(width: 96,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(padding: EdgeInsets.zero),
-                                onPressed: (){
-                                  Navigator.pop(context,exercise);
-                                },
-                                child: const Icon(Icons.add,size: 20)),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 40,height: 40,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(padding: EdgeInsets.zero),
-                                onPressed: (){
-                                Navigator.push(context,
-                                    MaterialPageRoute(
-                                        builder: (_) => ExerciseDetailsScreen(
-                                            exercise: exercise,
-                                            bodyParts: bodyParts,
-                                            exerciseTypes: exerciseTypes)));
-                                },
-                                child: const Icon(Icons.visibility)),
-                          )
-                        ],
-                      ))
+                      trailing: IconButton(
+                        onPressed: (){
+                          Navigator.pop(context,exercise);
+                        },
+                        icon: Icon (Icons.add, color: Colors.green, size: 30),
+                      ),)
                   );
                   } else if (currentVisibleCount < filteredExercises.length){
                     return Padding(
                         padding: const EdgeInsets.all(16),
                         child: ElevatedButton(
-                            onPressed: loadMore, child: const Text('Load More'),
-                        ),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange,
+                            elevation: 6,shadowColor: Colors.green.withOpacity(0.4),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ), onPressed: loadMore, child: const Text('Load More',
+                            style: TextStyle(fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1,color: Colors.white)),)
                     );
                   } else {
                     return const SizedBox.shrink();
@@ -297,7 +287,6 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
           Expanded(
             child: GestureDetector(
               onTap: () async {
-                // Show a multi-select dialog
                 final selected = await showDialog<List<String>>(
                   context: context,
                   builder: (_) {
@@ -359,6 +348,8 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   selectedBodyPartIds!.isEmpty
                       ? 'Select Body Parts'
                       : selectedBodyPartIds
@@ -373,12 +364,12 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: DropdownButtonFormField<String>(
-              isDense: true,
+              isDense: false,
               hint: const Text('Exercise Type'),
               value: selectedExerciseTypeId,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12,vertical: 12),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12,vertical: 6),
                 ),
                 icon: selectedExerciseTypeId != null
                   ? GestureDetector(
@@ -392,12 +383,11 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                   )
                   : const Icon(Icons.arrow_drop_down),
 
-              items: exerciseTypes.map(
-                    (t) => DropdownMenuItem<String>(
-                  child: Text(t.name),
+              items: [const DropdownMenuItem<String>(
+                  value: null,child: Text('All')),
+              ...exerciseTypes.map((t) => DropdownMenuItem(
                   value: t.id,
-                ),
-              ).toList(),
+                  child: Text(t.name)))],
               onChanged: (v) {
                 setState(() {
                   selectedExerciseTypeId = v;

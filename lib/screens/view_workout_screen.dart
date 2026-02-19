@@ -100,6 +100,19 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
                         return Card (
                           margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
+                            onTap: () async {
+                              final bodyPartsResult = await FS.list.allOfClass<BodyPart>(BodyPart);
+                              final exerciseTypesResult = await FS.list.allOfClass<ExerciseType>(
+                                  ExerciseType);
+                              if(!mounted) return;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => ExerciseDetailsScreen(exercise: exercise,
+                                    bodyParts: bodyPartsResult, exerciseTypes: exerciseTypesResult
+                                ),
+                                ),
+                              );
+                            },
                             title: Text(exercise!.name),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,23 +128,6 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
                                 if(we.distance != null)
                                   Text('Distance: ${we.distance} km'),
                               ],
-                            ),
-                            trailing: IconButton(
-                              tooltip: 'View Exercise',
-                              icon: const Icon (Icons.visibility, color: Colors.green),
-                                onPressed: () async {
-                                  final bodyPartsResult = await FS.list.allOfClass<BodyPart>(BodyPart);
-                                  final exerciseTypesResult = await FS.list.allOfClass<ExerciseType>(
-                                  ExerciseType);
-                                  if(!mounted) return;
-                                  Navigator.push(
-                                    context,
-                                MaterialPageRoute(builder: (_) => ExerciseDetailsScreen(exercise: exercise,
-                                    bodyParts: bodyPartsResult, exerciseTypes: exerciseTypesResult
-                                  ),
-                                  ),
-                                  );
-                                },
                             ),
                           ),
                         );

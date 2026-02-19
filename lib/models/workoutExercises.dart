@@ -14,6 +14,7 @@ class WorkoutExercises {
   double? distance; //km
   int? setsCompleted;
   int? repsCompleted;
+  int? durationLasted;
   double? distanceCovered;
   List<String>? routePoints;
   int? timeForDistanceCovered;
@@ -31,6 +32,7 @@ class WorkoutExercises {
     this.distance,
     this.setsCompleted,
     this.repsCompleted,
+    this.durationLasted,
     this.distanceCovered,
     this.timeForDistanceCovered,
     this.stretchingCompleted

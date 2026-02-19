@@ -117,6 +117,8 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
           } )
         ],),
         floatingActionButton: FloatingActionButton(
+          foregroundColor: Colors.black,
+          backgroundColor: Colors.amberAccent,
           child: const Icon(Icons.add),
             onPressed: () async {
               await Navigator.push(

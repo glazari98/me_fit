@@ -6,6 +6,7 @@ class ScheduledWorkout {
   String id;
   String userId;
   String workoutId;
+  String? originalWorkoutId;
   DateTime scheduledDate;
   bool isCompleted;
   DateTime? completedDate;
@@ -15,6 +16,7 @@ class ScheduledWorkout {
     required this.id,
     required this.userId,
     required this.workoutId,
+    this.originalWorkoutId,
     required this.scheduledDate,
     required this.isCompleted,
     this.completedDate,

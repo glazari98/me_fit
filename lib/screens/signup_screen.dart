@@ -187,6 +187,7 @@ class SignupScreenState extends State<SignupScreen> {
             id: Firestorm.randomID(),
             userId: userId,
             workoutId: starterWorkouts[i].id,
+            originalWorkoutId: starterWorkouts[i].id,
             scheduledDate: scheduledDate,
             isCompleted: false);
         await FS.create.one(scheduledWorkout);
@@ -291,6 +292,7 @@ class SignupScreenState extends State<SignupScreen> {
             id: Firestorm.randomID(),
             userId: userId,
             workoutId: starterWorkouts[i].id,
+            originalWorkoutId: starterWorkouts[i].id,
             scheduledDate: scheduledDate,
             isCompleted: false);
         await FS.create.one(scheduledWorkout);
@@ -354,6 +356,7 @@ class SignupScreenState extends State<SignupScreen> {
             id: Firestorm.randomID(),
             userId: userId,
             workoutId: starterWorkouts[i].id,
+            originalWorkoutId: starterWorkouts[i].id,
             scheduledDate: scheduledDate,
             isCompleted: false);
         await FS.create.one(scheduledWorkout);

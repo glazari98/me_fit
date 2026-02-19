@@ -1,8 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/models/workoutExercises.dart';
 import 'package:me_fit/screens/workout_feedback_screen.dart';
+import 'package:me_fit/services/authentication_service.dart';
 
 import '../models/workout.dart';
 
@@ -15,7 +17,7 @@ class CompletedWorkoutsScreen extends StatefulWidget {
 class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
    List<ScheduledWorkout> allCompleted = [];
    Map<String, Workout> workoutMap = {};
-
+    AuthenticationService authenticationService = AuthenticationService();
    bool isLatestFirst = true;
    bool isLoading = true;
    int visibleCount = 10;
@@ -30,6 +32,7 @@ class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
    Future<void> loadData() async {
      final scheduledResult = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
                                           .whereEqualTo('isCompleted', true)
+                                          .whereEqualTo('userId', authenticationService.getCurrentUser()?.uid)
                                           .fetch();
      final workoutResult = await FS.list.allOfClass<Workout>(Workout);
 
