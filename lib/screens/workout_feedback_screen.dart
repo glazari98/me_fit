@@ -217,7 +217,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text('Sets: ${feedback?.setsCompleted ?? 0} / ${we.sets ?? 0}'),
+            Text('Sets completed: ${feedback?.setsCompleted ?? 0} / ${we.sets ?? 0}'),
             Text('Reps completed: ${we.repsCompleted ?? 0}'),
           ],
         );
@@ -226,7 +226,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
         return Column (
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text('Sets: ${feedback?.setsCompleted ?? 0} / ${we.sets ?? 0 }'),
+            Text('Sets completed: ${feedback?.setsCompleted ?? 0} / ${we.sets ?? 0 }'),
           ],
         );
 
@@ -276,10 +276,8 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
                   myLocationEnabled: false,
                   onMapCreated: (controller) {
                     mapController = controller;
-                    Future.delayed(const Duration(milliseconds: 300), () {
-                      final points = we.routePoints!
-                          .map((p) => parseLatLng(p))
-                          .toList();
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      final points = we.routePoints!.map((p) => parseLatLng(p)).toList();
                       fitRouteOnMap(points);
                     });
                   },
@@ -294,6 +292,9 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
               Text('Target distance: ${we.distance ?? 0} km'),
               Text('Distance covered: ${feedback?.distanceCovered ?? 0} km'),
               Text('Time ${formatDuration(feedback?.timeForDistanceCovered ?? 0)}'),
+            Text(
+            'Pace: ${calculatePace(feedback?.distanceCovered,feedback?.timeForDistanceCovered,
+            )}',),
             ],
           );
         }

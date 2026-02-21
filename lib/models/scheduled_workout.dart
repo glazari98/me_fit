@@ -11,6 +11,12 @@ class ScheduledWorkout {
   bool isCompleted;
   DateTime? completedDate;
   int? totalDuration;
+  int? currentExerciseIndex;
+  int? currentSet;
+  int? elapsedSeconds;
+  int? remainingSeconds;
+  String? currentPhase;
+  bool? isInProgress;
 
   ScheduledWorkout({
     required this.id,
@@ -20,7 +26,13 @@ class ScheduledWorkout {
     required this.scheduledDate,
     required this.isCompleted,
     this.completedDate,
-    this.totalDuration
+    this.totalDuration,
+    this.currentExerciseIndex,
+    this.currentSet,
+    this.elapsedSeconds,
+    this.remainingSeconds,
+    this.currentPhase,
+    this.isInProgress,
 });
 
 }

@@ -19,8 +19,9 @@ import 'package:geolocator/geolocator.dart';
 
 class ActiveWorkoutScreen extends StatefulWidget{
   final Workout workout;
+  final ScheduledWorkout scheduledWorkout;
 
-  const ActiveWorkoutScreen({super.key, required this.workout});
+  const ActiveWorkoutScreen({super.key, required this.workout, required this.scheduledWorkout});
 
   @override
   State<ActiveWorkoutScreen> createState() => ActiveWorkoutScreenState();
@@ -49,6 +50,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   int remainingSeconds = 0;
   Timer? phaseTimer;
   bool isLastSetRest = false;
+  bool isPaused = false;
 
   List<BodyPart> bodyParts = [];
   List<ExerciseType> exerciseTypes = [];
@@ -61,8 +63,10 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   @override
   void initState(){
     super.initState();
-    loadWorkout();
     loadData();
+    loadWorkout().then((_) {
+      restoreProgress();
+    });
   }
   Future<void> loadData() async {
     final bodyPartsResult = await FS.list.allOfClass<BodyPart>(BodyPart);
@@ -74,6 +78,24 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       bodyParts = bodyPartsResult;
       exerciseTypes = exerciseTypesResult;
     });
+  }
+  void restoreProgress() async {
+    final scheduledWorkout = widget.scheduledWorkout;
+
+    if(scheduledWorkout.isInProgress != true) return;
+    currentIndex = scheduledWorkout.currentExerciseIndex!;
+    currentSet = scheduledWorkout.currentSet!;
+    elapsedSeconds = scheduledWorkout.elapsedSeconds!;
+    remainingSeconds = scheduledWorkout.remainingSeconds!;
+
+    phase = ExercisePhase.values.firstWhere((e) => e.name == scheduledWorkout.currentPhase, orElse: () =>ExercisePhase.idle);
+    isPaused = true;
+    workoutTimerStarted = true;
+    if(phase == ExercisePhase.activeSet && getExerciseType(we) == 'AEROBIC'){
+
+      await reinitialiseAerobic();
+    }
+
   }
   Future<void> loadWorkout() async {
     final weResult = await FS.list.filter<WorkoutExercises>(WorkoutExercises)
@@ -91,6 +113,54 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
     setState(() {});
   }
+  void pauseWorkout() {
+    if(isPaused) return;
+    workoutTimer?.cancel();
+    phaseTimer?.cancel();
+    positionStream?.pause();
+
+    setState(() => isPaused = true);
+
+  }
+  void resumeWorkout() {
+    if(!isPaused) return;
+
+    if(workoutTimerStarted){
+      workoutTimer= Timer.periodic(const Duration(seconds: 1), (_) {
+        setState(() => elapsedSeconds++);
+      });
+      if((phase == ExercisePhase.activeSet || phase == ExercisePhase.rest) && remainingSeconds > 0) {
+        phaseTimer= Timer.periodic(const Duration(seconds: 1), (t) async {
+          setState(() => remainingSeconds--);
+
+          if (remainingSeconds <= 0) {
+            t.cancel();
+            if (phase == ExercisePhase.rest) {
+              finishRest();
+            }
+            else if (getExerciseType(we) == 'CARDIO_PLYO') {
+              we.setsCompleted = (we.setsCompleted ?? 0) + 1;
+              await FS.update.one(we);
+              if(currentSet >= (we.sets ?? 1)){
+                startRest(we.restBetweenSets ?? 0, postExercise: true);
+              } else {
+                setState(() => currentSet++);
+                startRest(we.restBetweenSets ?? 0);
+              }
+            }
+            else if (getExerciseType(we) == 'STRETCHING') {
+              we.stretchingCompleted = true;
+              we.durationLasted = we.duration;
+              await FS.update.one(we);
+              moveToNextExercise();
+            }
+          }
+        });
+      }
+      positionStream?.resume();
+      setState(() => isPaused = false);
+    }
+  }
   void startWorkoutTimer(){
     if(workoutTimerStarted) return;
     workoutTimerStarted = true;
@@ -100,7 +170,6 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   //helper functions
-
   WorkoutExercises get we => workoutExercises[currentIndex];
   Exercise get ex => exerciseMap[we.exerciseId]!;
 
@@ -149,6 +218,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           distanceCovered: we.distanceCovered,
           timeForDistanceCovered: we.timeForDistanceCovered,
           stretchingCompleted: we.stretchingCompleted);
+
         await FS.create.one(feedback);
     }
     final scheduled = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
@@ -159,6 +229,12 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       sw.isCompleted = true;
       sw.totalDuration = elapsedSeconds;
       sw.completedDate = DateTime.now();
+      sw.currentExerciseIndex = null;
+      sw.currentSet = null;
+      sw.elapsedSeconds = null;
+      sw.remainingSeconds = null;
+      sw.currentPhase = null;
+      sw.isInProgress = null;
 
       await FS.update.one(sw);
     }
@@ -179,7 +255,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     startWorkoutTimer();
     setState(() {
       phase = ExercisePhase.activeSet;
-      currentSet = (we.setsCompleted ?? 0) + 1;
+      currentSet = 1;
     });
   }
 
@@ -192,7 +268,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
     await FS.update.one(we);
     setState(() =>isTransitioning = false);
-    if(we.setsCompleted! >= we.sets!){
+    if(currentSet >= we.sets!){
       startRest(we.restBetweenSets!,postExercise: true);
     }else{
       startRest(we.restBetweenSets!);
@@ -201,7 +277,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   //cardio-plyo logic
   void startTimedSet() {
-
+    startWorkoutTimer();
     phaseTimer?.cancel();
     setState(() {
       phase = ExercisePhase.activeSet;
@@ -217,9 +293,10 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
         we.setsCompleted = (we.setsCompleted ?? 0) + 1;
         await FS.update.one(we);
-        if (we.setsCompleted! >= (we.sets ?? 1)) {
+        if (currentSet >= (we.sets ?? 1)) {
           startRest(we.restBetweenSets ?? 0, postExercise: true);
         } else {
+          setState(() => currentSet++);
           startRest(we.restBetweenSets ?? 0);
         }
       }
@@ -231,10 +308,13 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   Future<void> startAerobicTracking() async {
     startWorkoutTimer();
     await positionStream?.cancel();
-    route.clear();
-    currentPosition = null;
-    aerobicStartSeconds = elapsedSeconds;
-    phase = ExercisePhase.activeSet;
+    setState(() {
+      positionStream = null;
+      route = [];
+      currentPosition = null;
+      aerobicStartSeconds = elapsedSeconds;
+
+    });
 
     bool locationServiceEnabled = await Geolocator.isLocationServiceEnabled();
 
@@ -257,14 +337,15 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     setState(() {
       hasLocationPermission = true;
     });
-    route.clear();
+
+
     final position = await Geolocator.getCurrentPosition();
     final point = LatLng(position.latitude, position.longitude);
-
     setState(() {
       currentPosition = point;
       route.add(point);
     });
+
     mapController?.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: point,zoom: 15)));
 
 
@@ -279,15 +360,20 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       });
       mapController?.animateCamera(CameraUpdate.newLatLng(newPoint));
     });
-    setState(() {});
+    setState(() {
+      phase = ExercisePhase.activeSet;
+    });
   }
   Future<void> finishAerobicTracking() async {
     positionStream?.cancel();
 
-    final distance = await Geolocator.distanceBetween(
-        route.first.latitude, route.first.longitude, route.last.latitude, route.last.longitude);
+    double totalDistance = 0;
+    for(int i = 0; i < route.length - 1; i++) {
+      totalDistance += Geolocator.distanceBetween(
+          route[i].latitude, route[i].longitude, route[i + 1].latitude, route[i + 1].longitude);
+    }
 
-    we.distanceCovered = distance / 1000;
+    we.distanceCovered = totalDistance / 1000;
 
     we.timeForDistanceCovered = elapsedSeconds - aerobicStartSeconds;
 
@@ -323,6 +409,55 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng));
     mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
   }
+
+  Future<void> reinitialiseAerobic() async {
+    await positionStream?.cancel();
+    setState(() {
+      positionStream = null;
+      route = [];
+      currentPosition = null;
+    });
+    bool locationServiceEnabled = await Geolocator.isLocationServiceEnabled();
+
+    if(!locationServiceEnabled){
+      setState(() {
+        hasLocationPermission = false;
+        return;
+      });
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if(permission == LocationPermission.denied || permission == LocationPermission.deniedForever){
+      setState(() => hasLocationPermission = false);
+      return;
+    }
+
+    setState(() {
+      hasLocationPermission = true;
+    });
+
+    if(we.routePoints != null && we.routePoints!.isNotEmpty) {
+      route = we.routePoints!.map((e) {
+        final parts = e.split(',');
+        return LatLng(double.parse(parts[0]),double.parse(parts[1]));
+      }).toList();
+    }
+    final position = await Geolocator.getCurrentPosition();
+    final newStart = LatLng(position.latitude, position.longitude);
+
+    route.add(newStart);
+    currentPosition = newStart;
+    positionStream = Geolocator.getPositionStream(
+      locationSettings: LocationSettings( accuracy: LocationAccuracy.high,distanceFilter: 5
+      ),
+    ).listen((Position position) {final newPoint = LatLng(position.latitude, position.longitude);
+    setState(() {
+      route.add(newPoint);
+    });
+    mapController?.animateCamera(CameraUpdate.newLatLng(newPoint));
+    });
+  }
   //stretching logic
   void startStretching() async {
     startWorkoutTimer();
@@ -335,7 +470,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     phaseTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
       if (!mounted) return; // ← add this check
       setState(() => remainingSeconds--);
-      print('remaining: $remainingSeconds');
+
       if (remainingSeconds <= 0) {
         t.cancel();
 
@@ -360,23 +495,52 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       setState(() =>remainingSeconds--);
       if(remainingSeconds <= 0){
         t.cancel();
-      if(isLastSetRest){
-        isLastSetRest = false;
-        moveToNextExercise();
-        return;
-      }
-        final type = getExerciseType(we);
-
-        if(type == 'CARDIO_PLYO') {
-          startTimedSet();
-        }
-        phase = ExercisePhase.activeSet;
-        currentSet++;
+        finishRest();
 
       }
     });
   }
 
+  void finishRest() {
+    phaseTimer?.cancel();
+
+    if(isLastSetRest){
+      isLastSetRest = false;
+      moveToNextExercise();
+      return;
+    }
+    final type = getExerciseType(we);
+
+    if(type == 'CARDIO_PLYO'){
+      startTimedSet();
+      return;
+    }
+
+    setState(() {
+      phase = ExercisePhase.activeSet;
+      currentSet++;
+    });
+  }
+  Future<void> saveWorkoutProgress() async {
+    final scheduled = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
+        .whereEqualTo('workoutId', widget.workout.id)
+        .fetch();
+    if(scheduled.items.isEmpty) return;
+    final sw = scheduled.items.first;
+
+    sw.currentExerciseIndex = currentIndex;
+    sw.currentSet = currentSet;
+    sw.elapsedSeconds = elapsedSeconds;
+    sw.remainingSeconds = remainingSeconds;
+    sw.currentPhase = phase.name;
+    sw.isInProgress = true;
+    if(phase == ExercisePhase.activeSet && getExerciseType(we) == 'AEROBIC'){
+      we.routePoints = route.map((e) => '${e.latitude},${e.longitude}').toList();
+      await FS.update.one(we);
+    }
+
+    await FS.update.one(sw);
+  }
   @override
   Widget build(BuildContext context){
     if(workoutExercises.isEmpty || exerciseMap.isEmpty){
@@ -385,14 +549,25 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
     final progress = (currentIndex + 1) / workoutExercises.length;
 
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        await saveWorkoutProgress();
+        return true;
+      },
+      child:Scaffold(
       appBar: AppBar(
         title: Text(widget.workout.name),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context,true),
-              child: const Text('Cancel',style: TextStyle(color: Colors.white)),
-          )
+          if(workoutTimerStarted)
+          IconButton(
+              onPressed: () async {
+                if(isPaused) {
+                  resumeWorkout();
+                }else{
+                  pauseWorkout();
+                  await saveWorkoutProgress();
+                }
+              }, icon: Icon(isPaused ? Icons.play_arrow : Icons.pause))
         ],
       ),
       body: Padding(
@@ -422,6 +597,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             ],
           ) ,
       ),
+      ),
     );
   }
 
@@ -448,12 +624,19 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                       fontSize: 64,
                       fontWeight: FontWeight.bold)),
                   circularStrokeCap: CircularStrokeCap.round,
-                  progressColor: Colors.blue,
+                  progressColor: isPaused ? Colors.grey : Colors.blue,
                   backgroundColor: Colors.grey.shade300,
                   animation: false,
                   animateFromLastPercent: true,
                   animationDuration: 500)),
           const SizedBox(height: 20),
+          SizedBox(height: 60,
+            child: ElevatedButton.icon(
+                icon: const Icon(Icons.skip_next, color: Colors.white),
+                style: ElevatedButton.styleFrom(backgroundColor: isPaused ? Colors.grey : Colors.orange,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                onPressed: isPaused ? null : finishRest,
+                label: Text('Skip',style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,color: Colors.white))),)
         ],
       )
     );
@@ -506,11 +689,11 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             const SizedBox(height: 12),
             SizedBox(width: double.infinity,height: 60,
             child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green,
+                style: ElevatedButton.styleFrom(backgroundColor: isPaused ? Colors.grey : Colors.green,
                 elevation: 6,shadowColor: Colors.green.withOpacity(0.4),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                onPressed: startStrengthSet,
+                onPressed: isPaused ? null :startStrengthSet,
                 child: const Text('Start Exercise',
                     style: TextStyle(fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -542,9 +725,9 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   child: SizedBox(height: 60,
                     child: ElevatedButton.icon(
                         icon: const Icon(Icons.skip_next, color: Colors.white),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.orange,
+                        style: ElevatedButton.styleFrom(backgroundColor: isPaused ? Colors.grey : Colors.orange,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                        onPressed: () {
+                        onPressed: isPaused ? null :() {
                           phaseTimer?.cancel();
                           if(currentSet >= (we.sets ?? 1)){
                             startRest(we.restBetweenSets ??  0,postExercise: true);
@@ -557,7 +740,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               Expanded(child: SizedBox(height: 60,child:
                 ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: isPaused ? Colors.grey : Colors.green,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       )
@@ -566,7 +749,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   label: Text('Set Completed',style: TextStyle(
                     fontSize: 18,fontWeight: FontWeight.bold,
                     color: Colors.white
-                  )), onPressed:completeStrengthSet,
+                  )), onPressed: isPaused ? null :completeStrengthSet,
                 ),)),
             ],)
 
@@ -586,8 +769,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 Text(ex.name,textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 22,fontWeight: FontWeight.bold)),
                 const Divider(height: 30),
-                Text('Sets:${we.sets}'),
-                Text('Duration of set: ${we.duration} s'),
+                Text('Sets: ${we.sets}'),
+                Text('Duration of set: ${we.duration}s'),
               ],
             ),
             const SizedBox(height: 20),
@@ -607,11 +790,11 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             const SizedBox(height: 12),
             SizedBox(width: double.infinity,height: 60,
                 child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green,
+                    style: ElevatedButton.styleFrom(backgroundColor: isPaused ? Colors.grey : Colors.green,
                       elevation: 6,shadowColor: Colors.green.withOpacity(0.4),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    onPressed: startTimedSet, child: const Text('Start Exercise',style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,letterSpacing: 1,color: Colors.black))))
+                    onPressed: isPaused? null : startTimedSet, child: const Text('Start Exercise',style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,letterSpacing: 1,color: Colors.black))))
           ],
         );
       }
@@ -632,7 +815,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             const SizedBox(height: 10),
             SizedBox(width: 300, height: 300,
               child: CircularPercentIndicator(
-                  progressColor: Colors.green,
+                  progressColor: isPaused ? Colors.grey : Colors.green,
                   radius: 100, lineWidth: 18,
                   percent: we.duration != null && we.duration! > 0
                       ? (remainingSeconds / we.duration!).clamp(0.0, 1.0)
@@ -648,13 +831,14 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   SizedBox(height: 60,
                   child: ElevatedButton.icon(
                       icon: const Icon(Icons.skip_next, color: Colors.white),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.orange,
+                      style: ElevatedButton.styleFrom(backgroundColor: isPaused ? Colors.grey : Colors.orange,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                      onPressed: () {
+                      onPressed: isPaused ? null : () {
                         phaseTimer?.cancel();
                         if(currentSet >= (we.sets ?? 1)){
                           startRest(we.restBetweenSets ??  0,postExercise: true);
                         }else{
+                          setState(() => currentSet++);
                           startRest(we.restBetweenSets ?? 0);
                         }
                       },
@@ -696,11 +880,11 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             const SizedBox(height: 12),
             SizedBox(width: double.infinity,height: 60,
                 child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green,
+                    style: ElevatedButton.styleFrom(backgroundColor: isPaused ? Colors.grey : Colors.green,
                       elevation: 6,shadowColor: Colors.green.withOpacity(0.4),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    onPressed: startAerobicTracking, child: const Text('Start Exercise',style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,letterSpacing: 1,color: Colors.black))))
+                    onPressed: isPaused ? null : startAerobicTracking, child: const Text('Start Exercise',style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,letterSpacing: 1,color: Colors.black))))
           ],
         );
       }
@@ -743,7 +927,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 SizedBox(height: 60,child:
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
+                        backgroundColor: isPaused ? Colors.grey:Colors.green,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         )
@@ -752,7 +936,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                     label: Text('Finish',style: TextStyle(
                         fontSize: 18,fontWeight: FontWeight.bold,
                         color: Colors.white
-                    )), onPressed:hasLocationPermission ? finishAerobicTracking : showAerobicDistanceDialog,
+                    )), onPressed:isPaused ? null : (hasLocationPermission ? finishAerobicTracking : showAerobicDistanceDialog),
                   ),)
                 ],
 
@@ -791,11 +975,11 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             const SizedBox(height: 12),
             SizedBox(width: double.infinity,height: 60,
                 child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green,
+                    style: ElevatedButton.styleFrom(backgroundColor: isPaused ? Colors.grey : Colors.green,
                       elevation: 6,shadowColor: Colors.green.withOpacity(0.4),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    onPressed: startStretching, child: const Text('Start Stretching',style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,letterSpacing: 1,color: Colors.black))))
+                    onPressed: isPaused ? null : startStretching, child: const Text('Start Stretching',style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,letterSpacing: 1,color: Colors.black))))
           ],
         );
       }
@@ -820,7 +1004,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                     fontSize: 64,
                     fontWeight: FontWeight.bold)),
                 circularStrokeCap: CircularStrokeCap.round,
-                progressColor: Colors.green,
+                progressColor: isPaused ? Colors.grey : Colors.green,
                 backgroundColor: Colors.grey.shade300,
                 animation: false,
                 animateFromLastPercent: true,
@@ -831,13 +1015,13 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   SizedBox(
                     height: 60,
                     child: ElevatedButton.icon(style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange, shape: RoundedRectangleBorder(
+                          backgroundColor:isPaused ? Colors.grey : Colors.orange, shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16))),
                       icon: const Icon(Icons.skip_next, color: Colors.white),
                       label: const Text('Skip',
                           style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,
                               color: Colors.white)),
-                      onPressed: () async {
+                      onPressed:isPaused ? null: () async {
                         phaseTimer?.cancel();
                         we.stretchingCompleted = false;
                         await FS.update.one(we);

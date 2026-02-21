@@ -37,6 +37,12 @@ extension ScheduledWorkoutModel on ScheduledWorkout {
       'isCompleted': this.isCompleted,
       'completedDate': this.completedDate?.toIso8601String(),
       'totalDuration': this.totalDuration,
+      'currentExerciseIndex': this.currentExerciseIndex,
+      'currentSet': this.currentSet,
+      'elapsedSeconds': this.elapsedSeconds,
+      'remainingSeconds': this.remainingSeconds,
+      'currentPhase': this.currentPhase,
+      'isInProgress': this.isInProgress,
     };
   }
 
@@ -50,6 +56,12 @@ extension ScheduledWorkoutModel on ScheduledWorkout {
       isCompleted: map['isCompleted'] as bool,
       completedDate: map['completedDate'] != null ? DateTime.parse(map['completedDate'] as String) : null,
       totalDuration: map['totalDuration'] as int?,
+      currentExerciseIndex: map['currentExerciseIndex'] as int?,
+      currentSet: map['currentSet'] as int?,
+      elapsedSeconds: map['elapsedSeconds'] as int?,
+      remainingSeconds: map['remainingSeconds'] as int?,
+      currentPhase: map['currentPhase'] as String?,
+      isInProgress: map['isInProgress'] as bool?,
     );
     return object;
   }

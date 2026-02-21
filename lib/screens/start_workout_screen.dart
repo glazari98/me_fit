@@ -75,6 +75,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
   String buttonLabel(ScheduledWorkout sw){
     if(sw.isCompleted) return 'Completed';
     if(isFutureWorkout(sw)) return 'Locked';
+    if(sw.isInProgress == true) return 'Continue';
     return 'Start';
   }
 
@@ -83,10 +84,11 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
       'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return days[date.weekday - 1];
   }
+
     @override
     Widget build(BuildContext context) {
       return Scaffold( appBar: AppBar(title: const Text('Start Workout')),
-      body:  FutureBuilder<Map<DateTime,List<ScheduledWorkout>>>(
+            body:  FutureBuilder<Map<DateTime,List<ScheduledWorkout>>>(
             future: weeklyWorkouts,
             builder: (context, snapshot){
               if(!snapshot.hasData){
@@ -132,7 +134,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
                                   onPressed: enabled ? () async {
                                      await Navigator.push(
                                       context,
-                                      MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: workout))
+                                      MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: workout, scheduledWorkout: sw))
                                     );
                                     setState(() {
                                       weeklyWorkouts = fetchWeeklyWorkouts();
@@ -152,6 +154,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
               ]);
             },
       ),
+
       );
     }
 }

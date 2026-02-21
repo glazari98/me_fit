@@ -119,10 +119,12 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text(weekdayLabel(sw.scheduledDate)),
                         trailing: SizedBox(
-                        child: Row(
+                        child: sw.isCompleted ? SizedBox()
+                          : sw.isInProgress == true ? const Text('In progress',style: TextStyle(fontSize: 15,color: Colors.black,fontWeight: FontWeight.bold))
+                          :Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            ?!sw.isCompleted ? IconButton(
+                            IconButton(
                                 onPressed: sw.isCompleted ? null
                                 : () async {
                                   final updated = await Navigator.push(
@@ -138,8 +140,8 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
                                   }
                                 },
                                 icon:Icon (Icons.edit, color: Colors.blue),
-                            ) : null,
-                            ?!sw.isCompleted ?IconButton(
+                            ),
+                            IconButton(
                                 onPressed: sw.isCompleted ? null
                                 : () async {
                                   await Navigator.push(
@@ -157,7 +159,7 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
 
                                 },
                                 icon: Icon (Icons.swap_horiz, color: Colors.purple))
-                                : null
+
                           ],
                         ))),
 
