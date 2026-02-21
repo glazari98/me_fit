@@ -41,6 +41,7 @@ extension ScheduledWorkoutModel on ScheduledWorkout {
       'currentSet': this.currentSet,
       'elapsedSeconds': this.elapsedSeconds,
       'remainingSeconds': this.remainingSeconds,
+      'aerobicStartSeconds': this.aerobicStartSeconds,
       'currentPhase': this.currentPhase,
       'isInProgress': this.isInProgress,
     };
@@ -60,6 +61,7 @@ extension ScheduledWorkoutModel on ScheduledWorkout {
       currentSet: map['currentSet'] as int?,
       elapsedSeconds: map['elapsedSeconds'] as int?,
       remainingSeconds: map['remainingSeconds'] as int?,
+      aerobicStartSeconds: map['aerobicStartSeconds'] as int?,
       currentPhase: map['currentPhase'] as String?,
       isInProgress: map['isInProgress'] as bool?,
     );

@@ -15,6 +15,7 @@ class ScheduledWorkout {
   int? currentSet;
   int? elapsedSeconds;
   int? remainingSeconds;
+  int? aerobicStartSeconds;
   String? currentPhase;
   bool? isInProgress;
 
@@ -31,6 +32,7 @@ class ScheduledWorkout {
     this.currentSet,
     this.elapsedSeconds,
     this.remainingSeconds,
+    this.aerobicStartSeconds,
     this.currentPhase,
     this.isInProgress,
 });
