@@ -26,6 +26,7 @@ class SignupScreenState extends State<SignupScreen> {
   final passwordController = TextEditingController();
   final nameController = TextEditingController();
   final ageController = TextEditingController();
+  final weightController = TextEditingController();
 
   String? trainingType;
   bool hasAccessToGym = false;
@@ -62,11 +63,16 @@ class SignupScreenState extends State<SignupScreen> {
           emailAddress: emailController.text.trim(),
           username: nameController.text.trim(),
           age: age,
+          weight: double.parse(weightController.text.trim()),
           trainingType: trainingType!,
           hasAccessToGym: hasAccessToGym!,
           preferredWorkoutsPerWeek: preferredWorkoutsPerWeek!,
           aerobicType: aerobicType,
-          aerobicDistance: aerobicDistance
+          aerobicDistance: aerobicDistance,
+          currentStreak: 0,
+          bestStreak: 0,
+          totalCompletedWorkouts: 0,
+          unlockedBadges: [],
       );
 
       await FS.create.one(user).then((_) {
@@ -101,7 +107,10 @@ class SignupScreenState extends State<SignupScreen> {
         for (final bp in bodyParts) bp.name : bp.id
       };
       List<List<String>> workoutPlanBodyParts = [];
-      if(preferredWorkoutsPerWeek == 2){
+      if(preferredWorkoutsPerWeek == 1){
+        workoutPlanBodyParts = [['CHEST','TRICEPS','SHOULDERS','UPPER ARMS','QUADRICEPS','HIPS','THIGHS','CALVES','FULL BODY']];
+      }
+      else if(preferredWorkoutsPerWeek == 2){
         workoutPlanBodyParts = [
         ['CHEST', 'CHEST', 'BACK','BACK','BICEPS','BICEPS','TRICEPS', 'SHOULDERS', "FULL BODY"],
         ['THIGHS', 'THIGHS', 'HAMSTRINGS','QUADRICEPS','QUADRICEPS','HIPS','HIPS','CALVES', "FULL BODY"],
@@ -116,6 +125,15 @@ class SignupScreenState extends State<SignupScreen> {
         workoutPlanBodyParts = [
           ['CHEST','CHEST','TRICEPS','TRICEPS','SHOULDERS','SHOULDERS','FULL BODY'],
           ['BACK','BACK','BACK','BACK','BICEPS','BICEPS','FULL BODY'],
+          ['THIGHS','THIGHS','HAMSTRINGS','QUADRICEPS','HIPS','WAIST','CALVES','FULL BODY'],
+          ['CHEST','TRICEPS','SHOULDERS','UPPER ARMS','QUADRICEPS','HIPS','THIGHS','CALVES','FULL BODY']
+        ];
+      }
+      else if(preferredWorkoutsPerWeek == 5){
+        workoutPlanBodyParts = [
+          ['CHEST','CHEST','TRICEPS','TRICEPS','SHOULDERS','SHOULDERS','FULL BODY'],
+          ['BACK','BACK','BACK','BACK','BICEPS','BICEPS','FULL BODY'],
+          ['CHEST','TRICEPS','SHOULDERS','UPPER ARMS','QUADRICEPS','HIPS','THIGHS','CALVES','FULL BODY'],
           ['THIGHS','THIGHS','HAMSTRINGS','QUADRICEPS','HIPS','WAIST','CALVES','FULL BODY'],
           ['CHEST','TRICEPS','SHOULDERS','UPPER ARMS','QUADRICEPS','HIPS','THIGHS','CALVES','FULL BODY']
         ];
@@ -174,12 +192,17 @@ class SignupScreenState extends State<SignupScreen> {
       final now = DateTime.now();
       final monday = now.subtract(Duration(days: now.weekday - 1));
       List<int> scheduleDays;
-      if(preferredWorkoutsPerWeek == 2){
+      if(preferredWorkoutsPerWeek == 1){
+        scheduleDays = [0];
+      }
+      else if(preferredWorkoutsPerWeek == 2){
         scheduleDays = [0,3];
       }else if(preferredWorkoutsPerWeek == 3){
         scheduleDays = [0,2,4];
-      }else{
+      }else if (preferredWorkoutsPerWeek == 4){
         scheduleDays = [0,1,3,5];
+      }else{
+        scheduleDays = [0,2,3,5,6];
       }
       for (int i = 0; i < starterWorkouts.length; i++) {
         final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
@@ -195,6 +218,11 @@ class SignupScreenState extends State<SignupScreen> {
     }
     if(trainingType == 'Cardio') {
       List<List<String>> workoutPlanExerciseTypes = [];
+      if(preferredWorkoutsPerWeek == 1){
+        workoutPlanExerciseTypes = [
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+        ];
+      }
       if(preferredWorkoutsPerWeek == 2){
         workoutPlanExerciseTypes = [
           ['CARDIO', 'CARDIO' 'CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
@@ -213,7 +241,16 @@ class SignupScreenState extends State<SignupScreen> {
           ['PLYOMETRICS', 'PLYOMETRICS', 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
           ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
         ];
+      }else if(preferredWorkoutsPerWeek == 5){
+        workoutPlanExerciseTypes = [
+          ['CARDIO','CARDIO','CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          ['PLYOMETRICS', 'PLYOMETRICS', 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+        ];
       }
+
       for(int i =0; i < workoutPlanExerciseTypes.length; i++) {
         final workout = Workout(
             id: Firestorm.randomID(),
@@ -279,12 +316,17 @@ class SignupScreenState extends State<SignupScreen> {
       final now = DateTime.now();
       final monday = now.subtract(Duration(days: now.weekday - 1));
       List<int> scheduleDays;
-      if(preferredWorkoutsPerWeek == 2){
+      if(preferredWorkoutsPerWeek == 1){
+        scheduleDays = [0];
+      }
+      else if(preferredWorkoutsPerWeek == 2){
         scheduleDays = [0,3];
       }else if(preferredWorkoutsPerWeek == 3){
         scheduleDays = [0,2,4];
-      }else{
+      }else if(preferredWorkoutsPerWeek == 4){
         scheduleDays = [0,1,3,5];
+      }else{
+        scheduleDays = [0,2,3,5,6];
       }
       for (int i = 0; i < starterWorkouts.length; i++) {
         final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
@@ -302,12 +344,16 @@ class SignupScreenState extends State<SignupScreen> {
       const aerobicExerciseTypeId = '20260129-1023-8024-a295-ced66eef7c9c';
 
       List<double> distanceSplits;
-      if(preferredWorkoutsPerWeek == 2){
+      if(preferredWorkoutsPerWeek == 1){
+        distanceSplits = [1.0];
+      }else if(preferredWorkoutsPerWeek == 2){
         distanceSplits = [0.4,0.6];
-      }else if (preferredWorkoutsPerWeek == 3){
+      }else if(preferredWorkoutsPerWeek == 3){
         distanceSplits = [0.25,0.30,0.45];
+      }else if(preferredWorkoutsPerWeek == 4){
+        distanceSplits = [0.25, 0.30, 0.45];
       }else{
-        distanceSplits = [0.2,0.25,0.25,0.30];
+        distanceSplits = [0.2,0.15,0.25,0.25,0.15];
       }
 
       for (int i =0 ; i< distanceSplits.length; i++){
@@ -343,12 +389,17 @@ class SignupScreenState extends State<SignupScreen> {
       final now = DateTime.now();
       final monday = now.subtract(Duration(days: now.weekday - 1));
       List<int> scheduleDays;
-      if(preferredWorkoutsPerWeek == 2){
+      if(preferredWorkoutsPerWeek == 1){
+        scheduleDays = [0];
+      }
+      else if(preferredWorkoutsPerWeek == 2){
         scheduleDays = [0,3];
       }else if(preferredWorkoutsPerWeek == 3){
         scheduleDays = [0,2,4];
-      }else{
+      }else if(preferredWorkoutsPerWeek == 4){
         scheduleDays = [0,1,3,5];
+      }else{
+        scheduleDays = [0,2,3,5,6];
       }
       for (int i = 0; i < starterWorkouts.length; i++) {
         final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
@@ -369,84 +420,114 @@ class SignupScreenState extends State<SignupScreen> {
     final result = await FS.list.allOfClass<Exercise>(Exercise);
     debugPrint('Success}');
   }
-
-  void nextStep() {
+  bool isValidEmail(String email){
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
+  Future<bool> emailAlreadyExists(String email) async{
+    final user = await FS.list.filter<User>(User)
+                                .whereEqualTo('emailAddress', email)
+                                .fetch();
+    return user.items.isNotEmpty;
+  }
+  Future<bool> usernameAlreadyExists(String username) async{
+    final user = await FS.list.filter<User>(User)
+        .whereEqualTo('username', username)
+        .fetch();
+    return user.items.isNotEmpty;
+  }
+  void showError(String message){
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+  Future<void> showThesisAgreementDialog() async {
+    final agreed = await showDialog(context: context,
+        barrierDismissible:false,
+        builder: (context){
+      return AlertDialog(
+        title: Text('Research Notice'),
+        content: Text('This application is part of a thesis research project.\n\n'
+        'By continuing, you acknowledge that you are responsible '
+        'for using this app safely and appropriately.\n\n'
+            'Do you agree to proceed?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context,false),child: Text('Decline')),
+          ElevatedButton(onPressed: () => Navigator.pop(context,true), child: Text('Agree')),
+        ],
+      );
+        });
+    if(agreed == true){
+      signup();
+    }
+  }
+  Future<void> nextStep() async {
     switch (currentStep) {
       case 0: //Account
-        if (emailController.text
-            .trim()
-            .isEmpty || passwordController.text
-            .trim()
-            .isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text(
-                  'Please fill up both email and password fields'))
-          );
+        final email = emailController.text.trim();
+        final password = passwordController.text.trim();
+
+        if(email.isEmpty || password.isEmpty){
+          showError('Please fill up both email and password fields');
+          return;
+        }
+        if(password.length <= 6){
+          showError('Password must be more than 6 characters');
+          return;
+        }
+        if(!isValidEmail(email)){
+          showError('Please enter a valid email address');
+          return;
+        }
+        final exists = await emailAlreadyExists(email);
+        if(exists) {
+          showError('An account with this email already exists');
           return;
         }
         setState(() => currentStep++);
         break;
       case 1: //Profile
-        if (nameController.text
-            .trim()
-            .isEmpty || ageController.text
-            .trim()
-            .isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text(
-                  'Please fill up both age and name fields'))
-          );
+        final username  = nameController.text.trim();
+        final age = int.tryParse(ageController.text.trim());
+        final weight = double.tryParse(weightController.text.trim());
+
+        if(username.isEmpty || age == null || weight == null) {
+          showError('Please complete all profile fields');
+          return;
+        }
+        if(age < 18 || age > 60){
+          showError('Age must be between 18 and 60');
+          return;
+        }
+        if(weight <= 0 || weight >= 200){
+          showError('Please enter a valid weight');
+          return;
+        }
+        final exists = await usernameAlreadyExists(username);
+        if(exists) {
+          showError('An account with this username already exists');
           return;
         }
         setState(() => currentStep++);
         break;
       case 2:
-        if (trainingType == null || preferredWorkoutsPerWeek == null ||
-            hasAccessToGym == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text('Please complete all training preferences'))
-          );
+        if (trainingType == null || preferredWorkoutsPerWeek == null) {
+          showError('Please complete all training preferences');
           return;
         }
-        if (trainingType == 'Aerobic'){
+
+        if(trainingType == 'Aerobic'){
           if(aerobicType == null){
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please select an aerobic type'))
-          );
-          return;
+            showError('Please select an aerobic type');
+            return;
+          }
+          final distance = double.tryParse(aerobicDistanceController.text.trim());
+          if(distance == null || distance <= 0){
+            showError('Enter valid weekly distance');
+            return;
+          }
+          aerobicDistance = distance;
         }
-        final distance = double.tryParse(aerobicDistanceController.text.trim());
-        if (distance == null || distance <= 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text(
-                'Please enter a valid distance for your aerobic workout')),
-          );
-          return;
-        }
-        bool validDistance = false;
-        switch (aerobicType) {
-          case 'Running':
-            validDistance = distance >= 5 && distance <= 80;
-            break;
-          case 'Cycling':
-            validDistance = distance >= 20 && distance <= 300;
-            break;
-          case 'Swimming':
-            validDistance = distance >= 1 && distance <= 15;
-            break;
-        }
-        if (!validDistance) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(
-                  'Distance for $aerobicType must within a normal range'))
-          );
-          return;
-        }
-        aerobicDistance = distance;
-      }
-      signup();
-      break;
+        await showThesisAgreementDialog();
+        break;
     }
   }
 
@@ -460,7 +541,15 @@ class SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Sign Up')),
-      body: Stepper(
+      body: Container(
+        decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF1E3C72), Color(0xFF2A5298)],
+        begin: Alignment.topCenter, end:Alignment.topCenter),
+        ),
+        child: SafeArea(child: Card(
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          elevation: 10,child: Padding(padding: EdgeInsets.all(16),
+        child: Stepper(
         currentStep: currentStep,
         onStepContinue: isLoading ? null : nextStep,
         onStepCancel: previousStep,
@@ -515,6 +604,11 @@ class SignupScreenState extends State<SignupScreen> {
                     decoration: const InputDecoration(labelText: 'Age'),
                     keyboardType: TextInputType.number,
                   ),
+                  TextField(
+                    controller: weightController,
+                    decoration: const InputDecoration(labelText: 'Weight (kg)'),
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  )
                 ],
               ),
           ),
@@ -533,6 +627,7 @@ class SignupScreenState extends State<SignupScreen> {
                       ],
                     onChanged: (v) => setState(() => trainingType = v!),
                   ),
+                  if(trainingType != 'Aerobic')
                   CheckboxListTile(
                       value: hasAccessToGym ?? false,
                       title: const Text('I have access to a gym'),
@@ -542,9 +637,11 @@ class SignupScreenState extends State<SignupScreen> {
                     value: preferredWorkoutsPerWeek,
                     decoration: const InputDecoration(labelText: 'Workouts per Week'),
                     items: const [
+                      DropdownMenuItem(value: 1,child: Text('1 days')),
                       DropdownMenuItem(value: 2,child: Text('2 days')),
                       DropdownMenuItem(value: 3,child: Text('3 days')),
                       DropdownMenuItem(value: 4,child: Text('4 days')),
+                      DropdownMenuItem(value: 5,child: Text('5 days')),
                     ],
                     onChanged: (v) => setState(() => preferredWorkoutsPerWeek = v!),
                   ),
@@ -569,6 +666,10 @@ class SignupScreenState extends State<SignupScreen> {
               ))
         ],
       ),
+        ),
+        ),
+        ),
+      )
     );
 
   }

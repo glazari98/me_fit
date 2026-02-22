@@ -202,9 +202,15 @@ extension UserModel on User {
       'hasAccessToGym': this.hasAccessToGym,
       'trainingType': this.trainingType,
       'age': this.age,
+      'weight': this.weight,
       'username': this.username,
       'emailAddress': this.emailAddress,
       'id': this.id,
+      'profileImageUrl': this.profileImageUrl,
+      'currentStreak': this.currentStreak,
+      'bestStreak': this.bestStreak,
+      'totalCompletedWorkouts': this.totalCompletedWorkouts,
+      'unlockedBadges': this.unlockedBadges,
     };
   }
 
@@ -214,11 +220,19 @@ extension UserModel on User {
       emailAddress: map['emailAddress'] as String,
       username: map['username'] as String,
       age: map['age'] as int,
+      weight: map['weight'] as double,
       trainingType: map['trainingType'] as String,
       hasAccessToGym: map['hasAccessToGym'] as bool,
       preferredWorkoutsPerWeek: map['preferredWorkoutsPerWeek'] as int,
       aerobicType: map['aerobicType'] as String?,
       aerobicDistance: map['aerobicDistance'] as double?,
+      profileImageUrl: map['profileImageUrl'] as String?,
+      currentStreak: map['currentStreak'] as int,
+      bestStreak: map['bestStreak'] as int,
+      totalCompletedWorkouts: map['totalCompletedWorkouts'] as int,
+        unlockedBadges: (map['unlockedBadges'] as List?)
+            ?.map((e) => e as int)
+            .toList(),
     );
     return object;
   }

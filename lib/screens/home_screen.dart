@@ -3,12 +3,15 @@ import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/WorkoutEvent.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
+import 'package:me_fit/screens/achievements_screen.dart';
 import 'package:me_fit/screens/my_workouts.dart';
+import 'package:me_fit/screens/profile_screen.dart';
 import 'package:me_fit/screens/start_workout_screen.dart';
 import 'package:me_fit/screens/weekly_workouts_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import '../models/user.dart';
 import 'completed_workouts_screen.dart';
 
 DateTime normaliseDate(DateTime date) => DateTime(date.year,date.month,date.day);
@@ -229,7 +232,10 @@ class HomeScreenState extends State<HomeScreen>{
               title: const Text('Start Workout'),
               onTap: (){
                 Navigator.pop(context);
-                Navigator.push(context,MaterialPageRoute(builder: (_) => StartWorkoutScreen()));
+                Navigator.push(context,MaterialPageRoute(builder: (_) => StartWorkoutScreen()))
+                .then((_){
+                  loadSchedule();
+                });
               },
             ),
             ListTile(
@@ -238,6 +244,29 @@ class HomeScreenState extends State<HomeScreen>{
               onTap: (){
                 Navigator.pop(context);
                 Navigator.push(context,MaterialPageRoute(builder: (_) => CompletedWorkoutsScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Profile'),
+              onTap: (){
+                Navigator.pop(context);
+                Navigator.push(context,MaterialPageRoute(builder: (_) => ProfileScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.badge),
+              title: const Text('Achievements'),
+              onTap: () async {
+                Navigator.pop(context);
+                final currentUser = authService.getCurrentUser();
+                User? user = await FS.get.one<User>(currentUser!.uid);
+                if(user != null){
+                  Navigator.push(context,MaterialPageRoute(builder: (_) => AchievementsScreen(user: user,workouts: userSchedule)));
+                }else{
+                  null;
+                }
+
               },
             ),
 

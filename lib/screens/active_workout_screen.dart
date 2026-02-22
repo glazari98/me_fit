@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:me_fit/services/acheivement_service.dart';
+import 'package:me_fit/services/authentication_service.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:firestorm/firestorm.dart';
 import 'package:firestorm/fs/fs.dart';
@@ -14,6 +16,8 @@ import 'package:me_fit/screens/workout_feedback_screen.dart';
 import 'package:me_fit/screens/exercise_details_screen.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+
+import '../models/user.dart';
 
 class ActiveWorkoutScreen extends StatefulWidget{
   final Workout workout;
@@ -284,6 +288,18 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       sw.aerobicStartSeconds = null;
       await FS.update.one(sw);
     }
+    //achievements
+    final userId = AuthenticationService().getCurrentUser()?.uid;
+    if(userId == null) return;
+    User? user = await FS.get.one<User>(userId);
+    final userScheduledWorkouts = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
+        .whereEqualTo('userId', user?.id)
+        .fetch();
+    AchievementService().updateAfterWorkout(user!);
+    AchievementService().checkWeeklyCompletion(user!, userScheduledWorkouts.items);
+
+    await FS.update.one(user);
+
     await Navigator.push(
       context,
       MaterialPageRoute(
