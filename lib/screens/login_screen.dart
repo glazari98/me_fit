@@ -14,6 +14,7 @@ class LoginScreenState extends State<LoginScreen>{
   final passwordController = TextEditingController();
 
   bool isLoading = false;
+  bool obscurePassword = true;
 
   final AuthenticationService authService = AuthenticationService();
 
@@ -66,14 +67,55 @@ class LoginScreenState extends State<LoginScreen>{
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(
+
+            //TODO - Place the app logo here.
+
+            TextFormField(
               controller: emailController,
-                decoration: const InputDecoration(labelText: 'Email')),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              validator: (value) {
+                final email = value?.trim() ?? '';
+                if (email.isEmpty) return 'Email is required';
+                //TODO - Use isValidEmail here form a utility class.
+                // if (!isValidEmail(email)) return 'Enter a valid email';
+                return null;
+              },
             ),
+
+            SizedBox(height: 10,),
+
+            TextFormField(
+              controller: passwordController,
+              obscureText: obscurePassword,
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  ),
+                  onPressed: () {
+                    setState(() => obscurePassword = !obscurePassword);
+                  },
+                ),
+                helperText: 'Minimum 6+ characters',
+              ),
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              validator: (value) {
+                final password = value ?? '';
+                if (password.isEmpty) return 'Password is required';
+                if (password.length <= 6) return 'Password too short';
+                return null;
+              },
+            ),
+
             const SizedBox(height: 30),
             ElevatedButton(
                 onPressed: () => isLoading ? null : login(),

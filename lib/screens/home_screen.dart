@@ -14,12 +14,13 @@ import 'package:table_calendar/table_calendar.dart';
 import '../models/user.dart';
 import 'completed_workouts_screen.dart';
 
+//TODO - Utility functions, should be moved to other classes/files.
 DateTime normaliseDate(DateTime date) => DateTime(date.year,date.month,date.day);
 bool isFutureWorkout(ScheduledWorkout sw){
   return normaliseDate(sw.scheduledDate).isAfter(normaliseDate(DateTime.now()));
 }
 
-
+//TODO - Dangling function, should be moved to a more appropriate place.
 LinkedHashMap<DateTime, List<WorkoutEvent>> buildWorkoutEventMap(List<ScheduledWorkout> workouts){
   final map = LinkedHashMap<DateTime,List<WorkoutEvent>>(
     equals: isSameDay,
@@ -105,6 +106,7 @@ class HomeScreenState extends State<HomeScreen>{
   }
 
   void logOut(BuildContext context) async{
+    //TODO - Important: Ask the user to confirm log out before logging them out. You can use an AlertDialog.
     authService.logOutUser();
     Navigator.pushReplacementNamed(context, '/login');
   }
@@ -121,7 +123,7 @@ class HomeScreenState extends State<HomeScreen>{
   @override
   Widget build(BuildContext context){
     return Scaffold(
-      appBar: AppBar(title: const Text('Home'),backgroundColor: Colors.white,
+      appBar: AppBar(title: const Text('Home'),
       actions: [
         IconButton(
             onPressed: () => logOut(context),
@@ -131,45 +133,114 @@ class HomeScreenState extends State<HomeScreen>{
       body: Column(
         children: [
           TableCalendar<WorkoutEvent>(
-              focusedDay: focusedDay,
-              firstDay: DateTime.now().subtract(const Duration(days: 30)),
-              lastDay: DateTime.now().add(const Duration(days: 90)),
-              selectedDayPredicate: (day) => isSameDay(selectedDay, day),
-              calendarFormat: calendarFormat,
-              eventLoader: getEventsForDay,
-              onDaySelected: onDaySelected,
-              onFormatChanged:(format) => setState(() => calendarFormat = format),
-            calendarStyle: CalendarStyle(
-              isTodayHighlighted: true,
-              cellMargin: EdgeInsets.all(10),
-            ),
-            //rowHeight: 40,
-            daysOfWeekHeight: 30,
-              calendarBuilders: CalendarBuilders(
-                markerBuilder: (context,day,events){
-                  final workoutEvents = events.cast<WorkoutEvent>();
-                  if(workoutEvents.isEmpty) return null;
-                    return Positioned(
-                        bottom: 1,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(
-                              workoutEvents.length > 3 ? 3 : workoutEvents.length,
-                              (index) => Container(
-                                margin: const EdgeInsets.all(0),
-                                width: 8,
-                                height: 7,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                          ),
-                        ),
-                    );
-                },
+            focusedDay: focusedDay,
+            firstDay: DateTime.now().subtract(const Duration(days: 30)),
+            lastDay: DateTime.now().add(const Duration(days: 90)),
+            selectedDayPredicate: (day) => isSameDay(selectedDay, day),
+            calendarFormat: calendarFormat,
+            eventLoader: getEventsForDay,
+            onDaySelected: onDaySelected,
+            onFormatChanged: (format) => setState(() => calendarFormat = format),
+
+            rowHeight: 52,
+            daysOfWeekHeight: 32,
+
+            headerStyle: HeaderStyle(
+              titleCentered: true,
+              formatButtonVisible: false,
+              titleTextStyle: Theme.of(context).textTheme.titleMedium!,
+              leftChevronIcon: Icon(
+                Icons.chevron_left,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              rightChevronIcon: Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
+
+            daysOfWeekStyle: DaysOfWeekStyle(
+              weekdayStyle: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w600,
+              ),
+              weekendStyle: TextStyle(
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
+            calendarStyle: CalendarStyle(
+              isTodayHighlighted: true,
+
+              cellMargin: const EdgeInsets.all(6),
+              cellPadding: const EdgeInsets.all(0),
+
+              defaultDecoration: BoxDecoration(
+                shape: BoxShape.circle,
+              ),
+
+              weekendDecoration: BoxDecoration(
+                shape: BoxShape.circle,
+              ),
+
+              todayDecoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+
+              selectedDecoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                shape: BoxShape.circle,
+              ),
+
+              selectedTextStyle: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+
+              todayTextStyle: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+
+              defaultTextStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+              ),
+
+              weekendTextStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+
+            calendarBuilders: CalendarBuilders(
+              markerBuilder: (context, day, events) {
+                final workoutEvents = events.cast<WorkoutEvent>();
+                if (workoutEvents.isEmpty) return null;
+
+                final color = Theme.of(context).colorScheme.secondary;
+
+                return Positioned(
+                  bottom: 6,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      workoutEvents.length > 3 ? 3 : workoutEvents.length,
+                          (index) => Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
             const SizedBox(height: 8),
             Expanded(
               child: ValueListenableBuilder<List<WorkoutEvent>>(
@@ -199,12 +270,14 @@ class HomeScreenState extends State<HomeScreen>{
             ),
         ],
       ),
+      //TODO - Ideally the drawer is a reusable widget that can be used across multiple screens.
+      //TODO You can create a separate widget for the drawer and use it in all the screens that require it.
       drawer: Drawer(
         child: Column(
           children: [
             DrawerHeader(
-              decoration: const BoxDecoration(
-                color: Colors.black
+              decoration: BoxDecoration(
+                color: Colors.green.shade900,
               ),
               child: Align(
                 alignment: Alignment.bottomLeft,

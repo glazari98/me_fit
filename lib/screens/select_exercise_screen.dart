@@ -6,7 +6,7 @@ import '../models/bodyPart.dart';
 import '../models/exerciseType.dart';
 import 'exercise_details_screen.dart';
 
-class SelectExerciseScreen extends StatefulWidget{
+class SelectExerciseScreen extends StatefulWidget {
   const SelectExerciseScreen({super.key});
 
   @override
@@ -20,7 +20,6 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
   List<BodyPart> bodyParts = [];
   List<ExerciseType> exerciseTypes = [];
 
-
   List<Exercise> allExercises = [];
   List<Exercise> filteredExercises = [];
   List<Exercise> visibleExercises = [];
@@ -33,45 +32,43 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
 
   String searchQuery = '';
   final TextEditingController searchController = TextEditingController();
-   late Map<String,String> bodyPartNameById;
-   late Map<String,String> exerciseTypeNameById;
+  late Map<String, String> bodyPartNameById;
+  late Map<String, String> exerciseTypeNameById;
 
-   bool sortAscending = true;
+  bool sortAscending = true;
 
   @override
   void initState() {
     super.initState();
     fetchFitlers().then((_) => loadAllExercises());
   }
+
   @override
-  void dispose(){
+  void dispose() {
     searchController.dispose();
     super.dispose();
-
   }
 
   Future<void> fetchFitlers() async {
     final bodyPartsResult = await FS.list.allOfClass<BodyPart>(BodyPart);
 
     final exerciseTypesResult = await FS.list.allOfClass<ExerciseType>(
-        ExerciseType);
+      ExerciseType,
+    );
 
     if (!mounted) return;
     setState(() {
       bodyParts = bodyPartsResult;
       exerciseTypes = exerciseTypesResult;
-      bodyPartNameById = {
-        for(final b in bodyParts) b.id : b.name
-      };
-      exerciseTypeNameById = {
-        for (final t in exerciseTypes) t.id : t.name
-      };
+      bodyPartNameById = {for (final b in bodyParts) b.id: b.name};
+      exerciseTypeNameById = {for (final t in exerciseTypes) t.id: t.name};
       filteredExercises.clear();
       visibleExercises.clear();
       isLoadingFilters = false;
     });
   }
-  Future<void> loadAllExercises() async{
+
+  Future<void> loadAllExercises() async {
     setState(() => isLoadingExercises = true);
 
     final result = await FS.list.allOfClass<Exercise>(Exercise);
@@ -82,188 +79,208 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
       isLoadingExercises = false;
     });
   }
+
   void applyFiltersAndSearch() {
     List<Exercise> temp = allExercises;
 
-    if(selectedExerciseTypeId != null){
-      temp = temp.where((e) =>
-      e.exerciseTypeId == selectedExerciseTypeId).toList();
-
+    if (selectedExerciseTypeId != null) {
+      temp = temp
+          .where((e) => e.exerciseTypeId == selectedExerciseTypeId)
+          .toList();
     }
-    if(selectedBodyPartIds.isNotEmpty){
-      temp = temp.where((e) =>
-          e.bodyParts.any((bp) => selectedBodyPartIds.contains(bp))
-      ).toList();
+    if (selectedBodyPartIds.isNotEmpty) {
+      temp = temp
+          .where(
+            (e) => e.bodyParts.any((bp) => selectedBodyPartIds.contains(bp)),
+          )
+          .toList();
     }
-    if(searchQuery.isNotEmpty){
+    if (searchQuery.isNotEmpty) {
       final q = searchQuery.toLowerCase();
-      temp = temp.where((e){
+      temp = temp.where((e) {
         final nameMatch = e.name.toLowerCase().contains(q);
-        final keywordMatch = e.keywords.any(
-            (k) => k.toLowerCase().contains(q),
-        );
+        final keywordMatch = e.keywords.any((k) => k.toLowerCase().contains(q));
         return nameMatch || keywordMatch;
       }).toList();
     }
-    temp.sort((a,b){
+    temp.sort((a, b) {
       final nameA = a.name.toLowerCase();
       final nameB = b.name.toLowerCase();
-      return sortAscending ? nameA.compareTo(nameB)
-                            : nameB.compareTo(nameA);
+      return sortAscending ? nameA.compareTo(nameB) : nameB.compareTo(nameA);
     });
     filteredExercises = temp.toList();
     currentVisibleCount = filteredExercises.length > pageSize
-    ? pageSize
-    : filteredExercises.length;
+        ? pageSize
+        : filteredExercises.length;
 
     visibleExercises = filteredExercises.take(currentVisibleCount).toList();
   }
+
   Future<void> loadMore() async {
     final remaining = filteredExercises.length - currentVisibleCount;
-    if(remaining <= 0) return;
+    if (remaining <= 0) return;
 
     final toShow = remaining >= pageSize ? pageSize : remaining;
     setState(() {
       visibleExercises.addAll(
         filteredExercises.sublist(
-            currentVisibleCount,
-            currentVisibleCount + toShow)
+          currentVisibleCount,
+          currentVisibleCount + toShow,
+        ),
       );
       currentVisibleCount += toShow;
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: const Text('Select Exercise'),
-          actions: [
-            IconButton(
-              tooltip: sortAscending ? 'Sorted A->Z': 'Sorted Z->A',
-              icon: Icon(
-                Icons.sort_by_alpha,
-                color: sortAscending ? Colors.blue : Colors.black,
+      appBar: AppBar(
+        title: const Text('Select Exercise'),
+        actions: [
+          IconButton(
+            tooltip: sortAscending ? 'Sorted A->Z' : 'Sorted Z->A',
+            icon: Icon(
+              sortAscending ? Icons.sort_by_alpha : Icons.arrow_upward,
             ),
-              onPressed: (){
-                setState(() {
-                  sortAscending = !sortAscending;
-                  applyFiltersAndSearch();
-                });
-              },
-            ),
-          ],
-        ),
-        body: Column(
+            onPressed: () {
+              setState(() {
+                sortAscending = !sortAscending;
+                applyFiltersAndSearch();
+              });
+            },
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
           children: [
             searchField(),
             filters(),
-            if(isLoadingExercises)
+            if (isLoadingExercises)
               const Padding(
-                  padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator()),
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(),
+              ),
             Expanded(
               child: visibleExercises.isEmpty
-              ? Center (
-                child: isLoadingExercises
-                ? const CircularProgressIndicator()
-                : const Text('No exercises to show'),
-              )
-              :
-              ListView.builder(
-                itemCount: visibleExercises.length + 1,
-                itemBuilder: (context, index) {
-                  if (index < visibleExercises.length) {
-                    final exercise = visibleExercises[index];
-                    final bodyPartNames = exercise.bodyParts
-                    .map((id) => bodyPartNameById[id])
-                    .whereType<String>()
-                    .join(' , ');
-                    final exerciseTypeName = exerciseTypeNameById[exercise.exerciseTypeId];
-                    return Card(
-                      key: ValueKey(exercise.id),
-                      child: ListTile(
-                        onTap: (){
-                          Navigator.push(context,
-                              MaterialPageRoute(
-                                  builder: (_) => ExerciseDetailsScreen(
+                  ? Center(
+                      child: isLoadingExercises
+                          ? const CircularProgressIndicator()
+                          : const Text('No exercises to show'),
+                    )
+                  : ListView.builder(
+                      itemCount: visibleExercises.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index < visibleExercises.length) {
+                          final exercise = visibleExercises[index];
+                          final bodyPartNames = exercise.bodyParts
+                              .map((id) => bodyPartNameById[id])
+                              .whereType<String>()
+                              .join(' , ');
+                          final exerciseTypeName =
+                              exerciseTypeNameById[exercise.exerciseTypeId];
+                          return Card(
+                            key: ValueKey(exercise.id),
+                            child: ListTile(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ExerciseDetailsScreen(
                                       exercise: exercise,
                                       bodyParts: bodyParts,
-                                      exerciseTypes: exerciseTypes)));
-                        },
-                      title: Text(exercise.name),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if(exerciseTypeName != null) Text(
-                            'Type: ${exerciseTypeName}',
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 13,
-                            ),
-                          ),
-                          if(bodyPartNames.isNotEmpty)
-                            Text(
-                              'Body parts: ${bodyPartNames}',
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 13,
+                                      exerciseTypes: exerciseTypes,
+                                    ),
+                                  ),
+                                );
+                              },
+                              title: Text(exercise.name),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (exerciseTypeName != null)
+                                    Text(
+                                      'Type: ${exerciseTypeName}',
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  if (bodyPartNames.isNotEmpty)
+                                    Text(
+                                      'Body parts: ${bodyPartNames}',
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                ],
                               ),
-                            )
-                        ],
-                      ),
-                      trailing: IconButton(
-                        onPressed: (){
-                          Navigator.pop(context,exercise);
-                        },
-                        icon: Icon (Icons.add, color: Colors.green, size: 30),
-                      ),)
-                  );
-                  } else if (currentVisibleCount < filteredExercises.length){
-                    return Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange,
-                            elevation: 6,shadowColor: Colors.green.withOpacity(0.4),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ), onPressed: loadMore, child: const Text('Load More',
-                            style: TextStyle(fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,color: Colors.white)),)
-                    );
-                  } else {
-                    return const SizedBox.shrink();
-                  }
-
-
-                },
-              ),
+                              trailing: IconButton(
+                                onPressed: () {
+                                  Navigator.pop(context, exercise);
+                                },
+                                icon: Icon(
+                                  Icons.add,
+                                  color: Colors.green,
+                                  size: 30,
+                                ),
+                              ),
+                            ),
+                          );
+                        } else if (currentVisibleCount <
+                            filteredExercises.length) {
+                          return Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: ElevatedButton(
+                              onPressed: loadMore,
+                              child: const Text(
+                                'Load More',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          );
+                        } else {
+                          return const SizedBox.shrink();
+                        }
+                      },
+                    ),
             ),
           ],
-        )
+        ),
+      ),
     );
   }
-  Widget searchField(){
+
+  Widget searchField() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8,vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: TextField(
         controller: searchController,
         decoration: InputDecoration(
           hintText: 'Search exercises',
           prefixIcon: const Icon(Icons.search),
           suffixIcon: searchQuery.isNotEmpty
-            ? IconButton(
-              onPressed: (){
-                searchController.clear();
-                setState(() {
-                  searchQuery = '';
-                  applyFiltersAndSearch();
-                });
-              }, icon: const Icon(Icons.clear))
+              ? IconButton(
+                  onPressed: () {
+                    searchController.clear();
+                    setState(() {
+                      searchQuery = '';
+                      applyFiltersAndSearch();
+                    });
+                  },
+                  icon: const Icon(Icons.clear),
+                )
               : null,
-            border: const OutlineInputBorder(),
+          border: const OutlineInputBorder(),
         ),
-        onChanged: (value){
+        onChanged: (value) {
           setState(() {
             searchQuery = value.trim().toLowerCase();
             applyFiltersAndSearch();
@@ -272,6 +289,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
       ),
     );
   }
+
   Widget filters() {
     if (isLoadingFilters) {
       return const Padding(
@@ -324,7 +342,8 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                               child: const Text('Cancel'),
                             ),
                             ElevatedButton(
-                              onPressed: () => Navigator.pop(context, tempSelected),
+                              onPressed: () =>
+                                  Navigator.pop(context, tempSelected),
                               child: const Text('Apply'),
                             ),
                           ],
@@ -342,7 +361,10 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                 }
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey),
                   borderRadius: BorderRadius.circular(4),
@@ -353,9 +375,11 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                   selectedBodyPartIds!.isEmpty
                       ? 'Select Body Parts'
                       : selectedBodyPartIds
-                      .map((id) =>
-                  bodyParts.firstWhere((b) => b.id == id).name)
-                      .join(', '),
+                            .map(
+                              (id) =>
+                                  bodyParts.firstWhere((b) => b.id == id).name,
+                            )
+                            .join(', '),
                   style: const TextStyle(fontSize: 16),
                 ),
               ),
@@ -369,25 +393,29 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
               value: selectedExerciseTypeId,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12,vertical: 6),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
                 ),
-                icon: selectedExerciseTypeId != null
+              ),
+              icon: selectedExerciseTypeId != null
                   ? GestureDetector(
-                    onTap: (){
-                      setState(() {
-                        selectedExerciseTypeId = null;
-                        applyFiltersAndSearch();
-                      });
-                    },
-                    child: const Icon(Icons.clear),
-                  )
+                      onTap: () {
+                        setState(() {
+                          selectedExerciseTypeId = null;
+                          applyFiltersAndSearch();
+                        });
+                      },
+                      child: const Icon(Icons.clear),
+                    )
                   : const Icon(Icons.arrow_drop_down),
 
-              items: [const DropdownMenuItem<String>(
-                  value: null,child: Text('All')),
-              ...exerciseTypes.map((t) => DropdownMenuItem(
-                  value: t.id,
-                  child: Text(t.name)))],
+              items: [
+                const DropdownMenuItem<String>(value: null, child: Text('All')),
+                ...exerciseTypes.map(
+                  (t) => DropdownMenuItem(value: t.id, child: Text(t.name)),
+                ),
+              ],
               onChanged: (v) {
                 setState(() {
                   selectedExerciseTypeId = v;

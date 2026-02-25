@@ -41,7 +41,7 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
   Future<void> fetchWorkouts () async {
     final user = authenticationService.getCurrentUser();
 
-    final result = await FS.list
+    final result = await FS.list //TODO - This line causes an error: Unhandled Exception: type 'Timestamp' is not a subtype of type 'DateTime?' in type cast
       .filter<Workout>(Workout)
       .whereEqualTo('createdBy', user?.uid)
       .whereEqualTo('isMyWorkout', true)
@@ -117,8 +117,6 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
           } )
         ],),
         floatingActionButton: FloatingActionButton(
-          foregroundColor: Colors.black,
-          backgroundColor: Colors.amberAccent,
           child: const Icon(Icons.add),
             onPressed: () async {
               await Navigator.push(

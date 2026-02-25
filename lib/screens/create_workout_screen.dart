@@ -156,7 +156,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
     return showDialog<WorkoutExerciseInstance>(
       context: context,
       builder: (_){
-        return AlertDialog(
+        return AlertDialog( //TODO - This dialog seems to be reused throughout your app. I suggest you create a separate widget for it, it will make the code cleaner and more maintainable
           title: Text('Alter ${instance.exercise.name}'),
           content: SingleChildScrollView(
             child: Column (
@@ -276,86 +276,89 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
         backgroundColor: Colors.amberAccent,
           onPressed: addExerciseFlow,
           child: const Icon (Icons.add)),
-      body: Padding(
-        padding:const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Form(
-              key: formKey,
-              child: TextFormField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Workout name'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter workout name' : null,
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            Expanded(child: ReorderableListView(
-                onReorder: (oldIndex, newIndex){
-                  if(newIndex > oldIndex) newIndex--;
-                  final item = selectedExercises.removeAt(oldIndex);
-                  selectedExercises.insert(newIndex, item);
-                  setState((){});
-                },
+      body: SafeArea(
+        child: Padding(
+          padding:const EdgeInsets.all(16),
+          child: Column(
             children: [
-              for (int i = 0; i < selectedExercises.length ; i++)
-                Card(
-                  key: ValueKey(selectedExercises[i].exercise.id),
-                  child: ListTile(
-                    title: Text(selectedExercises[i].exercise.name),
-                    subtitle: Text(buildSummary(selectedExercises[i])),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                            onPressed: () async {
-                              final updated = await showExerciseAlterDialog(selectedExercises[i]);
-                              if(updated != null) {
-                                setState(() {});
-                              }
-                            },
-                            icon: const Icon (Icons.edit,color: Colors.blue)),
-                        IconButton(onPressed: () async {
-                          final confirm = await showDialog<bool>(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (context) => AlertDialog(
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(16)),
-                                title: const Row(children: [
-                                  Icon(Icons.warning_amber_rounded,color: Colors.red),
-                                  SizedBox(width: 8),Text('Remove Exercise'),
-                                ],),
-                                content: Text('Are you sure you want to remove ${selectedExercises[i].exercise.name}?'),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(context),
-                                      child: Text('Cancel')),
-                                  ElevatedButton(
-                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                                      onPressed: () => Navigator.pop(context,true), child: Text('Remove',style: TextStyle(color: Colors.white)))
+              Form(
+                key: formKey,
+                child: TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Workout name'),
+                  validator: (value) => value == null || value.isEmpty ? 'Enter workout name' : null,
+                ),
+              ),
+              const SizedBox(height: 20),
 
-                                ],
-                              )
-                          );
-                          if(confirm != true) return;
-                          setState(() {
-                            selectedExercises.removeAt(i);
-                          });
-                        }, icon: const Icon (Icons.delete,color: Colors.red))
-                      ],
+              Expanded(child: ReorderableListView(
+                  onReorder: (oldIndex, newIndex){
+                    if(newIndex > oldIndex) newIndex--;
+                    final item = selectedExercises.removeAt(oldIndex);
+                    selectedExercises.insert(newIndex, item);
+                    setState((){});
+                  },
+              children: [
+                for (int i = 0; i < selectedExercises.length ; i++)
+                  Card(
+                    key: ValueKey(selectedExercises[i].exercise.id),
+                    child: ListTile(
+                      title: Text(selectedExercises[i].exercise.name),
+                      subtitle: Text(buildSummary(selectedExercises[i])),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                              onPressed: () async {
+                                final updated = await showExerciseAlterDialog(selectedExercises[i]);
+                                if(updated != null) {
+                                  setState(() {});
+                                }
+                              },
+                              icon: const Icon (Icons.edit,color: Colors.blue)),
+                          IconButton(onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => AlertDialog(
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(16)),
+                                  title: const Row(children: [
+                                    Icon(Icons.warning_amber_rounded,color: Colors.red),
+                                    SizedBox(width: 8),Text('Remove Exercise'),
+                                  ],),
+                                  content: Text('Are you sure you want to remove ${selectedExercises[i].exercise.name}?'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(context),
+                                        child: Text('Cancel')),
+                                    ElevatedButton(
+                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                        onPressed: () => Navigator.pop(context,true), child: Text('Remove',style: TextStyle(color: Colors.white)))
+
+                                  ],
+                                )
+                            );
+                            if(confirm != true) return;
+                            setState(() {
+                              selectedExercises.removeAt(i);
+                            });
+                          }, icon: const Icon (Icons.delete,color: Colors.red))
+                        ],
+                      ),
                     ),
-                  ),
-                )
-            ],)),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green,
-              elevation: 6,shadowColor: Colors.green.withOpacity(0.4),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ), onPressed: saveWorkout, child: const Text('Save Workout',
-              style: TextStyle(fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,color: Colors.white)),)
-          ],
-        )
+                  )
+              ],)),
+            SizedBox(
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green,
+                ), onPressed: saveWorkout, child: const Text('Save Workout',
+                  style: TextStyle(fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,color: Colors.white)),),
+            )
+            ],
+          )
+        ),
       ),
 
     );

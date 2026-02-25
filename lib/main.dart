@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:me_fit/screens/home_screen.dart';
 import 'package:me_fit/screens/my_workouts.dart';
 import 'package:me_fit/screens/signup_screen.dart';
+import 'package:me_fit/theme/app_theme_light.dart';
 import 'generated/firestorm_models.dart';
 import 'screens/login_screen.dart';
 
@@ -26,9 +27,7 @@ class MeFitApp extends StatelessWidget{
     return MaterialApp(
       title: 'MeFit',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-      ),
+      theme: lightTheme,
       initialRoute: FirebaseAuth.instance.currentUser != null ? '/home' : '/login',
       routes: {
         '/login': (context) => const LoginScreen(),

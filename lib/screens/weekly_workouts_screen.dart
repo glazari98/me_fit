@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/models/workout.dart';
 import 'package:me_fit/models/workoutExerciseFeedback.dart';
-import 'package:me_fit/screens/edit_weekly _workout_screen.dart';
+import 'package:me_fit/screens/edit_weekly_workout_screen.dart';
 import 'package:me_fit/screens/edit_workout_screen.dart';
 import 'package:me_fit/screens/home_screen.dart';
 import 'package:me_fit/screens/view_workout_screen.dart';
