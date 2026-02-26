@@ -2,6 +2,7 @@ import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/services/authentication_service.dart';
+import '../components/workout_card.dart';
 import '../models/workout.dart';
 import 'active_workout_screen.dart';
 DateTime startOfWeek(DateTime date){
@@ -85,76 +86,87 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
     return days[date.weekday - 1];
   }
 
-    @override
-    Widget build(BuildContext context) {
-      return Scaffold( appBar: AppBar(title: const Text('Start Workout')),
-            body:  FutureBuilder<Map<DateTime,List<ScheduledWorkout>>>(
-            future: weeklyWorkouts,
-            builder: (context, snapshot){
-              if(!snapshot.hasData){
-                return const Center(child: CircularProgressIndicator());
-              }
-              final groupedWorkouts = snapshot.data!;
-              if(groupedWorkouts.isEmpty){
-                return const Center(child: Text('No workouts available'));
-              }
-              return ListView(
-                children: [
-                  ...groupedWorkouts.entries.map((entry) {
-                  final date = entry.key;
-                  final workouts = entry.value;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 8),
-                        child: Text(
-                          '${weekdayLabel(date)}, ${date.day}/${date.month}/${date.year}',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      ...workouts.map((sw){
-                      return FutureBuilder<Workout?>(
-                      future: FS.get.one<Workout>(sw.workoutId),
-                      builder: (context,snapshot){
-                        if(!snapshot.hasData){
-                        return const SizedBox.shrink();
-                        }
-                        
-                        final workout = snapshot.data!;
-                        final enabled = isButtonEnabled(sw);
-                        
-                        return Card(
-                            color: workoutCardColor(sw),
-                            margin: const EdgeInsets.symmetric(horizontal: 16,vertical: 4),
-                            child: ListTile(
-                              title: Text(workout.name,
-                              style: TextStyle(fontWeight: FontWeight.bold,color: Colors.black)),
-                              trailing: ElevatedButton(
-                                  onPressed: enabled ? () async {
-                                     await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: workout, scheduledWorkout: sw))
-                                    );
-                                    setState(() {
-                                      weeklyWorkouts = fetchWeeklyWorkouts();
-                                    });
-                                  } : null,
-                                child: Text(buttonLabel(sw),
-                              ),
-                              ),
-                            ),
-                        );
-                      },
-                      );
-                      }).toList(),
-                    ],
-                  );
-                }).toList(),
-              ]);
-            },
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[50], // Light background for contrast
+      appBar: AppBar(
+        title: const Text('Weekly Schedule', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
+      body: RefreshIndicator(
+        onRefresh: () async => setState(() => weeklyWorkouts = fetchWeeklyWorkouts()),
+        child: FutureBuilder<Map<DateTime, List<ScheduledWorkout>>>(
+          future: weeklyWorkouts,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator.adaptive());
+            }
+            final groupedWorkouts = snapshot.data ?? {};
+            if (groupedWorkouts.isEmpty) {
+              return _buildEmptyState();
+            }
 
-      );
-    }
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: groupedWorkouts.length,
+              itemBuilder: (context, index) {
+                final entry = groupedWorkouts.entries.elementAt(index);
+                return _buildDaySection(entry.key, entry.value);
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Simple empty state with icon and message
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.calendar_today_outlined, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text('No workouts scheduled for this week', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+        ],
+      ),
+    );
+  }
+
+  /// Builds a section for a specific day, showing the date and its workouts
+  Widget _buildDaySection(DateTime date, List<ScheduledWorkout> workouts) {
+    final bool isToday = normaliseDate(DateTime.now()) == date;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, top: 16, bottom: 8),
+          child: Row(
+            children: [
+              Text(
+                isToday ? 'TODAY' : weekdayLabel(date).toUpperCase(),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                  color: isToday ? Theme.of(context).primaryColor : Colors.grey[600],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${date.day}/${date.month}',
+                style: TextStyle(color: Colors.grey[400], fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+        ...workouts.map((scheduledWorkout) => WorkoutCard(
+          scheduledWorkout: scheduledWorkout,
+          onRefresh: () => setState(() => weeklyWorkouts = fetchWeeklyWorkouts()),
+        )),
+      ],
+    );
+  }
 }

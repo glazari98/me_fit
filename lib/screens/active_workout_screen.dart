@@ -557,6 +557,85 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     await FS.update.one(sw);
   }
 
+  //TODO - Move this to a separate widget file --> WorkoutActionButton?
+  Widget _buildActionButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback? onPressed,
+    IconAlignment? iconAlignment,
+    bool isFullWidth = false,
+  }) {
+    final button = ElevatedButton.icon(
+      icon: Icon(icon, size: 22, color: Colors.white),
+      label: Text(label, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isPaused ? Colors.grey : color,
+        minimumSize: Size(isFullWidth ? double.infinity : 0, 60),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 4,
+      ),
+      onPressed: isPaused ? null : onPressed,
+      iconAlignment: iconAlignment ?? IconAlignment.start,
+    );
+
+    return isFullWidth ? SizedBox(width: double.infinity, child: button) : button;
+  }
+
+  //TODO - Move this to a separate widget file --> WorkoutActionButton?
+  Widget _buildSecondaryActionButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback? onPressed,
+    bool isFullWidth = false,
+    IconAlignment? iconAlignment,
+  }) {
+    final button = OutlinedButton.icon(
+      icon: Icon(icon, size: 22,),
+      label: Text(label, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      style: ElevatedButton.styleFrom(
+        minimumSize: Size(isFullWidth ? double.infinity : 0, 60),
+        elevation: 4,
+      ),
+      onPressed: isPaused ? null : onPressed,
+      iconAlignment: iconAlignment ?? IconAlignment.start,
+    );
+
+    return isFullWidth ? SizedBox(width: double.infinity, child: button) : button;
+  }
+
+  // Progress Circle
+  //TODO - Move this to a separate widget file --> WorkoutProgressCircle?
+  Widget _buildTimerCircle({required double percent, required int seconds, Color color = Colors.green}) {
+    return Center(
+      child: CircularPercentIndicator(
+        radius: 110,
+        lineWidth: 15,
+        percent: percent.clamp(0.0, 1.0),
+        center: Text('$seconds', style: const TextStyle(fontSize: 64, fontWeight: FontWeight.w900)),
+        circularStrokeCap: CircularStrokeCap.round,
+        progressColor: isPaused ? Colors.grey : color,
+        backgroundColor: Colors.grey.shade200,
+        animation: true,
+        animateFromLastPercent: true,
+      ),
+    );
+  }
+
+  // Exercise Info Card
+  // TODO - Move this to a separate widget file --> ExerciseInfoCard?
+  Widget _buildViewDetailsButton(Exercise ex) {
+    return _buildSecondaryActionButton(
+      label: 'VIEW DETAILS',
+      icon: Icons.info_outline,
+      color: Colors.black87,
+      isFullWidth: true,
+      onPressed: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => ExerciseDetailsScreen(exercise: ex, bodyParts: bodyParts, exerciseTypes: exerciseTypes))),
+    );
+  }
+
   @override
   Widget build(BuildContext context){
     if(workoutExercises.isEmpty || exerciseMap.isEmpty){
@@ -602,363 +681,298 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   Widget buildExerciseControls() {
-    if(isTransitioning){
+    if (isTransitioning) {
       return const Center(child: CircularProgressIndicator());
     }
+
     final type = getExerciseType(we);
 
-    if(phase == ExercisePhase.rest){
+    if (phase == ExercisePhase.rest) {
       return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Lets take a break...', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
-              const SizedBox(height: 30),
-              SizedBox(width: 200, height: 200,
-                  child: CircularPercentIndicator(
-                      radius: 100, lineWidth: 18,
-                      percent: remainingSeconds / we.restBetweenSets!,
-                      center: Text('$remainingSeconds', style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold)),
-                      circularStrokeCap: CircularStrokeCap.round,
-                      progressColor: isPaused ? Colors.grey : Colors.blue,
-                      backgroundColor: Colors.grey.shade300,
-                      animation: false,
-                      animateFromLastPercent: true,
-                      animationDuration: 500)),
-              const SizedBox(height: 20),
-              SizedBox(height: 60,
-                child: ElevatedButton.icon(
-                    icon: const Icon(Icons.skip_next, color: Colors.white),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: isPaused ? Colors.grey : Colors.orange,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                    onPressed: isPaused ? null : finishRest,
-                    label: const Text('Skip', style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,color: Colors.white))),)
-            ])
-          );
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Take a break...',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, letterSpacing: 1.2)),
+            const SizedBox(height: 30),
+            _buildTimerCircle(
+              percent: remainingSeconds / (we.restBetweenSets ?? 1),
+              seconds: remainingSeconds,
+            ),
+            const SizedBox(height: 40),
+            _buildActionButton(
+              label: 'SKIP REST',
+              icon: Icons.skip_next,
+              color: Colors.orange.shade700,
+              isFullWidth: true,
+              onPressed: finishRest,
+              iconAlignment: IconAlignment.end,
+            ),
+          ],
+        ),
+      );
     }
 
-    switch(type){
+    switch (type) {
       case 'STRENGTH':
+        if (phase == ExercisePhase.idle) {
+          return Column(children: [
+            buildExerciseInfoCard(children: [
+              _buildHeaderTag(),
+              const SizedBox(height: 12),
+              Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+              const Divider(height: 32),
+              _buildInfoRow('Sets', '${we.sets}'),
+              _buildInfoRow('Reps', '${we.repetitions}'),
+              _buildInfoRow('Rest', '${we.restBetweenSets}s'),
+            ]),
+            const SizedBox(height: 24),
+            _buildViewDetailsButton(ex),
+            const SizedBox(height: 12),
+            _buildActionButton(
+              label: 'START EXERCISE',
+              icon: Icons.play_arrow,
+              color: Colors.green,
+              onPressed: startStrengthSet,
+              isFullWidth: true,
+            ),
+          ]);
+        }
+        if (phase == ExercisePhase.activeSet) {
+          return Column(children: [
+            buildExerciseInfoCard(children: [
+              _buildHeaderTag(),
+              const SizedBox(height: 12),
+              Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const Divider(height: 24),
+              Text('SET $currentSet OF ${we.sets}',
+                  style: const TextStyle(letterSpacing: 1.5, fontWeight: FontWeight.w900, fontSize: 18, color: Colors.green)),
+            ]),
+            const SizedBox(height: 40),
+            Row(children: [
+              Expanded(child: _buildActionButton(
+                  label: 'SKIP', icon: Icons.skip_next, color: Colors.orange.shade700,
+                  iconAlignment: IconAlignment.end,
+                  onPressed: () {
+                    phaseTimer?.cancel();
+                    (currentSet >= (we.sets ?? 1)) ? startRest(we.restBetweenSets ?? 0, postExercise: true) : startRest(we.restBetweenSets ?? 0);
+                  }
+              )),
+              const SizedBox(width: 12),
+              Expanded(child: _buildActionButton(
+                  label: 'DONE', icon: Icons.check, color: Colors.green,
+                  onPressed: completeStrengthSet
+              )),
+            ]),
+          ]);
+        }
+        break;
+
+      case 'TIMED':
+      case 'CARDIO_PLYO':
+        if (phase == ExercisePhase.idle) {
+          return Column(children: [
+            buildExerciseInfoCard(children: [
+              _buildHeaderTag(),
+              const SizedBox(height: 12),
+              Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+              const Divider(height: 32),
+              _buildInfoRow('Sets', '${we.sets}'),
+              _buildInfoRow('Duration', '${we.duration}s'),
+            ]),
+            const SizedBox(height: 24),
+            _buildViewDetailsButton(ex),
+            const SizedBox(height: 12),
+            _buildActionButton(label: 'START', icon: Icons.timer, color: Colors.green, onPressed: startTimedSet, isFullWidth: true),
+          ]);
+        }
+        if (phase == ExercisePhase.activeSet) {
+          return Column(children: [
+            buildExerciseInfoCard(children: [
+              _buildHeaderTag(),
+              const SizedBox(height: 12),
+              Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              Text('Set $currentSet / ${we.sets}', style: TextStyle(color: Colors.grey[600])),
+            ]),
+            const SizedBox(height: 30),
+            _buildTimerCircle(
+              percent: we.duration != null && we.duration! > 0 ? (remainingSeconds / we.duration!) : 0.0,
+              seconds: remainingSeconds,
+            ),
+            const SizedBox(height: 40),
+            _buildActionButton(
+                label: 'SKIP SET', icon: Icons.skip_next, color: Colors.orange.shade700, isFullWidth: true,
+                onPressed: () {
+                  phaseTimer?.cancel();
+                  (currentSet >= (we.sets ?? 1)) ? startRest(we.restBetweenSets ?? 0, postExercise: true) : startRest(we.restBetweenSets ?? 0);
+                }
+            ),
+          ]);
+        }
+        break;
+
+      case 'AEROBIC':
+        if (phase == ExercisePhase.idle) {
+          return Column(children: [
+            buildExerciseInfoCard(children: [
+              _buildHeaderTag(),
+              const SizedBox(height: 12),
+              Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+              const Divider(height: 32),
+              _buildInfoRow('Goal Distance', '${we.distance} km'),
+            ]),
+            const SizedBox(height: 24),
+            _buildViewDetailsButton(ex),
+            const SizedBox(height: 12),
+            _buildActionButton(
+                label: 'START TRACKING',
+                icon: Icons.location_on,
+                color: Colors.green,
+                onPressed: startAerobicTracking,
+                isFullWidth: true
+            ),
+          ]);
+        }
+
+        if (phase == ExercisePhase.activeSet) {
+          return Column(children: [
+            buildExerciseInfoCard(children: [
+              _buildHeaderTag(),
+              const SizedBox(height: 12),
+              Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const Divider(height: 20),
+              _buildInfoRow('Current Goal', '${we.distance} km'),
+            ]),
+            Container(
+              height: 250,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.grey.shade300),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: hasLocationPermission
+                    ? GoogleMap(
+                  key: ValueKey('map_exercise_$currentIndex'),
+                  initialCameraPosition: CameraPosition(
+                    target: currentPosition ?? const LatLng(0, 0),
+                    zoom: 15,
+                  ),
+                  onMapCreated: (controller) => mapController = controller,
+                  polylines: {
+                    Polyline(
+                      polylineId: const PolylineId('route'),
+                      color: Theme.of(context).primaryColor,
+                      width: 6,
+                      points: route,
+                    )
+                  },
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: true,
+                )
+                    : const Center(child: Text("Location permission required for map")),
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildActionButton(
+              label: 'FINISH EXERCISE',
+              icon: Icons.check_circle,
+              color: Colors.green,
+              isFullWidth: true,
+              onPressed: hasLocationPermission ? finishAerobicTracking : showAerobicDistanceDialog,
+            ),
+          ]);
+        }
+        break;
+      case 'STRETCHING':
         if (phase == ExercisePhase.idle) {
           return Column(
             children: [
               buildExerciseInfoCard(children: [
-                Text('Exercise ${currentIndex + 1} / ${workoutExercises.length}',
-                    style: TextStyle(fontSize: 13, letterSpacing: 2, color: Colors.grey)),
-                const SizedBox(height: 8),
-                Text(ex.name, textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                const Divider(height: 30),
-                Text('Sets: ${we.sets}', style: TextStyle(fontSize: 16)),
-                Text('Repetitions: ${we.repetitions}', style: const TextStyle(fontSize: 16)),
-                Text('Rest: ${we.restBetweenSets} sec', style: const TextStyle(fontSize: 16)),
+                _buildHeaderTag(),
+                const SizedBox(height: 12),
+                Text(ex.name,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+                const Divider(height: 32),
+                _buildInfoRow('Target Duration', '${we.duration}s'),
               ]),
-              const SizedBox(height: 20),
-              SizedBox(width: double.infinity, height: 55,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange,
-                      elevation: 6, shadowColor: Colors.green.withOpacity(0.4),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => ExerciseDetailsScreen(exercise: ex, bodyParts: bodyParts, exerciseTypes: exerciseTypes))),
-                  child: const Text('View Exercise', style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600,color: Colors.black)),
-                )),
+              const SizedBox(height: 24),
+              _buildViewDetailsButton(ex),
               const SizedBox(height: 12),
-              SizedBox(width:double.infinity, height: 60,
-              child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: isPaused ? Colors.grey : Colors.green,
-                  elevation: 6, shadowColor: Colors.green.withOpacity(0.4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-              onPressed: isPaused ? null : startStrengthSet,
-              child: const Text('Start Exercise',
-                  style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,letterSpacing: 1,color: Colors.black))))
-            ]);
-        }
-        if(phase == ExercisePhase.activeSet){
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              buildExerciseInfoCard(children: [
-                Text('Exercise ${currentIndex + 1} / ${workoutExercises.length}',
-                    style: const TextStyle(fontSize: 13, letterSpacing: 2,color: Colors.grey)),
-                const SizedBox(height: 6),
-                Text(ex.name, textAlign: TextAlign.center,
-                    style:const TextStyle(fontSize: 22,fontWeight: FontWeight.bold)),
-                const Divider(height: 30),
-                Text('Set: $currentSet / ${we.sets}'),
-                Text('Repetitions: ${we.repetitions}'),
-              ]),
-              const SizedBox(height: 16),
-              Row(children: [
-                Expanded(child: SizedBox(height: 60,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.skip_next, color: Colors.white),
-                    style: ElevatedButton.styleFrom(backgroundColor: isPaused ? Colors.grey : Colors.orange,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                    onPressed: isPaused ? null : (){
-                      phaseTimer?.cancel();
-                      if(currentSet >= (we.sets ?? 1)){
-                        startRest(we.restBetweenSets ?? 0, postExercise: true);
-                      }else{
-                        startRest(we.restBetweenSets ?? 0);
-                      }},
-                  label: const Text('Skip',style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,color: Colors.white))),)),
-                const SizedBox(width: 12),
-                Expanded(child: SizedBox(height: 60, child:
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: isPaused ? Colors.grey : Colors.green,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                  icon: const Icon(Icons.check, color: Colors.white),
-                  label: const Text('Set Completed',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                  onPressed: isPaused ? null : completeStrengthSet,
-                ))),
-              ])
+              _buildActionButton(
+                label: 'START STRETCHING',
+                icon: Icons.accessibility_new,
+                color: Theme.of(context).primaryColor,
+                isFullWidth: true,
+                onPressed: startStretching,
+              ),
             ],
           );
         }
-        return const SizedBox();
-
-      case 'CARDIO_PLYO':
-        if(phase == ExercisePhase.idle) {
+        if (phase == ExercisePhase.activeSet) {
           return Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               buildExerciseInfoCard(children: [
-                Text('Exercise ${currentIndex + 1} / ${workoutExercises.length}',
-                    style: const TextStyle(fontSize: 13, letterSpacing: 2, color: Colors.grey)),
-                Text(ex.name, textAlign: TextAlign.center,
+                _buildHeaderTag(),
+                const SizedBox(height: 12),
+                Text(ex.name,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                const Divider(height: 30),
-                Text('Sets: ${we.sets}'),
-                Text('Duration of set: ${we.duration}s'),
               ]),
-              const SizedBox(height: 20),
-              SizedBox(width: double.infinity, height: 55,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange,
-                      elevation: 6, shadowColor: Colors.green.withOpacity(0.4),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => ExerciseDetailsScreen(exercise: ex, bodyParts: bodyParts, exerciseTypes: exerciseTypes))),
-                  child: const Text('View Exercise', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black)),
-                ),
+              const SizedBox(height: 30),
+              _buildTimerCircle(
+                percent: remainingSeconds / (we.duration ?? 1),
+                seconds: remainingSeconds,
               ),
-              const SizedBox(height: 12),
-              SizedBox(width: double.infinity, height: 60,
-                  child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: isPaused ? Colors.grey : Colors.green,
-                          elevation: 6, shadowColor: Colors.green.withOpacity(0.4),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                      onPressed: isPaused ? null : startTimedSet,
-                      child: const Text('Start Exercise',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1, color: Colors.black))))
+              const SizedBox(height: 40),
+              _buildActionButton(
+                label: 'SKIP STRETCH',
+                icon: Icons.skip_next,
+                color: Colors.orange.shade700,
+                isFullWidth: true,
+                iconAlignment: IconAlignment.end,
+                onPressed: () async {
+                  phaseTimer?.cancel();
+                  we.stretchingCompleted = false;
+                  await FS.update.one(we);
+                  moveToNextExercise();
+                },
+              ),
             ],
           );
         }
-        if(phase == ExercisePhase.activeSet) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              buildExerciseInfoCard(children: [
-                Text('Exercise ${currentIndex + 1} / ${workoutExercises.length}',
-                    style: const TextStyle(fontSize: 13, letterSpacing: 2, color: Colors.grey)),
-                const SizedBox(height: 6),
-                Text(ex.name, textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize:22, fontWeight: FontWeight.bold)),
-                Text('Set: $currentSet / ${we.sets}')
-              ]),
-              const SizedBox(height: 10),
-              SizedBox(width: 300, height: 300,
-                  child: CircularPercentIndicator(
-                      progressColor: isPaused ? Colors.grey : Colors.green,
-                      radius: 100, lineWidth: 18,
-                      percent: we.duration != null && we.duration! > 0
-                          ? (remainingSeconds / we.duration!).clamp(0.0,1.0) : 0.0,
-                      center: Text('$remainingSeconds',
-                          style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold)),
-                      circularStrokeCap: CircularStrokeCap.round,
-                      backgroundColor: Colors.grey.shade300,
-                      animation: false, animateFromLastPercent: true, animationDuration: 500)),
-              SizedBox(height: 60,
-                child: ElevatedButton.icon(
-                    icon: const Icon(Icons.skip_next, color: Colors.white),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: isPaused ? Colors.grey : Colors.orange,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                    onPressed: isPaused ? null : () {
-                      phaseTimer?.cancel();
-                      if(currentSet >= (we.sets ?? 1)){
-                        startRest(we.restBetweenSets ?? 0, postExercise: true);
-                      } else {
-                        setState(() => currentSet++);
-                        startRest(we.restBetweenSets ?? 0);
-                      }
-                    },
-                    label: const Text('Skip', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white))),)
-            ] );
-        }
-        return const SizedBox();
-
-      case 'AEROBIC':
-        if(phase == ExercisePhase.idle) {
-          return Column(
-            children: [
-              buildExerciseInfoCard(children: [
-                Text('Exercise ${currentIndex + 1} / ${workoutExercises.length}',
-                    style: const TextStyle(fontSize: 13, letterSpacing: 2, color: Colors.grey)),
-                const SizedBox(height: 6),
-                Text(ex.name, textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                const Divider(height: 30),
-                Text('Target distance: ${we.distance} km'),
-              ]),
-              const SizedBox(height: 20),
-              SizedBox(width: double.infinity, height: 55,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange,
-                      elevation: 6, shadowColor: Colors.green.withOpacity(0.4),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => ExerciseDetailsScreen(exercise: ex,bodyParts: bodyParts,exerciseTypes: exerciseTypes))),
-                  child: Text('View Exercise', style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600,color: Colors.black)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(width: double.infinity, height: 60,
-                child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: isPaused ? Colors.grey : Colors.green,
-                    elevation: 6, shadowColor: Colors.green.withOpacity(0.4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                onPressed: isPaused ? null : startAerobicTracking,
-                child: const Text('Start Exercise',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1, color: Colors.black))))
-      ],
-          );
-        }
-        if(phase == ExercisePhase.activeSet) {
-          return Column(
-            children: [ buildExerciseInfoCard(children: [
-                Text('Exercise ${currentIndex + 1} / ${workoutExercises.length}',
-                  style: const TextStyle(fontSize: 13,letterSpacing: 2,color: Colors.grey)),
-                const SizedBox(height: 6),
-                Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                const Divider(height: 30),
-                Text('Target distance: ${we.distance} km'),
-              ]),
-              const SizedBox(height: 12),
-              hasLocationPermission ? SizedBox(height: 250, width: double.infinity,
-              child: ClipRect( child: GoogleMap(
-                  key: ValueKey('map_exercise_$currentIndex'),
-                  initialCameraPosition: CameraPosition(
-                      target: currentPosition ?? const LatLng(0, 0), zoom: 15),
-                  onMapCreated: (controller) {
-                    mapController = controller;
-                  },
-                  polylines: {
-                    Polyline(polylineId: const PolylineId('route'),color: Colors.blue,
-                      width: 6,points: route)},
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: true,
-                ),
-              ))
-              : const SizedBox(),
-              const SizedBox(height: 12),
-              SizedBox(height: 60, child:
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: isPaused ? Colors.grey : Colors.green,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                icon: const Icon(Icons.check, color: Colors.white),
-                label: const Text('Finish', style: TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                onPressed: isPaused ? null : (hasLocationPermission ? finishAerobicTracking : showAerobicDistanceDialog),
-              ))
-            ]);
-        }
-        return const SizedBox();
-      case 'STRETCHING':
-        if(phase == ExercisePhase.idle) {
-          return Column(
-            children: [
-              buildExerciseInfoCard(children: [
-                Text('Exercise ${currentIndex + 1} / ${workoutExercises.length}',
-                    style: const TextStyle(fontSize: 13,letterSpacing: 2,color: Colors.grey)),
-                const SizedBox(height: 6),
-                Text(ex.name, textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                const Divider(height: 30),
-                Text('Duration: ${we.duration}s'),
-              ]),
-              const SizedBox(height: 20),
-              SizedBox(width: double.infinity, height: 55,
-                child: ElevatedButton( style: ElevatedButton.styleFrom(backgroundColor: Colors.orange,
-                      elevation: 6, shadowColor: Colors.green.withOpacity(0.4),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => ExerciseDetailsScreen(exercise: ex, bodyParts: bodyParts, exerciseTypes: exerciseTypes))),
-                  child: const Text('View Exercise', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(width: double.infinity, height: 60,
-                  child: ElevatedButton(style: ElevatedButton.styleFrom( backgroundColor: isPaused ? Colors.grey : Colors.green,
-                      elevation: 6, shadowColor: Colors.green.withOpacity(0.4),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                  onPressed: isPaused ? null : startStretching,
-                  child: const Text('Start Stretching',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1, color: Colors.black))))
-        ] );
-        }
-        if(phase == ExercisePhase.activeSet) {
-          return Column(
-            children: [
-              const SizedBox(height: 20),
-              buildExerciseInfoCard(children: [
-                Text('Exercise ${currentIndex + 1} / ${workoutExercises.length}',
-                    style: const TextStyle(fontSize: 13,letterSpacing: 2, color: Colors.grey)),
-                const SizedBox(height: 6),
-                Text(ex.name, textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 22,fontWeight: FontWeight.bold))
-              ]),
-              SizedBox(width: 300, height: 300,
-                child: CircularPercentIndicator(
-                  radius: 100, lineWidth: 18,
-                  percent: remainingSeconds / we.duration!,
-                  center: Text('$remainingSeconds',
-                      style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold)),
-                  circularStrokeCap: CircularStrokeCap.round,
-                  progressColor: isPaused ? Colors.grey : Colors.green,
-                  backgroundColor: Colors.grey.shade300,
-                  animation: false, animateFromLastPercent: true, animationDuration: 500)),
-              Row( mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(height: 60,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: isPaused ? Colors.grey : Colors.orange,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                    icon: const Icon(Icons.skip_next, color: Colors.white),
-                    label: const Text('Skip',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                    onPressed: isPaused ? null : () async {
-                      phaseTimer?.cancel();
-                      we.stretchingCompleted = false;
-                      await FS.update.one(we);
-                      moveToNextExercise();
-                      },
-                    )),
-                  const SizedBox(width: 12),
-                ])]);
-        }
-        return const SizedBox();
-      default: return const SizedBox();
+        break;
     }
+
+    return const SizedBox();
+  }
+
+  /// Header Tag for Exercise Progress
+  Widget _buildHeaderTag() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(color: Theme.of(context).primaryColor, borderRadius: BorderRadius.circular(20)),
+      child: Text('EXERCISE ${currentIndex + 1} / ${workoutExercises.length}',
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+    );
+  }
+
+  /// Info Row for Exercise Details
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        ],
+      ),
+    );
   }
 
   Future<void> showAerobicDistanceDialog() async {

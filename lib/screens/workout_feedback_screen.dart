@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/models/workoutExerciseFeedback.dart';
 import 'package:me_fit/models/workoutExercises.dart';
+import 'package:me_fit/screens/my_workouts.dart';
 
 
 import '../models/exercise.dart';
@@ -127,6 +128,19 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
           title: const Text('Workout Summary'),
           centerTitle: true,
         ),
+        // floatingActionButton: FloatingActionButton.extended(
+        //   backgroundColor: Theme.of(context).primaryColor,
+        //   onPressed: () {
+        //     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyWorkoutsScreen(),),(route) => false,);
+        //   },
+        //   label: Row(
+        //     children: [
+        //       const Icon(Icons.check, color: Colors.white,),
+        //       const SizedBox(width: 8),
+        //       Text('Done', style: TextStyle(color: Colors.white),),
+        //     ],
+        //   ),
+        // ),
         body: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
