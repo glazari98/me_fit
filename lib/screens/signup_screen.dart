@@ -96,6 +96,321 @@ class SignupScreenState extends State<SignupScreen> {
   Future<void> assignStarterWorkouts(String userId) async {
     final allExercises = await FS.list.allOfClass<Exercise>(Exercise);
     if (allExercises.isEmpty) return;
+
+    List<Workout> starterWorkouts = [];
+    if(trainingType == 'Strength') {
+      List<BodyPart> bodyParts = await FS.list.allOfClass<BodyPart>(BodyPart);
+      final Map<String, String> bodyPartNameToId = {
+        for (final bp in bodyParts) bp.name : bp.id
+      };
+      List<List<String>> workoutPlanBodyParts = [];
+      if(preferredWorkoutsPerWeek == 1){
+        workoutPlanBodyParts = [['CHEST','TRICEPS','SHOULDERS','UPPER ARMS','QUADRICEPS','HIPS','THIGHS','CALVES','FULL BODY']];
+      }
+      else if(preferredWorkoutsPerWeek == 2){
+        workoutPlanBodyParts = [
+          ['CHEST', 'CHEST', 'BACK','BACK','BICEPS','BICEPS','TRICEPS', 'SHOULDERS', "FULL BODY"],
+          ['THIGHS', 'THIGHS', 'HAMSTRINGS','QUADRICEPS','QUADRICEPS','HIPS','HIPS','CALVES', "FULL BODY"],
+        ];
+      }else if(preferredWorkoutsPerWeek == 3){
+        workoutPlanBodyParts = [
+          ['CHEST','CHEST','TRICEPS','TRICEPS','SHOULDERS','SHOULDERS','FULL BODY'],
+          ['BACK','BACK','BACK','BACK','BICEPS','BICEPS','FULL BODY'],
+          ['THIGHS','THIGHS','HAMSTRINGS','QUADRICEPS','HIPS','WAIST','CALVES','FULL BODY']
+        ];
+      }else if(preferredWorkoutsPerWeek == 4){
+        workoutPlanBodyParts = [
+          ['CHEST','CHEST','TRICEPS','TRICEPS','SHOULDERS','SHOULDERS','FULL BODY'],
+          ['BACK','BACK','BACK','BACK','BICEPS','BICEPS','FULL BODY'],
+          ['THIGHS','THIGHS','HAMSTRINGS','QUADRICEPS','HIPS','WAIST','CALVES','FULL BODY'],
+          ['CHEST','TRICEPS','SHOULDERS','UPPER ARMS','QUADRICEPS','HIPS','THIGHS','CALVES','FULL BODY']
+        ];
+      }
+      else if(preferredWorkoutsPerWeek == 5){
+        workoutPlanBodyParts = [
+          ['CHEST','CHEST','TRICEPS','TRICEPS','SHOULDERS','SHOULDERS','FULL BODY'],
+          ['BACK','BACK','BACK','BACK','BICEPS','BICEPS','FULL BODY'],
+          ['CHEST','TRICEPS','SHOULDERS','UPPER ARMS','QUADRICEPS','HIPS','THIGHS','CALVES','FULL BODY'],
+          ['THIGHS','THIGHS','HAMSTRINGS','QUADRICEPS','HIPS','WAIST','CALVES','FULL BODY'],
+          ['CHEST','TRICEPS','SHOULDERS','UPPER ARMS','QUADRICEPS','HIPS','THIGHS','CALVES','FULL BODY']
+        ];
+      }
+      for(int i =0; i < workoutPlanBodyParts.length; i++){
+        final workout = Workout(
+            id: Firestorm.randomID(),
+            name: 'Workout ${i + 1}',
+            createdBy: userId,
+            isMyWorkout: false, createdOn: DateTime.now());
+
+        await FS.create.one(workout);
+        for (int j = 0; j < workoutPlanBodyParts[i].length; j++) {
+          final isLastExercise = j == workoutPlanBodyParts[i].length - 1;
+
+          final exercisesForType = allExercises.where((e) {
+            final equipmentMatch = hasAccessToGym! ||
+                e.equipmentId == '20260129-1024-8a43-b037-3d29faa316f7';
+
+            if (isLastExercise){
+              return e.exerciseTypeId ==
+                  '20260129-1023-8223-a819-4e81b08f7f14' && //stretching
+                  equipmentMatch;
+            }
+            final bodyPartId = bodyPartNameToId[workoutPlanBodyParts[i][j]];
+            final bodyPartMatch = e.bodyParts.contains(bodyPartId);
+
+
+            return bodyPartMatch && equipmentMatch &&
+                e.exerciseTypeId ==
+                    '20260129-1023-8922-8643-a9a2984d73d5'; //strength
+          }).toList();
+
+
+
+
+          if(exercisesForType.isEmpty) continue;
+
+          final exercise = (exercisesForType..shuffle()).first;
+
+          final we = WorkoutExercises(
+            id: Firestorm.randomID(),
+            workoutId: workout.id,
+            exerciseId: exercise.id,
+            order: j + 1,
+            sets: isLastExercise ? null : 3,
+            repetitions: isLastExercise ? null : 12,
+            restBetweenSets: isLastExercise ? null : 5,
+            duration: isLastExercise ? 5 : null,
+          );
+          await FS.create.one(we);
+        }
+        starterWorkouts.add(workout);
+      }
+
+      final now = DateTime.now();
+      final monday = now.subtract(Duration(days: now.weekday - 1));
+      List<int> scheduleDays;
+      if(preferredWorkoutsPerWeek == 1){
+        scheduleDays = [0];
+      }
+      else if(preferredWorkoutsPerWeek == 2){
+        scheduleDays = [0,3];
+      }else if(preferredWorkoutsPerWeek == 3){
+        scheduleDays = [0,2,4];
+      }else if (preferredWorkoutsPerWeek == 4){
+        scheduleDays = [0,1,3,5];
+      }else{
+        scheduleDays = [0,2,3,5,6];
+      }
+      for (int i = 0; i < starterWorkouts.length; i++) {
+        final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
+        final scheduledWorkout = ScheduledWorkout(
+            id: Firestorm.randomID(),
+            userId: userId,
+            workoutId: starterWorkouts[i].id,
+            originalWorkoutId: starterWorkouts[i].id,
+            scheduledDate: scheduledDate,
+            isCompleted: false);
+        await FS.create.one(scheduledWorkout);
+      }
+    }
+    if(trainingType == 'Cardio') {
+      List<List<String>> workoutPlanExerciseTypes = [];
+      if(preferredWorkoutsPerWeek == 1){
+        workoutPlanExerciseTypes = [
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+        ];
+      }
+      if(preferredWorkoutsPerWeek == 2){
+        workoutPlanExerciseTypes = [
+          ['CARDIO', 'CARDIO' 'CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
+          ['PLYOMETRICS', 'PLYOMETRICS' 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+        ];
+      }else if(preferredWorkoutsPerWeek == 3){
+        workoutPlanExerciseTypes = [
+          ['CARDIO','CARDIO','CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
+          ['PLYOMETRICS', 'PLYOMETRICS', 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+        ];
+      }else if(preferredWorkoutsPerWeek == 4){
+        workoutPlanExerciseTypes = [
+          ['CARDIO','CARDIO','CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          ['PLYOMETRICS', 'PLYOMETRICS', 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+        ];
+      }else if(preferredWorkoutsPerWeek == 5){
+        workoutPlanExerciseTypes = [
+          ['CARDIO','CARDIO','CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          ['PLYOMETRICS', 'PLYOMETRICS', 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+        ];
+      }
+
+      for(int i =0; i < workoutPlanExerciseTypes.length; i++) {
+        final workout = Workout(
+            id: Firestorm.randomID(),
+            name: 'Workout ${i + 1}',
+            createdBy: userId,
+            isMyWorkout: false, createdOn: DateTime.now());
+
+        await FS.create.one(workout);
+
+        for (int j = 0; j < workoutPlanExerciseTypes[i].length; j++){
+          final type = workoutPlanExerciseTypes[i][j];
+
+          String exerciseTypeId ;
+          if(type == 'CARDIO'){
+            exerciseTypeId = '20260129-1023-8c23-9480-a118b95f118c';
+          } else if (type == 'PLYOMETRICS'){
+            exerciseTypeId = '20260129-1023-8923-b650-e37111665694';
+          } else{
+            exerciseTypeId = '20260129-1023-8223-a819-4e81b08f7f14';
+          }
+
+          final exerciseForType = allExercises.where((e) {
+            final typeMatch = e.exerciseTypeId == exerciseTypeId;
+            final equipmentMatch = hasAccessToGym! || e.equipmentId == '20260129-1024-8a43-b037-3d29faa316f7';
+            return typeMatch && equipmentMatch;
+          }).toList();
+
+          if(exerciseForType.isEmpty) continue;
+
+          final exercise = (exerciseForType..shuffle()).first;
+          WorkoutExercises we;
+
+          if(type == 'CARDIO'){
+            we = WorkoutExercises(
+                id: Firestorm.randomID(),
+                workoutId: workout.id,
+                exerciseId: exercise.id,
+                order: j+1,
+                sets: 1,
+                duration: 5,
+                restBetweenSets: 5);
+          }else if (type == 'PLYOMETRICS'){
+            we = WorkoutExercises(
+                id: Firestorm.randomID(),
+                workoutId: workout.id,
+                exerciseId: exercise.id,
+                order: j + 1,
+                sets: 2,
+                duration: 5,
+                restBetweenSets: 5);
+          }else{
+            we = WorkoutExercises(
+                id: Firestorm.randomID(),
+                workoutId: workout.id,
+                exerciseId: exercise.id,
+                order: j + 1,
+                duration: 5);
+          }
+          await FS.create.one(we);
+        }
+        starterWorkouts.add(workout);
+      }
+      final now = DateTime.now();
+      final monday = now.subtract(Duration(days: now.weekday - 1));
+      List<int> scheduleDays;
+      if(preferredWorkoutsPerWeek == 1){
+        scheduleDays = [0];
+      }
+      else if(preferredWorkoutsPerWeek == 2){
+        scheduleDays = [0,3];
+      }else if(preferredWorkoutsPerWeek == 3){
+        scheduleDays = [0,2,4];
+      }else if(preferredWorkoutsPerWeek == 4){
+        scheduleDays = [0,1,3,5];
+      }else{
+        scheduleDays = [0,2,3,5,6];
+      }
+      for (int i = 0; i < starterWorkouts.length; i++) {
+        final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
+        final scheduledWorkout = ScheduledWorkout(
+            id: Firestorm.randomID(),
+            userId: userId,
+            workoutId: starterWorkouts[i].id,
+            originalWorkoutId: starterWorkouts[i].id,
+            scheduledDate: scheduledDate,
+            isCompleted: false);
+        await FS.create.one(scheduledWorkout);
+      }
+    }
+    if(trainingType == 'Aerobic'){
+      const aerobicExerciseTypeId = '20260129-1023-8024-a295-ced66eef7c9c';
+
+      List<double> distanceSplits;
+      if(preferredWorkoutsPerWeek == 1){
+        distanceSplits = [1.0];
+      }else if(preferredWorkoutsPerWeek == 2){
+        distanceSplits = [0.4,0.6];
+      }else if(preferredWorkoutsPerWeek == 3){
+        distanceSplits = [0.25,0.30,0.45];
+      }else if(preferredWorkoutsPerWeek == 4){
+        distanceSplits = [0.25, 0.30, 0.45];
+      }else{
+        distanceSplits = [0.2,0.15,0.25,0.25,0.15];
+      }
+
+      for (int i =0 ; i< distanceSplits.length; i++){
+        final workout = Workout(
+            id: Firestorm.randomID(),
+            name: 'Workout ${i + 1}',
+            createdBy: userId,
+            isMyWorkout: false, createdOn: DateTime.now());
+
+        await FS.create.one(workout);
+        starterWorkouts.add(workout);
+
+        final workoutDistance = aerobicDistance! * distanceSplits[i];
+
+        final matchingExercises = allExercises.where((e) {
+          final typeMatch = e.exerciseTypeId == aerobicExerciseTypeId;
+          final aerobicTypeMatch = e.name == aerobicType!;
+          return typeMatch && aerobicTypeMatch;
+        }).toList();
+
+        if(matchingExercises.isEmpty) continue;
+        final exercise = (matchingExercises..shuffle()).first;
+
+        final we = WorkoutExercises(
+            id: Firestorm.randomID(),
+            workoutId: workout.id,
+            exerciseId: exercise.id,
+            order: 1,
+            distance: workoutDistance);
+        await FS.create.one(we);
+      }
+
+      final now = DateTime.now();
+      final monday = now.subtract(Duration(days: now.weekday - 1));
+      List<int> scheduleDays;
+      if(preferredWorkoutsPerWeek == 1){
+        scheduleDays = [0];
+      }
+      else if(preferredWorkoutsPerWeek == 2){
+        scheduleDays = [0,3];
+      }else if(preferredWorkoutsPerWeek == 3){
+        scheduleDays = [0,2,4];
+      }else if(preferredWorkoutsPerWeek == 4){
+        scheduleDays = [0,1,3,5];
+      }else{
+        scheduleDays = [0,2,3,5,6];
+      }
+      for (int i = 0; i < starterWorkouts.length; i++) {
+        final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
+        final scheduledWorkout = ScheduledWorkout(
+            id: Firestorm.randomID(),
+            userId: userId,
+            workoutId: starterWorkouts[i].id,
+            originalWorkoutId: starterWorkouts[i].id,
+            scheduledDate: scheduledDate,
+            isCompleted: false);
+        await FS.create.one(scheduledWorkout);
+      }
+
+    }
   }
 
   bool isValidEmail(String email) { //TODO Move to a util class, can be reused elsewhere (e.g., login screen)
