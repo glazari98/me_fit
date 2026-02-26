@@ -7,7 +7,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:firestorm/rdb/rdb.dart';
 import 'package:firestorm/ls/ls.dart';
@@ -21,6 +20,7 @@ import 'package:me_fit/models/workoutExercises.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/models/workout.dart';
 import 'package:me_fit/screens/active_workout_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // - - - - - - - FirestormObject BodyPart - - - - - - -
 
@@ -32,9 +32,9 @@ extension BodyPartModel on BodyPart {
 
 	 Map<String, dynamic> toMap() {
 		 return {
-			 'imageUrl': this.imageUrl,
-			 'name': this.name,
-			 'id': this.id,
+			 'imageUrl': imageUrl,
+			 'name': name,
+			 'id': id,
 		 };
 	 }
 
@@ -59,9 +59,9 @@ extension EquipmentModel on Equipment {
 
 	 Map<String, dynamic> toMap() {
 		 return {
-			 'imageUrl': this.imageUrl,
-			 'name': this.name,
-			 'id': this.id,
+			 'imageUrl': imageUrl,
+			 'name': name,
+			 'id': id,
 		 };
 	 }
 
@@ -86,14 +86,14 @@ extension ExerciseModel on Exercise {
 
 	 Map<String, dynamic> toMap() {
 		 return {
-			 'keywords': this.keywords,
-			 'instruction': this.instruction,
-			 'exerciseTypeId': this.exerciseTypeId,
-			 'equipmentId': this.equipmentId,
-			 'bodyParts': this.bodyParts,
-			 'imageUrl': this.imageUrl,
-			 'name': this.name,
-			 'id': this.id,
+			 'keywords': keywords,
+			 'instruction': instruction,
+			 'exerciseTypeId': exerciseTypeId,
+			 'equipmentId': equipmentId,
+			 'bodyParts': bodyParts,
+			 'imageUrl': imageUrl,
+			 'name': name,
+			 'id': id,
 		 };
 	 }
 
@@ -123,9 +123,9 @@ extension ExerciseTypeModel on ExerciseType {
 
 	 Map<String, dynamic> toMap() {
 		 return {
-			 'imageUrl': this.imageUrl,
-			 'name': this.name,
-			 'id': this.id,
+			 'imageUrl': imageUrl,
+			 'name': name,
+			 'id': id,
 		 };
 	 }
 
@@ -150,21 +150,21 @@ extension UserModel on User {
 
 	 Map<String, dynamic> toMap() {
 		 return {
-			 'unlockedBadges': this.unlockedBadges,
-			 'totalCompletedWorkouts': this.totalCompletedWorkouts,
-			 'bestStreak': this.bestStreak,
-			 'currentStreak': this.currentStreak,
-			 'profileImageUrl': this.profileImageUrl,
-			 'aerobicDistance': this.aerobicDistance,
-			 'aerobicType': this.aerobicType,
-			 'preferredWorkoutsPerWeek': this.preferredWorkoutsPerWeek,
-			 'hasAccessToGym': this.hasAccessToGym,
-			 'trainingType': this.trainingType,
-			 'weight': this.weight,
-			 'age': this.age,
-			 'username': this.username,
-			 'emailAddress': this.emailAddress,
-			 'id': this.id,
+			 'unlockedBadges': unlockedBadges,
+			 'totalCompletedWorkouts': totalCompletedWorkouts,
+			 'bestStreak': bestStreak,
+			 'currentStreak': currentStreak,
+			 'profileImageUrl': profileImageUrl,
+			 'aerobicDistance': aerobicDistance,
+			 'aerobicType': aerobicType,
+			 'preferredWorkoutsPerWeek': preferredWorkoutsPerWeek,
+			 'hasAccessToGym': hasAccessToGym,
+			 'trainingType': trainingType,
+			 'weight': weight,
+			 'age': age,
+			 'username': username,
+			 'emailAddress': emailAddress,
+			 'id': id,
 		 };
 	 }
 
@@ -201,15 +201,15 @@ extension WorkoutExerciseFeedbackModel on WorkoutExerciseFeedback {
 
 	 Map<String, dynamic> toMap() {
 		 return {
-			 'stretchingCompleted': this.stretchingCompleted,
-			 'pace': this.pace,
-			 'timeForDistanceCovered': this.timeForDistanceCovered,
-			 'distanceCovered': this.distanceCovered,
-			 'durationLasted': this.durationLasted,
-			 'repsCompleted': this.repsCompleted,
-			 'setsCompleted': this.setsCompleted,
-			 'workoutExerciseId': this.workoutExerciseId,
-			 'id': this.id,
+			 'stretchingCompleted': stretchingCompleted,
+			 'pace': pace,
+			 'timeForDistanceCovered': timeForDistanceCovered,
+			 'distanceCovered': distanceCovered,
+			 'durationLasted': durationLasted,
+			 'repsCompleted': repsCompleted,
+			 'setsCompleted': setsCompleted,
+			 'workoutExerciseId': workoutExerciseId,
+			 'id': id,
 		 };
 	 }
 
@@ -240,22 +240,22 @@ extension WorkoutExercisesModel on WorkoutExercises {
 
 	 Map<String, dynamic> toMap() {
 		 return {
-			 'stretchingCompleted': this.stretchingCompleted,
-			 'timeForDistanceCovered': this.timeForDistanceCovered,
-			 'routePoints': this.routePoints,
-			 'distanceCovered': this.distanceCovered,
-			 'durationLasted': this.durationLasted,
-			 'repsCompleted': this.repsCompleted,
-			 'setsCompleted': this.setsCompleted,
-			 'distance': this.distance,
-			 'duration': this.duration,
-			 'restBetweenSets': this.restBetweenSets,
-			 'sets': this.sets,
-			 'repetitions': this.repetitions,
-			 'order': this.order,
-			 'exerciseId': this.exerciseId,
-			 'workoutId': this.workoutId,
-			 'id': this.id,
+			 'stretchingCompleted': stretchingCompleted,
+			 'timeForDistanceCovered': timeForDistanceCovered,
+			 'routePoints': routePoints,
+			 'distanceCovered': distanceCovered,
+			 'durationLasted': durationLasted,
+			 'repsCompleted': repsCompleted,
+			 'setsCompleted': setsCompleted,
+			 'distance': distance,
+			 'duration': duration,
+			 'restBetweenSets': restBetweenSets,
+			 'sets': sets,
+			 'repetitions': repetitions,
+			 'order': order,
+			 'exerciseId': exerciseId,
+			 'workoutId': workoutId,
+			 'id': id,
 		 };
 	 }
 
@@ -293,21 +293,21 @@ extension ScheduledWorkoutModel on ScheduledWorkout {
 
 	 Map<String, dynamic> toMap() {
 		 return {
-			 'isInProgress': this.isInProgress,
-			 'currentPhase': this.currentPhase,
-			 'aerobicStartSeconds': this.aerobicStartSeconds,
-			 'remainingSeconds': this.remainingSeconds,
-			 'elapsedSeconds': this.elapsedSeconds,
-			 'currentSet': this.currentSet,
-			 'currentExerciseIndex': this.currentExerciseIndex,
-			 'totalDuration': this.totalDuration,
-			 'completedDate': this.completedDate,
-			 'isCompleted': this.isCompleted,
-			 'scheduledDate': this.scheduledDate,
-			 'originalWorkoutId': this.originalWorkoutId,
-			 'workoutId': this.workoutId,
-			 'userId': this.userId,
-			 'id': this.id,
+			 'isInProgress': isInProgress,
+			 'currentPhase': currentPhase,
+			 'aerobicStartSeconds': aerobicStartSeconds,
+			 'remainingSeconds': remainingSeconds,
+			 'elapsedSeconds': elapsedSeconds,
+			 'currentSet': currentSet,
+			 'currentExerciseIndex': currentExerciseIndex,
+			 'totalDuration': totalDuration,
+			 'completedDate': completedDate,
+			 'isCompleted': isCompleted,
+			 'scheduledDate': scheduledDate,
+			 'originalWorkoutId': originalWorkoutId,
+			 'workoutId': workoutId,
+			 'userId': userId,
+			 'id': id,
 		 };
 	 }
 
@@ -344,11 +344,11 @@ extension WorkoutModel on Workout {
 
 	 Map<String, dynamic> toMap() {
 		 return {
-			 'isMyWorkout': this.isMyWorkout,
-			 'createdOn': this.createdOn,
-			 'createdBy': this.createdBy,
-			 'name': this.name,
-			 'id': this.id,
+			 'isMyWorkout': isMyWorkout,
+			 'createdOn': createdOn,
+			 'createdBy': createdBy,
+			 'name': name,
+			 'id': id,
 		 };
 	 }
 
