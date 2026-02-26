@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firestorm/firestorm.dart';
 import 'package:flutter/material.dart';
 import 'package:firestorm/fs/fs.dart';
@@ -98,49 +99,163 @@ class SignupScreenState extends State<SignupScreen> {
     if (allExercises.isEmpty) return;
 
     List<Workout> starterWorkouts = [];
-    if(trainingType == 'Strength') {
+    if (trainingType == 'Strength') {
       List<BodyPart> bodyParts = await FS.list.allOfClass<BodyPart>(BodyPart);
       final Map<String, String> bodyPartNameToId = {
-        for (final bp in bodyParts) bp.name : bp.id
+        for (final bp in bodyParts) bp.name: bp.id
       };
       List<List<String>> workoutPlanBodyParts = [];
-      if(preferredWorkoutsPerWeek == 1){
-        workoutPlanBodyParts = [['CHEST','TRICEPS','SHOULDERS','UPPER ARMS','QUADRICEPS','HIPS','THIGHS','CALVES','FULL BODY']];
-      }
-      else if(preferredWorkoutsPerWeek == 2){
+      if (preferredWorkoutsPerWeek == 1) {
         workoutPlanBodyParts = [
-          ['CHEST', 'CHEST', 'BACK','BACK','BICEPS','BICEPS','TRICEPS', 'SHOULDERS', "FULL BODY"],
-          ['THIGHS', 'THIGHS', 'HAMSTRINGS','QUADRICEPS','QUADRICEPS','HIPS','HIPS','CALVES', "FULL BODY"],
-        ];
-      }else if(preferredWorkoutsPerWeek == 3){
-        workoutPlanBodyParts = [
-          ['CHEST','CHEST','TRICEPS','TRICEPS','SHOULDERS','SHOULDERS','FULL BODY'],
-          ['BACK','BACK','BACK','BACK','BICEPS','BICEPS','FULL BODY'],
-          ['THIGHS','THIGHS','HAMSTRINGS','QUADRICEPS','HIPS','WAIST','CALVES','FULL BODY']
-        ];
-      }else if(preferredWorkoutsPerWeek == 4){
-        workoutPlanBodyParts = [
-          ['CHEST','CHEST','TRICEPS','TRICEPS','SHOULDERS','SHOULDERS','FULL BODY'],
-          ['BACK','BACK','BACK','BACK','BICEPS','BICEPS','FULL BODY'],
-          ['THIGHS','THIGHS','HAMSTRINGS','QUADRICEPS','HIPS','WAIST','CALVES','FULL BODY'],
-          ['CHEST','TRICEPS','SHOULDERS','UPPER ARMS','QUADRICEPS','HIPS','THIGHS','CALVES','FULL BODY']
+          [
+            'CHEST',
+            'TRICEPS',
+            'SHOULDERS',
+            'UPPER ARMS',
+            'QUADRICEPS',
+            'HIPS',
+            'THIGHS',
+            'CALVES',
+            'FULL BODY'
+          ]
         ];
       }
-      else if(preferredWorkoutsPerWeek == 5){
+      else if (preferredWorkoutsPerWeek == 2) {
         workoutPlanBodyParts = [
-          ['CHEST','CHEST','TRICEPS','TRICEPS','SHOULDERS','SHOULDERS','FULL BODY'],
-          ['BACK','BACK','BACK','BACK','BICEPS','BICEPS','FULL BODY'],
-          ['CHEST','TRICEPS','SHOULDERS','UPPER ARMS','QUADRICEPS','HIPS','THIGHS','CALVES','FULL BODY'],
-          ['THIGHS','THIGHS','HAMSTRINGS','QUADRICEPS','HIPS','WAIST','CALVES','FULL BODY'],
-          ['CHEST','TRICEPS','SHOULDERS','UPPER ARMS','QUADRICEPS','HIPS','THIGHS','CALVES','FULL BODY']
+          [
+            'CHEST',
+            'CHEST',
+            'BACK',
+            'BACK',
+            'BICEPS',
+            'BICEPS',
+            'TRICEPS',
+            'SHOULDERS',
+            "FULL BODY"
+          ],
+          [
+            'THIGHS',
+            'THIGHS',
+            'HAMSTRINGS',
+            'QUADRICEPS',
+            'QUADRICEPS',
+            'HIPS',
+            'HIPS',
+            'CALVES',
+            "FULL BODY"
+          ],
+        ];
+      } else if (preferredWorkoutsPerWeek == 3) {
+        workoutPlanBodyParts = [
+          [
+            'CHEST',
+            'CHEST',
+            'TRICEPS',
+            'TRICEPS',
+            'SHOULDERS',
+            'SHOULDERS',
+            'FULL BODY'
+          ],
+          ['BACK', 'BACK', 'BACK', 'BACK', 'BICEPS', 'BICEPS', 'FULL BODY'],
+          [
+            'THIGHS',
+            'THIGHS',
+            'HAMSTRINGS',
+            'QUADRICEPS',
+            'HIPS',
+            'WAIST',
+            'CALVES',
+            'FULL BODY'
+          ]
+        ];
+      } else if (preferredWorkoutsPerWeek == 4) {
+        workoutPlanBodyParts = [
+          [
+            'CHEST',
+            'CHEST',
+            'TRICEPS',
+            'TRICEPS',
+            'SHOULDERS',
+            'SHOULDERS',
+            'FULL BODY'
+          ],
+          ['BACK', 'BACK', 'BACK', 'BACK', 'BICEPS', 'BICEPS', 'FULL BODY'],
+          [
+            'THIGHS',
+            'THIGHS',
+            'HAMSTRINGS',
+            'QUADRICEPS',
+            'HIPS',
+            'WAIST',
+            'CALVES',
+            'FULL BODY'
+          ],
+          [
+            'CHEST',
+            'TRICEPS',
+            'SHOULDERS',
+            'UPPER ARMS',
+            'QUADRICEPS',
+            'HIPS',
+            'THIGHS',
+            'CALVES',
+            'FULL BODY'
+          ]
         ];
       }
-      for(int i =0; i < workoutPlanBodyParts.length; i++){
+      else if (preferredWorkoutsPerWeek == 5) {
+        workoutPlanBodyParts = [
+          [
+            'CHEST',
+            'CHEST',
+            'TRICEPS',
+            'TRICEPS',
+            'SHOULDERS',
+            'SHOULDERS',
+            'FULL BODY'
+          ],
+          ['BACK', 'BACK', 'BACK', 'BACK', 'BICEPS', 'BICEPS', 'FULL BODY'],
+          [
+            'CHEST',
+            'TRICEPS',
+            'SHOULDERS',
+            'UPPER ARMS',
+            'QUADRICEPS',
+            'HIPS',
+            'THIGHS',
+            'CALVES',
+            'FULL BODY'
+          ],
+          [
+            'THIGHS',
+            'THIGHS',
+            'HAMSTRINGS',
+            'QUADRICEPS',
+            'HIPS',
+            'WAIST',
+            'CALVES',
+            'FULL BODY'
+          ],
+          [
+            'CHEST',
+            'TRICEPS',
+            'SHOULDERS',
+            'UPPER ARMS',
+            'QUADRICEPS',
+            'HIPS',
+            'THIGHS',
+            'CALVES',
+            'FULL BODY'
+          ]
+        ];
+      }
+      for (int i = 0; i < workoutPlanBodyParts.length; i++) {
         final workout = Workout(
             id: Firestorm.randomID(),
             name: 'Workout ${i + 1}',
             createdBy: userId,
-            isMyWorkout: false, createdOn: DateTime.now());
+            isMyWorkout: false,
+            createdOn: Timestamp.now());
 
         await FS.create.one(workout);
         for (int j = 0; j < workoutPlanBodyParts[i].length; j++) {
@@ -150,7 +265,7 @@ class SignupScreenState extends State<SignupScreen> {
             final equipmentMatch = hasAccessToGym! ||
                 e.equipmentId == '20260129-1024-8a43-b037-3d29faa316f7';
 
-            if (isLastExercise){
+            if (isLastExercise) {
               return e.exerciseTypeId ==
                   '20260129-1023-8223-a819-4e81b08f7f14' && //stretching
                   equipmentMatch;
@@ -165,9 +280,7 @@ class SignupScreenState extends State<SignupScreen> {
           }).toList();
 
 
-
-
-          if(exercisesForType.isEmpty) continue;
+          if (exercisesForType.isEmpty) continue;
 
           final exercise = (exercisesForType..shuffle()).first;
 
@@ -189,17 +302,17 @@ class SignupScreenState extends State<SignupScreen> {
       final now = DateTime.now();
       final monday = now.subtract(Duration(days: now.weekday - 1));
       List<int> scheduleDays;
-      if(preferredWorkoutsPerWeek == 1){
+      if (preferredWorkoutsPerWeek == 1) {
         scheduleDays = [0];
       }
-      else if(preferredWorkoutsPerWeek == 2){
-        scheduleDays = [0,3];
-      }else if(preferredWorkoutsPerWeek == 3){
-        scheduleDays = [0,2,4];
-      }else if (preferredWorkoutsPerWeek == 4){
-        scheduleDays = [0,1,3,5];
-      }else{
-        scheduleDays = [0,2,3,5,6];
+      else if (preferredWorkoutsPerWeek == 2) {
+        scheduleDays = [0, 3];
+      } else if (preferredWorkoutsPerWeek == 3) {
+        scheduleDays = [0, 2, 4];
+      } else if (preferredWorkoutsPerWeek == 4) {
+        scheduleDays = [0, 1, 3, 5];
+      } else {
+        scheduleDays = [0, 2, 3, 5, 6];
       }
       for (int i = 0; i < starterWorkouts.length; i++) {
         final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
@@ -208,88 +321,226 @@ class SignupScreenState extends State<SignupScreen> {
             userId: userId,
             workoutId: starterWorkouts[i].id,
             originalWorkoutId: starterWorkouts[i].id,
-            scheduledDate: scheduledDate,
+            scheduledDate: Timestamp.fromDate(scheduledDate),
             isCompleted: false);
         await FS.create.one(scheduledWorkout);
       }
     }
-    if(trainingType == 'Cardio') {
+    if (trainingType == 'Cardio') {
       List<List<String>> workoutPlanExerciseTypes = [];
-      if(preferredWorkoutsPerWeek == 1){
+      if (preferredWorkoutsPerWeek == 1) {
         workoutPlanExerciseTypes = [
-          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          [
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            "STRETCHING"
+          ],
         ];
       }
-      if(preferredWorkoutsPerWeek == 2){
+      if (preferredWorkoutsPerWeek == 2) {
         workoutPlanExerciseTypes = [
-          ['CARDIO', 'CARDIO' 'CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
-          ['PLYOMETRICS', 'PLYOMETRICS' 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          [
+            'CARDIO',
+            'CARDIO' 'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            "STRETCHING"
+          ],
+          [
+            'PLYOMETRICS',
+            'PLYOMETRICS' 'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            "STRETCHING"
+          ],
         ];
-      }else if(preferredWorkoutsPerWeek == 3){
+      } else if (preferredWorkoutsPerWeek == 3) {
         workoutPlanExerciseTypes = [
-          ['CARDIO','CARDIO','CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
-          ['PLYOMETRICS', 'PLYOMETRICS', 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
-          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          [
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            "STRETCHING"
+          ],
+          [
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            "STRETCHING"
+          ],
+          [
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            "STRETCHING"
+          ],
         ];
-      }else if(preferredWorkoutsPerWeek == 4){
+      } else if (preferredWorkoutsPerWeek == 4) {
         workoutPlanExerciseTypes = [
-          ['CARDIO','CARDIO','CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
-          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
-          ['PLYOMETRICS', 'PLYOMETRICS', 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
-          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          [
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            "STRETCHING"
+          ],
+          [
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            "STRETCHING"
+          ],
+          [
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            "STRETCHING"
+          ],
+          [
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            "STRETCHING"
+          ],
         ];
-      }else if(preferredWorkoutsPerWeek == 5){
+      } else if (preferredWorkoutsPerWeek == 5) {
         workoutPlanExerciseTypes = [
-          ['CARDIO','CARDIO','CARDIO','CARDIO','CARDIO','CARDIO', "STRETCHING"],
-          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
-          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
-          ['PLYOMETRICS', 'PLYOMETRICS', 'PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
-          ['CARDIO', 'CARDIO', 'CARDIO','CARDIO','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS','PLYOMETRICS', "STRETCHING"],
+          [
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            "STRETCHING"
+          ],
+          [
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            "STRETCHING"
+          ],
+          [
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            "STRETCHING"
+          ],
+          [
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            "STRETCHING"
+          ],
+          [
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'CARDIO',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
+            "STRETCHING"
+          ],
         ];
       }
 
-      for(int i =0; i < workoutPlanExerciseTypes.length; i++) {
+      for (int i = 0; i < workoutPlanExerciseTypes.length; i++) {
         final workout = Workout(
             id: Firestorm.randomID(),
             name: 'Workout ${i + 1}',
             createdBy: userId,
-            isMyWorkout: false, createdOn: DateTime.now());
+            isMyWorkout: false,
+            createdOn: Timestamp.now());
 
         await FS.create.one(workout);
 
-        for (int j = 0; j < workoutPlanExerciseTypes[i].length; j++){
+        for (int j = 0; j < workoutPlanExerciseTypes[i].length; j++) {
           final type = workoutPlanExerciseTypes[i][j];
 
-          String exerciseTypeId ;
-          if(type == 'CARDIO'){
+          String exerciseTypeId;
+          if (type == 'CARDIO') {
             exerciseTypeId = '20260129-1023-8c23-9480-a118b95f118c';
-          } else if (type == 'PLYOMETRICS'){
+          } else if (type == 'PLYOMETRICS') {
             exerciseTypeId = '20260129-1023-8923-b650-e37111665694';
-          } else{
+          } else {
             exerciseTypeId = '20260129-1023-8223-a819-4e81b08f7f14';
           }
 
           final exerciseForType = allExercises.where((e) {
             final typeMatch = e.exerciseTypeId == exerciseTypeId;
-            final equipmentMatch = hasAccessToGym! || e.equipmentId == '20260129-1024-8a43-b037-3d29faa316f7';
+            final equipmentMatch = hasAccessToGym! ||
+                e.equipmentId == '20260129-1024-8a43-b037-3d29faa316f7';
             return typeMatch && equipmentMatch;
           }).toList();
 
-          if(exerciseForType.isEmpty) continue;
+          if (exerciseForType.isEmpty) continue;
 
           final exercise = (exerciseForType..shuffle()).first;
           WorkoutExercises we;
 
-          if(type == 'CARDIO'){
+          if (type == 'CARDIO') {
             we = WorkoutExercises(
                 id: Firestorm.randomID(),
                 workoutId: workout.id,
                 exerciseId: exercise.id,
-                order: j+1,
+                order: j + 1,
                 sets: 1,
                 duration: 5,
                 restBetweenSets: 5);
-          }else if (type == 'PLYOMETRICS'){
+          } else if (type == 'PLYOMETRICS') {
             we = WorkoutExercises(
                 id: Firestorm.randomID(),
                 workoutId: workout.id,
@@ -298,7 +549,7 @@ class SignupScreenState extends State<SignupScreen> {
                 sets: 2,
                 duration: 5,
                 restBetweenSets: 5);
-          }else{
+          } else {
             we = WorkoutExercises(
                 id: Firestorm.randomID(),
                 workoutId: workout.id,
@@ -313,17 +564,17 @@ class SignupScreenState extends State<SignupScreen> {
       final now = DateTime.now();
       final monday = now.subtract(Duration(days: now.weekday - 1));
       List<int> scheduleDays;
-      if(preferredWorkoutsPerWeek == 1){
+      if (preferredWorkoutsPerWeek == 1) {
         scheduleDays = [0];
       }
-      else if(preferredWorkoutsPerWeek == 2){
-        scheduleDays = [0,3];
-      }else if(preferredWorkoutsPerWeek == 3){
-        scheduleDays = [0,2,4];
-      }else if(preferredWorkoutsPerWeek == 4){
-        scheduleDays = [0,1,3,5];
-      }else{
-        scheduleDays = [0,2,3,5,6];
+      else if (preferredWorkoutsPerWeek == 2) {
+        scheduleDays = [0, 3];
+      } else if (preferredWorkoutsPerWeek == 3) {
+        scheduleDays = [0, 2, 4];
+      } else if (preferredWorkoutsPerWeek == 4) {
+        scheduleDays = [0, 1, 3, 5];
+      } else {
+        scheduleDays = [0, 2, 3, 5, 6];
       }
       for (int i = 0; i < starterWorkouts.length; i++) {
         final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
@@ -332,33 +583,34 @@ class SignupScreenState extends State<SignupScreen> {
             userId: userId,
             workoutId: starterWorkouts[i].id,
             originalWorkoutId: starterWorkouts[i].id,
-            scheduledDate: scheduledDate,
+            scheduledDate: Timestamp.fromDate(scheduledDate),
             isCompleted: false);
         await FS.create.one(scheduledWorkout);
       }
     }
-    if(trainingType == 'Aerobic'){
+    if (trainingType == 'Aerobic') {
       const aerobicExerciseTypeId = '20260129-1023-8024-a295-ced66eef7c9c';
 
       List<double> distanceSplits;
-      if(preferredWorkoutsPerWeek == 1){
+      if (preferredWorkoutsPerWeek == 1) {
         distanceSplits = [1.0];
-      }else if(preferredWorkoutsPerWeek == 2){
-        distanceSplits = [0.4,0.6];
-      }else if(preferredWorkoutsPerWeek == 3){
-        distanceSplits = [0.25,0.30,0.45];
-      }else if(preferredWorkoutsPerWeek == 4){
+      } else if (preferredWorkoutsPerWeek == 2) {
+        distanceSplits = [0.4, 0.6];
+      } else if (preferredWorkoutsPerWeek == 3) {
         distanceSplits = [0.25, 0.30, 0.45];
-      }else{
-        distanceSplits = [0.2,0.15,0.25,0.25,0.15];
+      } else if (preferredWorkoutsPerWeek == 4) {
+        distanceSplits = [0.25, 0.30, 0.45];
+      } else {
+        distanceSplits = [0.2, 0.15, 0.25, 0.25, 0.15];
       }
 
-      for (int i =0 ; i< distanceSplits.length; i++){
+      for (int i = 0; i < distanceSplits.length; i++) {
         final workout = Workout(
             id: Firestorm.randomID(),
             name: 'Workout ${i + 1}',
             createdBy: userId,
-            isMyWorkout: false, createdOn: DateTime.now());
+            isMyWorkout: false,
+            createdOn: Timestamp.now());
 
         await FS.create.one(workout);
         starterWorkouts.add(workout);
@@ -371,7 +623,7 @@ class SignupScreenState extends State<SignupScreen> {
           return typeMatch && aerobicTypeMatch;
         }).toList();
 
-        if(matchingExercises.isEmpty) continue;
+        if (matchingExercises.isEmpty) continue;
         final exercise = (matchingExercises..shuffle()).first;
 
         final we = WorkoutExercises(
@@ -386,17 +638,17 @@ class SignupScreenState extends State<SignupScreen> {
       final now = DateTime.now();
       final monday = now.subtract(Duration(days: now.weekday - 1));
       List<int> scheduleDays;
-      if(preferredWorkoutsPerWeek == 1){
+      if (preferredWorkoutsPerWeek == 1) {
         scheduleDays = [0];
       }
-      else if(preferredWorkoutsPerWeek == 2){
-        scheduleDays = [0,3];
-      }else if(preferredWorkoutsPerWeek == 3){
-        scheduleDays = [0,2,4];
-      }else if(preferredWorkoutsPerWeek == 4){
-        scheduleDays = [0,1,3,5];
-      }else{
-        scheduleDays = [0,2,3,5,6];
+      else if (preferredWorkoutsPerWeek == 2) {
+        scheduleDays = [0, 3];
+      } else if (preferredWorkoutsPerWeek == 3) {
+        scheduleDays = [0, 2, 4];
+      } else if (preferredWorkoutsPerWeek == 4) {
+        scheduleDays = [0, 1, 3, 5];
+      } else {
+        scheduleDays = [0, 2, 3, 5, 6];
       }
       for (int i = 0; i < starterWorkouts.length; i++) {
         final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
@@ -405,15 +657,15 @@ class SignupScreenState extends State<SignupScreen> {
             userId: userId,
             workoutId: starterWorkouts[i].id,
             originalWorkoutId: starterWorkouts[i].id,
-            scheduledDate: scheduledDate,
+            scheduledDate: Timestamp.fromDate(scheduledDate),
             isCompleted: false);
         await FS.create.one(scheduledWorkout);
       }
-
     }
   }
 
-  bool isValidEmail(String email) { //TODO Move to a util class, can be reused elsewhere (e.g., login screen)
+  bool isValidEmail(String email) {
+    //TODO Move to a util class, can be reused elsewhere (e.g., login screen)
     final emailRegex =
     RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(email);
@@ -464,7 +716,7 @@ class SignupScreenState extends State<SignupScreen> {
           showError('Please complete all training preferences');
           return;
         }
-        signup();
+        showThesisAgreementDialog();
         break;
     }
   }
@@ -475,345 +727,381 @@ class SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  InputDecoration fieldDecoration(String label, IconData icon) { //TODO Move to a theming class instead. Can be reused across the app for consistent styling of form fields.
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon),
-      filled: true,
-    );
+  Future<void> showThesisAgreementDialog() async {
+    final agreed = await showDialog(context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Research Notice'),
+            content: Text(
+                'This application is part of a thesis research project.\n\n'
+                    'By continuing, you acknowledge that you are responsible '
+                    'for using this app safely and appropriately.\n\n'
+                    'Do you agree to proceed?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false),
+                  child: Text('Decline')),
+              ElevatedButton(onPressed: () => Navigator.pop(context, true),
+                  child: Text('Agree')),
+            ],
+          );
+        });
+    if (agreed == true) {
+      signup();
+    }
   }
+    InputDecoration fieldDecoration(String label, IconData icon) {
+      //TODO Move to a theming class instead. Can be reused across the app for consistent styling of form fields.
+      return InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        filled: true,
+      );
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Sign Up',
-        ),
-      ),
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Color(0xFF1E3C72), Color(0xFF2A5298)], //TODO - Change this gradient to match the app's color scheme (Green!)
-                  begin: Alignment.topCenter, end:Alignment.topCenter)
-            ),
+    @override
+    Widget build(BuildContext context) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Sign Up',
           ),
-          SafeArea(
-            child: Card(
-              margin: const EdgeInsets.all(10),
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
+        ),
+        body: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                      colors: [Color(0xFF1E3C72), Color(0xFF2A5298)],
+                      //TODO - Change this gradient to match the app's color scheme (Green!)
+                      begin: Alignment.topCenter,
+                      end: Alignment.topCenter)
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 28),
-                child: Form(
-                  key: _formKey,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Stepper(
-                      type: StepperType.vertical,
-                      currentStep: currentStep,
-                      onStepContinue: isLoading ? null : nextStep,
-                      onStepCancel: previousStep,
-                      controlsBuilder: (context, details) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Row(
-                            children: [
-                              if (currentStep > 0) ...[
-                                const SizedBox(width: 12),
+            ),
+            SafeArea(
+              child: Card(
+                margin: const EdgeInsets.all(10),
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24, vertical: 28),
+                  child: Form(
+                    key: _formKey,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Stepper(
+                        type: StepperType.vertical,
+                        currentStep: currentStep,
+                        onStepContinue: isLoading ? null : nextStep,
+                        onStepCancel: previousStep,
+                        controlsBuilder: (context, details) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Row(
+                              children: [
+                                if (currentStep > 0) ...[
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextButton.icon(
+                                      onPressed: details.onStepCancel,
+                                      icon: const Icon(Icons.arrow_back),
+                                      label: const Text('Back'),
+                                    ),
+                                  ),
+                                ],
                                 Expanded(
-                                  child: TextButton.icon(
-                                    onPressed: details.onStepCancel,
-                                    icon: const Icon(Icons.arrow_back),
-                                    label: const Text('Back'),
-                                  ),
-                                ),
-                              ],
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    minimumSize: const Size.fromHeight(52),
-                                  ),
-                                  onPressed: details.onStepContinue,
-                                  icon: Icon(
-                                    currentStep == 2
-                                        ? Icons.check
-                                        : Icons.arrow_forward,
-                                  ),
-                                  label: isLoading
-                                      ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child:
-                                    CircularProgressIndicator(
-                                        strokeWidth: 2),
-                                  )
-                                      : Text(currentStep == 2
-                                      ? 'Finish'
-                                      : 'Next'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      steps: [
-                        Step(
-                          title: const Text('Account'),
-                          subtitle:
-                          const Text('Login credentials'),
-                          content: Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Column(
-                              children: [
-                                TextFormField(
-                                  controller: emailController,
-                                  decoration: fieldDecoration('Email', Icons.email_outlined),
-                                  keyboardType: TextInputType.emailAddress,
-                                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                                  validator: (value) {
-                                    final email = value?.trim() ?? '';
-
-                                    if (email.isEmpty) {
-                                      return 'Email is required';
-                                    }
-                                    if (!isValidEmail(email)) {
-                                      return 'Enter a valid email address';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 22),
-                                TextFormField(
-                                  controller: passwordController,
-                                  decoration: fieldDecoration('Password', Icons.lock_outline).copyWith(
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                      ),
-                                      onPressed: () {
-                                        setState(() => obscurePassword = !obscurePassword);
-                                      },
+                                  child: ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      minimumSize: const Size.fromHeight(52),
                                     ),
-                                    helperText: 'Minimum 6+ characters',
+                                    onPressed: details.onStepContinue,
+                                    icon: Icon(
+                                      currentStep == 2
+                                          ? Icons.check
+                                          : Icons.arrow_forward,
+                                    ),
+                                    label: isLoading
+                                        ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child:
+                                      CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    )
+                                        : Text(currentStep == 2
+                                        ? 'Finish'
+                                        : 'Next'),
                                   ),
-                                  obscureText: obscurePassword,
-                                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                                  validator: (value) {
-                                    final password = value ?? '';
-
-                                    if (password.isEmpty) {
-                                      return 'Password is required';
-                                    }
-                                    if (password.length <= 6) {
-                                      return 'Password must be more than 6 characters';
-                                    }
-                                    return null;
-                                  },
                                 ),
                               ],
                             ),
-                          ),
-                        ),
-                        Step(
-                          title: const Text('Profile'),
-                          subtitle:
-                          const Text('Personal details'),
-                          content: Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Column(
-                              children: [
-                                TextFormField(
-                                  textCapitalization: TextCapitalization.words,
-                                  controller: nameController,
-                                  decoration: fieldDecoration(
-                                      'Name',
-                                      Icons.person_outline),
-                                ),
-                                const SizedBox(height: 22),
-                                TextFormField(
-                                  controller: ageController,
-                                  decoration: fieldDecoration(
-                                      'Age',
-                                      Icons.cake_outlined),
-                                  keyboardType:
-                                  TextInputType.number,
-                                ),
-                                const SizedBox(height: 22),
-                                TextFormField(
-                                  controller: weightController,
-                                  decoration: fieldDecoration(
-                                      'Weight (kg)',
-                                      Icons
-                                          .monitor_weight_outlined),
-                                  keyboardType:
-                                  const TextInputType
-                                      .numberWithOptions(
-                                      decimal: true),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Step(
-                          title:
-                          const Text('Training Setup'),
-                          subtitle:
-                          const Text('Preferences'),
-                          content: Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Column(
-                              children: [
-                                const SizedBox(height: 8),
-                                SegmentedButton<String>(
-                                  segments: const [
-                                    ButtonSegment(
-                                        value: 'Strength',
-                                        label:
-                                        Text('Strength')),
-                                    ButtonSegment(
-                                        value: 'Cardio',
-                                        label:
-                                        Text('Cardio')),
-                                    ButtonSegment(
-                                        value: 'Aerobic',
-                                        label:
-                                        Text('Aerobic')),
-                                  ],
-                                  selected: {
-                                    trainingType ??
-                                        'Strength'
-                                  },
-                                  onSelectionChanged:
-                                      (selection) {
-                                    setState(() =>
-                                    trainingType =
-                                        selection.first);
-                                  },
-                                ),
-                                const SizedBox(height: 18),
-                                if (trainingType !=
-                                    'Aerobic')
-                                  SwitchListTile(
-                                    value: hasAccessToGym,
-                                    title: const Text(
-                                        'Gym Access'),
-                                    onChanged: (v) =>
-                                        setState(() =>
-                                        hasAccessToGym =
-                                            v),
-                                  ),
-                                const SizedBox(height: 18),
-                                DropdownButtonFormField<int>(
-                                  value:
-                                  preferredWorkoutsPerWeek,
-                                  decoration:
-                                  const InputDecoration(
-                                    labelText:
-                                    'Workouts per Week',
-                                    filled: true,
-                                  ),
-                                  items: const [
-                                    DropdownMenuItem(
-                                        value: 1,
-                                        child:
-                                        Text('1 days')),
-                                    DropdownMenuItem(
-                                        value: 2,
-                                        child:
-                                        Text('2 days')),
-                                    DropdownMenuItem(
-                                        value: 3,
-                                        child:
-                                        Text('3 days')),
-                                    DropdownMenuItem(
-                                        value: 4,
-                                        child:
-                                        Text('4 days')),
-                                    DropdownMenuItem(
-                                        value: 5,
-                                        child:
-                                        Text('5 days')),
-                                  ],
-                                  onChanged: (v) =>
-                                      setState(() =>
-                                      preferredWorkoutsPerWeek =
-                                      v!),
-                                ),
-                                if (trainingType ==
-                                    'Aerobic') ...[
-                                  const SizedBox(
-                                      height: 22),
-                                  DropdownButtonFormField<
-                                      String>(
-                                    value: aerobicType,
-                                    decoration:
-                                    const InputDecoration(
-                                      labelText:
-                                      'Aerobic type',
-                                      filled: true,
-                                    ),
-                                    items: const [
-                                      DropdownMenuItem(
-                                          value:
-                                          'Running',
-                                          child:
-                                          Text('Running')),
-                                      DropdownMenuItem(
-                                          value:
-                                          'Cycling',
-                                          child:
-                                          Text('Cycling')),
-                                      DropdownMenuItem(
-                                          value:
-                                          'Swimming',
-                                          child:
-                                          Text('Swimming')),
-                                    ],
-                                    onChanged: (v) =>
-                                        setState(() =>
-                                        aerobicType =
-                                            v),
-                                  ),
-                                  const SizedBox(
-                                      height: 22),
+                          );
+                        },
+                        steps: [
+                          Step(
+                            title: const Text('Account'),
+                            subtitle:
+                            const Text('Login credentials'),
+                            content: Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Column(
+                                children: [
                                   TextFormField(
-                                    controller:
-                                    aerobicDistanceController,
-                                    decoration:
-                                    fieldDecoration(
-                                        'Weekly Distance (km)',
+                                    controller: emailController,
+                                    decoration: fieldDecoration(
+                                        'Email', Icons.email_outlined),
+                                    keyboardType: TextInputType.emailAddress,
+                                    autovalidateMode: AutovalidateMode
+                                        .onUserInteraction,
+                                    validator: (value) {
+                                      final email = value?.trim() ?? '';
+
+                                      if (email.isEmpty) {
+                                        return 'Email is required';
+                                      }
+                                      if (!isValidEmail(email)) {
+                                        return 'Enter a valid email address';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 22),
+                                  TextFormField(
+                                    controller: passwordController,
+                                    decoration: fieldDecoration(
+                                        'Password', Icons.lock_outline)
+                                        .copyWith(
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          obscurePassword
+                                              ? Icons.visibility_off
+                                              : Icons.visibility,
+                                        ),
+                                        onPressed: () {
+                                          setState(() =>
+                                          obscurePassword = !obscurePassword);
+                                        },
+                                      ),
+                                      helperText: 'Minimum 6+ characters',
+                                    ),
+                                    obscureText: obscurePassword,
+                                    autovalidateMode: AutovalidateMode
+                                        .onUserInteraction,
+                                    validator: (value) {
+                                      final password = value ?? '';
+
+                                      if (password.isEmpty) {
+                                        return 'Password is required';
+                                      }
+                                      if (password.length <= 6) {
+                                        return 'Password must be more than 6 characters';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Step(
+                            title: const Text('Profile'),
+                            subtitle:
+                            const Text('Personal details'),
+                            content: Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Column(
+                                children: [
+                                  TextFormField(
+                                    textCapitalization: TextCapitalization
+                                        .words,
+                                    controller: nameController,
+                                    decoration: fieldDecoration(
+                                        'Name',
+                                        Icons.person_outline),
+                                  ),
+                                  const SizedBox(height: 22),
+                                  TextFormField(
+                                    controller: ageController,
+                                    decoration: fieldDecoration(
+                                        'Age',
+                                        Icons.cake_outlined),
+                                    keyboardType:
+                                    TextInputType.number,
+                                  ),
+                                  const SizedBox(height: 22),
+                                  TextFormField(
+                                    controller: weightController,
+                                    decoration: fieldDecoration(
+                                        'Weight (kg)',
                                         Icons
-                                            .directions_run_outlined),
+                                            .monitor_weight_outlined),
                                     keyboardType:
                                     const TextInputType
                                         .numberWithOptions(
                                         decimal: true),
                                   ),
-                                ]
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                          Step(
+                            title:
+                            const Text('Training Setup'),
+                            subtitle:
+                            const Text('Preferences'),
+                            content: Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Column(
+                                children: [
+                                  const SizedBox(height: 8),
+                                  SegmentedButton<String>(
+                                    segments: const [
+                                      ButtonSegment(
+                                          value: 'Strength',
+                                          label:
+                                          Text('Strength')),
+                                      ButtonSegment(
+                                          value: 'Cardio',
+                                          label:
+                                          Text('Cardio')),
+                                      ButtonSegment(
+                                          value: 'Aerobic',
+                                          label:
+                                          Text('Aerobic')),
+                                    ],
+                                    selected: {
+                                      trainingType ??
+                                          'Strength'
+                                    },
+                                    onSelectionChanged:
+                                        (selection) {
+                                      setState(() =>
+                                      trainingType =
+                                          selection.first);
+                                    },
+                                  ),
+                                  const SizedBox(height: 18),
+                                  if (trainingType !=
+                                      'Aerobic')
+                                    SwitchListTile(
+                                      value: hasAccessToGym,
+                                      title: const Text(
+                                          'Gym Access'),
+                                      onChanged: (v) =>
+                                          setState(() =>
+                                          hasAccessToGym =
+                                              v),
+                                    ),
+                                  const SizedBox(height: 18),
+                                  DropdownButtonFormField<int>(
+                                    value:
+                                    preferredWorkoutsPerWeek,
+                                    decoration:
+                                    const InputDecoration(
+                                      labelText:
+                                      'Workouts per Week',
+                                      filled: true,
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(
+                                          value: 1,
+                                          child:
+                                          Text('1 days')),
+                                      DropdownMenuItem(
+                                          value: 2,
+                                          child:
+                                          Text('2 days')),
+                                      DropdownMenuItem(
+                                          value: 3,
+                                          child:
+                                          Text('3 days')),
+                                      DropdownMenuItem(
+                                          value: 4,
+                                          child:
+                                          Text('4 days')),
+                                      DropdownMenuItem(
+                                          value: 5,
+                                          child:
+                                          Text('5 days')),
+                                    ],
+                                    onChanged: (v) =>
+                                        setState(() =>
+                                        preferredWorkoutsPerWeek =
+                                        v!),
+                                  ),
+                                  if (trainingType ==
+                                      'Aerobic') ...[
+                                    const SizedBox(
+                                        height: 22),
+                                    DropdownButtonFormField<
+                                        String>(
+                                      value: aerobicType,
+                                      decoration:
+                                      const InputDecoration(
+                                        labelText:
+                                        'Aerobic type',
+                                        filled: true,
+                                      ),
+                                      items: const [
+                                        DropdownMenuItem(
+                                            value:
+                                            'Running',
+                                            child:
+                                            Text('Running')),
+                                        DropdownMenuItem(
+                                            value:
+                                            'Cycling',
+                                            child:
+                                            Text('Cycling')),
+                                        DropdownMenuItem(
+                                            value:
+                                            'Swimming',
+                                            child:
+                                            Text('Swimming')),
+                                      ],
+                                      onChanged: (v) =>
+                                          setState(() =>
+                                          aerobicType =
+                                              v),
+                                    ),
+                                    const SizedBox(
+                                        height: 22),
+                                    TextFormField(
+                                      controller:
+                                      aerobicDistanceController,
+                                      decoration:
+                                      fieldDecoration(
+                                          'Weekly Distance (km)',
+                                          Icons
+                                              .directions_run_outlined),
+                                      keyboardType:
+                                      const TextInputType
+                                          .numberWithOptions(
+                                          decimal: true),
+                                    ),
+                                  ]
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-          if (isLoading)
-            Container(
-              color: Colors.black26,
-              child: const Center(
-                  child: CircularProgressIndicator()),
-            ),
-        ],
-      ),
-    );
+            if (isLoading)
+              Container(
+                color: Colors.black26,
+                child: const Center(
+                    child: CircularProgressIndicator()),
+              ),
+          ],
+        ),
+      );
+    }
   }
-}

@@ -43,13 +43,13 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
     final end = endOfWeek(now);
 
     final weeklyScheduled = swResult.items.where((sw) {
-      final date = normaliseDate(sw.scheduledDate);
+      final date = normaliseDate(sw.scheduledDate.toDate());
       return !date.isBefore(start) && !date.isAfter(end);
     }).toList();
 
     Map<DateTime, List<ScheduledWorkout>> grouped = {};
     for (final sw in weeklyScheduled) {
-      final date = normaliseDate(sw.scheduledDate);
+      final date = normaliseDate(sw.scheduledDate.toDate());
       grouped.putIfAbsent(date, () => []).add(sw);
       }
     return Map.fromEntries(
@@ -58,7 +58,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
     }
 
   bool isFutureWorkout(ScheduledWorkout sw){
-    return sw.scheduledDate.isAfter(DateTime.now());
+    return sw.scheduledDate.toDate().isAfter(DateTime.now());
   }
   Color workoutCardColor(ScheduledWorkout sw){
     if(sw.isCompleted) return Colors.green.shade200;

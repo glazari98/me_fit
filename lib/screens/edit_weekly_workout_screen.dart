@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
 import 'package:firestorm/firestorm.dart';
 import 'package:firestorm/fs/fs.dart';
@@ -28,7 +29,7 @@ class EditWeeklyWorkoutScreenState extends State<EditWeeklyWorkoutScreen>{
   @override
   void initState(){
     super.initState();
-    selectedDate = widget.scheduledWorkout.scheduledDate;
+    selectedDate = widget.scheduledWorkout.scheduledDate.toDate();
     originalWorkoutId = widget.scheduledWorkout.workoutId;
     loadMyWorkouts();
   }
@@ -55,18 +56,18 @@ class EditWeeklyWorkoutScreenState extends State<EditWeeklyWorkoutScreen>{
   }
 
   Future<void> updateScheduledWorkout({ DateTime? newDate, Workout? newWorkout})async{
-    final updatedDate = newDate != null ? normaliseDate(newDate) : widget.scheduledWorkout.scheduledDate;
+    final updatedDate = newDate != null ? normaliseDate(newDate) : widget.scheduledWorkout.scheduledDate.toDate();
 
     if(newDate != null){
-      final originalDate = normaliseDate(widget.scheduledWorkout.scheduledDate);
+      final originalDate = widget.scheduledWorkout.scheduledDate.toDate();
 
       if(updatedDate != originalDate) {
         final existing = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
-                                      .whereEqualTo('usedId', widget.scheduledWorkout.userId)
+                                      .whereEqualTo('userId', widget.scheduledWorkout.userId)
                                       .fetch();
 
         final conflict = existing.items.any((sw) {
-          return sw.id != widget.scheduledWorkout.userId && normaliseDate(sw.scheduledDate) == updatedDate;
+          return sw.id != widget.scheduledWorkout.userId && normaliseDate(sw.scheduledDate.toDate()) == updatedDate;
 
         });
         if(conflict) {
@@ -75,7 +76,7 @@ class EditWeeklyWorkoutScreenState extends State<EditWeeklyWorkoutScreen>{
         return;
         }
       }
-      widget.scheduledWorkout.scheduledDate = updatedDate;
+      widget.scheduledWorkout.scheduledDate = Timestamp.fromDate(updatedDate);
     }
     if(newWorkout != null) {
       final clonedWorkout = Workout(
@@ -83,7 +84,7 @@ class EditWeeklyWorkoutScreenState extends State<EditWeeklyWorkoutScreen>{
         name: newWorkout.name,
         createdBy: newWorkout.createdBy,
         isMyWorkout: false,
-        createdOn: DateTime.now(),
+        createdOn: Timestamp.now(),
       );
       await FS.create.one(clonedWorkout);
       final weResult = await FS.list

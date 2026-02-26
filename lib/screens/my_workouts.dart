@@ -31,8 +31,8 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
   }
   void sortList() {
     allWorkouts.sort((a,b) {
-      final aDate = a.createdOn ?? DateTime(0);
-      final bDate = b.createdOn ?? DateTime(0);
+      final aDate = a.createdOn?.toDate() ?? DateTime(0);
+      final bDate = b.createdOn?.toDate() ?? DateTime(0);
 
 
       return isLatestFirst ? bDate.compareTo(aDate) : aDate.compareTo(bDate);
@@ -157,7 +157,7 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
                   );
                 },
                 title:Text(workout.name,style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: workout.createdOn != null ? Text('Created on: ${formatDate(workout.createdOn!)}')
+                subtitle: workout.createdOn != null ? Text('Created on: ${formatDate(workout.createdOn!.toDate())}')
                   : null,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,

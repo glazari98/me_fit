@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firestorm/annotations/firestorm_object.dart';
 
 
@@ -7,9 +8,9 @@ class ScheduledWorkout {
   String userId;
   String workoutId;
   String? originalWorkoutId;
-  DateTime scheduledDate;
+  Timestamp scheduledDate;
   bool isCompleted;
-  DateTime? completedDate;
+  Timestamp? completedDate;
   int? totalDuration;
   int? currentExerciseIndex;
   int? currentSet;

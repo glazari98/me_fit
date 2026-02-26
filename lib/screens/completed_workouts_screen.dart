@@ -48,8 +48,8 @@ class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
 
    void sortList() {
      allCompleted.sort((a,b){
-       final aDate = a.completedDate ?? DateTime(0);
-       final bDate = b.completedDate ?? DateTime(0);
+       final aDate = a.completedDate?.toDate() ?? DateTime(0);
+       final bDate = b.completedDate?.toDate() ?? DateTime(0);
        return isLatestFirst ? bDate.compareTo(aDate) : aDate.compareTo(bDate);
      });
    }
@@ -151,7 +151,7 @@ class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
 
             return ListTile(
             title: Text(workout?.name ?? 'Unknown Workout'),
-            subtitle: Text(sw.completedDate != null ? 'Completed on: ${formatDate(sw.completedDate!)}' : '',
+            subtitle: Text(sw.completedDate != null ? 'Completed on: ${formatDate(sw.completedDate!.toDate())}' : '',
             ),
             leading: const Icon(Icons.check_circle,color: Colors.green),
             onTap: () => navigateToFeedbackScreen(sw),

@@ -56,9 +56,9 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
 
       return result.items.where((sw){
         final date = DateTime(
-          sw.scheduledDate.year,
-          sw.scheduledDate.month,
-          sw.scheduledDate.day
+          sw.scheduledDate.toDate().year,
+          sw.scheduledDate.toDate().month,
+          sw.scheduledDate.toDate().day
         );
         return !date.isBefore(start) && !date.isAfter(end);
       }).toList();
@@ -117,7 +117,7 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
                         leading: const Icon (Icons.fitness_center),
                         title: Text(workout.name,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(weekdayLabel(sw.scheduledDate)),
+                        subtitle: Text(weekdayLabel(sw.scheduledDate.toDate())),
                         trailing: SizedBox(
                         child: sw.isCompleted ? SizedBox()
                           : sw.isInProgress == true ? const Text('In progress',style: TextStyle(fontSize: 15,color: Colors.black,fontWeight: FontWeight.bold))

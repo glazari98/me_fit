@@ -26,7 +26,7 @@ class AchievementService{
     final lastMonday = currentMonday.subtract(Duration(days: 7));
     final lastSunday = currentMonday.subtract(Duration(seconds: 1));
 
-    final lastWeekWorkouts = workouts.where((w) =>!w.scheduledDate.isBefore(lastMonday) && !w.scheduledDate.isAfter(lastSunday)).toList();
+    final lastWeekWorkouts = workouts.where((w) =>!w.scheduledDate.toDate().isBefore(lastMonday) && !w.scheduledDate.toDate().isAfter(lastSunday)).toList();
 
     final lastWeekAllCompleted =lastWeekWorkouts.isNotEmpty && lastWeekWorkouts.every((w) => w.isCompleted);
 
@@ -36,7 +36,7 @@ class AchievementService{
 
     final currentSunday = currentMonday.add(Duration(days:6,hours:23,minutes:59,seconds:59));
 
-    final currentWeekWorkouts = workouts.where((w) => !w.scheduledDate.isBefore(currentMonday) && !w.scheduledDate.isAfter(currentSunday)
+    final currentWeekWorkouts = workouts.where((w) => !w.scheduledDate.toDate().isBefore(currentMonday) && !w.scheduledDate.toDate().isAfter(currentSunday)
     ).toList();
 
     final completedThisWeek = currentWeekWorkouts.where((w) => w.isCompleted).length;
@@ -57,7 +57,7 @@ class AchievementService{
     int streak =0;
     for(int i = workouts.length - 1;i>=0;i--){
       final workout = workouts[i];
-      if(workout.scheduledDate.isAfter(DateTime.now())){
+      if(workout.scheduledDate.toDate().isAfter(DateTime.now())){
         continue;
       }
 

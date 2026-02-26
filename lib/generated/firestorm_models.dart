@@ -7,6 +7,7 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:firestorm/rdb/rdb.dart';
 import 'package:firestorm/ls/ls.dart';
@@ -316,9 +317,9 @@ extension ScheduledWorkoutModel on ScheduledWorkout {
 			userId: map['userId'] as String,
 			workoutId: map['workoutId'] as String,
 			originalWorkoutId: map['originalWorkoutId'] as String?,
-			scheduledDate: map['scheduledDate'] as DateTime,
+			scheduledDate: map['scheduledDate'] as Timestamp,
 			isCompleted: map['isCompleted'] as bool,
-			completedDate: map['completedDate'] as DateTime?,
+			completedDate: map['completedDate'] as Timestamp?,
 			totalDuration: map['totalDuration'] as int?,
 			currentExerciseIndex: map['currentExerciseIndex'] as int?,
 			currentSet: map['currentSet'] as int?,
@@ -357,7 +358,7 @@ extension WorkoutModel on Workout {
 			name: map['name'] as String,
 			createdBy: map['createdBy'] as String,
 			isMyWorkout: map['isMyWorkout'] as bool,
-			createdOn: map['createdOn'] as DateTime?,
+			createdOn: map['createdOn'] as Timestamp?,
 		 );
 		 return object;
 	}

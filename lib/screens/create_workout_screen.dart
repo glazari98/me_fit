@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firestorm/firestorm.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
@@ -54,7 +55,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen>{
         id: workoutId,
         name: nameController.text.trim(),
         createdBy: authService.getCurrentUser()!.uid,
-        isMyWorkout: true, createdOn: DateTime.now()
+        isMyWorkout: true, createdOn: Timestamp.now()
       )
     );
 

@@ -17,7 +17,7 @@ import 'completed_workouts_screen.dart';
 //TODO - Utility functions, should be moved to other classes/files.
 DateTime normaliseDate(DateTime date) => DateTime(date.year,date.month,date.day);
 bool isFutureWorkout(ScheduledWorkout sw){
-  return normaliseDate(sw.scheduledDate).isAfter(normaliseDate(DateTime.now()));
+  return normaliseDate(sw.scheduledDate.toDate()).isAfter(normaliseDate(DateTime.now()));
 }
 
 //TODO - Dangling function, should be moved to a more appropriate place.
@@ -28,7 +28,7 @@ LinkedHashMap<DateTime, List<WorkoutEvent>> buildWorkoutEventMap(List<ScheduledW
   );
 
   for (final sw in workouts){
-    final day = normaliseDate(sw.scheduledDate);
+    final day = normaliseDate(sw.scheduledDate.toDate());
     map.putIfAbsent(day, () => []).add(
       WorkoutEvent('Workout: ${sw.workoutId}', sw),
     );
