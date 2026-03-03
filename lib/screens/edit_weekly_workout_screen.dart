@@ -5,7 +5,7 @@ import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/screens/home_screen.dart';
-import 'package:me_fit/screens/weekly_workouts_screen.dart';
+import 'package:me_fit/screens/weekly_workouts_screen.dart' hide normaliseDate;
 
 import '../models/workout.dart';
 import '../models/workoutExercises.dart';
@@ -25,6 +25,7 @@ class EditWeeklyWorkoutScreenState extends State<EditWeeklyWorkoutScreen>{
   List<Workout> myWorkouts = [];
 
   String? originalWorkoutId = '';
+  bool hasBeenReplaced = false;
 
   @override
   void initState(){
@@ -46,7 +47,9 @@ class EditWeeklyWorkoutScreenState extends State<EditWeeklyWorkoutScreen>{
     final currentWorkout = result.items.firstWhereOrNull(
         (w) => w.id == widget.scheduledWorkout.workoutId
         );
-
+    final hasOriginal= widget.scheduledWorkout.originalWorkoutId != null && widget.scheduledWorkout.originalWorkoutId!.isNotEmpty;
+    final isDifferent = widget.scheduledWorkout.workoutId != widget.scheduledWorkout.originalWorkoutId;
+    hasBeenReplaced = hasOriginal && isDifferent;
     setState(() {
       myWorkouts = result.items;
       selectedWorkout = currentWorkout;
@@ -117,6 +120,7 @@ class EditWeeklyWorkoutScreenState extends State<EditWeeklyWorkoutScreen>{
         await FS.create.one(clonedExercise);
       }
       widget.scheduledWorkout.workoutId = clonedWorkout.id;
+      hasBeenReplaced = true;
     }
     await FS.update.one(widget.scheduledWorkout);
   }
@@ -144,7 +148,6 @@ class EditWeeklyWorkoutScreenState extends State<EditWeeklyWorkoutScreen>{
                     firstDate: today,
                     lastDate: endOfWeek(today),
                   );
-
                   if(picked != null){
                     setState(() {
                       selectedDate = picked;
@@ -152,8 +155,7 @@ class EditWeeklyWorkoutScreenState extends State<EditWeeklyWorkoutScreen>{
                     await updateScheduledWorkout(newDate: picked);
                     if(mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout updated'),duration: Duration(seconds: 2),));
-                    }
-                  }
+                    }}
                 },
                 ),
               ),
@@ -163,51 +165,70 @@ class EditWeeklyWorkoutScreenState extends State<EditWeeklyWorkoutScreen>{
                 elevation: 4,
                 child: Padding(
                 padding: const EdgeInsets.all(12),
-                child:
-                Row(children: [ Expanded(
-                      child: DropdownButtonFormField<Workout>(
-                        value: selectedWorkout,hint: const Text('Select a workout (optional)'),
-                        items: myWorkouts.map((w) {
-                          return DropdownMenuItem(
-                            value: w, child: Text(w.name),
-                          );
-                        }).toList(),
-                        onChanged: (value) async {
-                          setState(() => selectedWorkout = value);
-                          if (value != null) {
-                            await updateScheduledWorkout(newWorkout: value);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Workout replaced with "${value.name}"'),duration: const Duration(seconds: 2),
-                                ),
-                              );}}},
-                        decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        ),),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [ Row( children: [
+                        Expanded(child: DropdownButtonFormField<Workout>(
+                            value: selectedWorkout, hint: const Text('Replace current workout (optional)'),
+                            items: myWorkouts.map((w) {
+                              return DropdownMenuItem(
+                                value: w,child: Text(w.name)
+                              );
+                            }).toList(),
+                            onChanged: (value) async {
+                              setState(() => selectedWorkout = value);
+                              if (value != null) {
+                                await updateScheduledWorkout(newWorkout: value);
+                                setState((){});
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Workout replaced with "${value.name}"'),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }}},
+                            decoration: InputDecoration( border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12)
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 12
+                              ))
+                          ))
+                      ],
                     ),
-                    if (selectedWorkout != null)
-                      Padding(padding: const EdgeInsets.only(left:8.0),
-                      child:
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent
-                        ,shape: const CircleBorder(),padding: EdgeInsets.all(12)),
-                        onPressed: () async {
-                          setState(() {
-                            selectedWorkout = null;
-                            widget.scheduledWorkout.workoutId = widget
-                                .scheduledWorkout.originalWorkoutId ?? '';
-                          });
-                          await FS.update.one(widget.scheduledWorkout);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restored original workout'),duration: Duration(seconds: 2),),
-                            );
-                          }},
-                        child: const Icon(Icons.clear,color: Colors.white),
-                        ),
-                        ),],
-                ),
-                  ),
-                ),
+                    if (hasBeenReplaced)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16.0),
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            )),
+                          icon: const Icon(Icons.restore),
+                          label: const Text('Restore Original System Workout'),
+                          onPressed: () async {
+                            if (widget.scheduledWorkout.originalWorkoutId != null &&
+                                widget.scheduledWorkout.originalWorkoutId!.isNotEmpty) {
+                              setState(() {
+                                widget.scheduledWorkout.workoutId = widget.scheduledWorkout.originalWorkoutId!;
+                                hasBeenReplaced = false;
+                              });
+                              await FS.update.one(widget.scheduledWorkout);
+                              await loadMyWorkouts();
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Restored original system workout'),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                              }}},
+                        )),
+                        ],
+                       )),),
             ],
           ),
         ),

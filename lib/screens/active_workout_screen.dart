@@ -536,25 +536,28 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   Future<void> saveWorkoutProgress() async {
-    final scheduled = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
-        .whereEqualTo('workoutId', widget.workout.id)
-        .fetch();
-    if(scheduled.items.isEmpty) return;
-    final sw = scheduled.items.first;
+    final sw = widget.scheduledWorkout;
 
     sw.currentExerciseIndex = currentIndex;
     sw.currentSet = currentSet;
     sw.elapsedSeconds = elapsedSeconds;
     sw.remainingSeconds = remainingSeconds;
     sw.currentPhase = phase.name;
-    sw.isInProgress = true;
+    if(elapsedSeconds == 0){
+      sw.isInProgress = false;
+    }else {
+      sw.isInProgress = true;
+    }
 
-    if(phase == ExercisePhase.activeSet && getExerciseType(we) == 'AEROBIC'){
+    if (phase == ExercisePhase.activeSet &&
+        getExerciseType(we) == 'AEROBIC') {
       sw.aerobicStartSeconds = aerobicStartSeconds;
       we.routePoints = route.map((e) => '${e.latitude},${e.longitude}').toList();
       await FS.update.one(we);
     }
+
     await FS.update.one(sw);
+
   }
 
   //TODO - Move this to a separate widget file --> WorkoutActionButton?
@@ -635,7 +638,63 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           builder: (_) => ExerciseDetailsScreen(exercise: ex, bodyParts: bodyParts, exerciseTypes: exerciseTypes))),
     );
   }
+  Future<void> showCancelDialog() async{
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(children: [
+          Icon(Icons.warning,color: Colors.red),
+          SizedBox(width: 8),Text('Cancel Workout')
+        ],
+        ),
+        content: Text('Are you sure you want to cancel this workout?/nAll progress will be lost.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context,false),
+            child: Text('No, continue'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red,foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(context,true),
+              child: Text('Yes, cancel'))
+        ],
+      )
+    );
+    if(confirm == true){
+      await cancelWorkout();
+    }
+  }
+  Future<void> cancelWorkout() async {
+    workoutTimer?.cancel();
+    phaseTimer?.cancel();
+    positionStream?.cancel();
 
+    final sw = widget.scheduledWorkout;
+    sw.isInProgress = false;
+    sw.currentExerciseIndex = null;
+    sw.currentSet = null;
+    sw.elapsedSeconds = null;
+    sw.remainingSeconds = null;
+    sw.currentPhase = null;
+    sw.aerobicStartSeconds = null;
+    await FS.update.one(sw);
+
+    for(var we in workoutExercises){
+      we.setsCompleted = 0;
+      we.repsCompleted = 0;
+      we.durationLasted = 0;
+      we.distanceCovered = 0;
+      we.timeForDistanceCovered = 0;
+      we.stretchingCompleted = false;
+      we.routePoints = null;
+      await FS.update.one(we);
+    }
+    if(!mounted) return;
+    Navigator.pop(context,true);
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout cancelled.'),duration: Duration(seconds: 2)));
+
+
+  }
   @override
   Widget build(BuildContext context){
     if(workoutExercises.isEmpty || exerciseMap.isEmpty){
@@ -651,6 +710,12 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         appBar: AppBar(
           title: Text(widget.workout.name),
           actions: [
+            if(workoutTimerStarted)
+              IconButton(
+                onPressed: showCancelDialog,
+                icon: const Icon(Icons.cancel_outlined),
+                tooltip: 'Cancel Workout',
+              ),
             if(workoutTimerStarted)
               IconButton(onPressed: () async {
                 if(isPaused) {
@@ -674,7 +739,9 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                       style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold)),
                 ]),
               const SizedBox(height: 20),
-              buildExerciseControls(),
+              Expanded(
+                child: buildExerciseControls(),
+              ),
             ]),
         )),
     );
@@ -764,6 +831,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   onPressed: completeStrengthSet
               )),
             ]),
+            const Spacer(),
+            _buildViewDetailsButton(ex),
           ]);
         }
         break;
@@ -807,6 +876,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   (currentSet >= (we.sets ?? 1)) ? startRest(we.restBetweenSets ?? 0, postExercise: true) : startRest(we.restBetweenSets ?? 0);
                 }
             ),
+            const Spacer(),
+            _buildViewDetailsButton(ex),
           ]);
         }
         break;
@@ -942,6 +1013,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   moveToNextExercise();
                 },
               ),
+              const Spacer(),
+              _buildViewDetailsButton(ex),
             ],
           );
         }

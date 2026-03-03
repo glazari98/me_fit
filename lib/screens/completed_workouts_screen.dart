@@ -6,6 +6,7 @@ import 'package:me_fit/models/workoutExercises.dart';
 import 'package:me_fit/screens/workout_feedback_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 
+import '../components/drawer_menu.dart';
 import '../models/workout.dart';
 
 class CompletedWorkoutsScreen extends StatefulWidget {
@@ -111,56 +112,78 @@ class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
               isLatestFirst ? 'Sorted by latest completed workouts' : 'Sorted by earliest completed workouts'
             ),duration: const Duration(seconds: 2)));
-          })
-        ],
+          })],
       ),
+      drawer: AppDrawer(currentRoute: '/completed-workouts'),
       body: Column(
-        children: [
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: TextField(
-            decoration: const InputDecoration(
-              hintText: 'Search workout name',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
-            ),
-            onChanged: (value){
-              setState(() {
-                searchQuery = value;
-                visibleCount = 10;
-              });
-            },
-          ),
-        ),
-        Expanded(child: ListView.builder(
-          itemCount: filteredList.length + (hasMore ? 1 : 0),
-            itemBuilder: (context, index){
-            if(index >= filteredList.length){
-              return Padding(
-              padding: const EdgeInsets.all(12),
-                  child: ElevatedButton(
-                    onPressed: (){
-                      setState(() {
-                        visibleCount += 10;
-                      });
-                  },
-                  child: const Text('Load More')));
+        children: [Padding( padding: const EdgeInsets.all(12),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Search workout name', prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder()),
+              onChanged: (value){setState(() {
+                  searchQuery = value;
+                  visibleCount = 10;
+                });
+              }),
+          ),Expanded(
+            child: filteredList.isEmpty
+                ? Center( child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [Icon(Icons.fitness_center_outlined, size: 64, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text('No completed workouts found',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                  )],
+              ))
+                : ListView.builder(
+              itemCount: filteredList.length + (hasMore ? 1 : 0),
+              itemBuilder: (context, index) {
+                if(index >= filteredList.length){
+                  return Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          visibleCount += 10;
+                        });},
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        )),
+                      child: const Text('Load More'),
+                    ));
                 }
-            final sw = filteredList[index];
-            final workout = workoutMap[sw.workoutId];
-
-            return ListTile(
-            title: Text(workout?.name ?? 'Unknown Workout'),
-            subtitle: Text(sw.completedDate != null ? 'Completed on: ${formatDate(sw.completedDate!.toDate())}' : '',
-            ),
-            leading: const Icon(Icons.check_circle,color: Colors.green),
-            onTap: () => navigateToFeedbackScreen(sw),
-            );
-           })
-        ),
-        ],
-      ),
+                final sw = filteredList[index];
+                final workout = workoutMap[sw.workoutId];
+                return Card(
+                  margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  elevation: 0,shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: Colors.grey.withOpacity(0.1)),
+                  ),color: Colors.green[50],
+                  child: ListTile(onTap: () => navigateToFeedbackScreen(sw),
+                    leading: Container(padding: EdgeInsets.all(10),
+                      decoration: BoxDecoration(color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),child: Icon(
+                        Icons.check_circle,color: Colors.green,
+                      )),
+                    title: Text(workout?.name ?? 'Unknown Workout',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    subtitle: sw.completedDate != null
+                        ? Text('Completed on: ${sw.completedDate?.toDate().day}/${sw.completedDate?.toDate().month}'
+                        ' at ${sw.completedDate?.toDate().hour.toString().padLeft(2, '0')}:${sw.completedDate?.toDate().minute.toString().padLeft(2, '0')}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    ): null,
+                    trailing:  Icon(
+                      Icons.chevron_right,
+                      color: Colors.grey,
+                    )),);
+              }),
+          )]),
     );
-  }
-
+   }
 }

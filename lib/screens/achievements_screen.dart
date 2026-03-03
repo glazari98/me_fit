@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/services/acheivement_service.dart';
 
+import '../components/drawer_menu.dart';
 import '../models/user.dart';
 
 class AchievementsScreen extends StatefulWidget {
@@ -34,6 +35,7 @@ class AchievementsScreenState extends State<AchievementsScreen>{
     return Scaffold(appBar: AppBar(
       title: Text('Achievements'),centerTitle: true,
     ),
+      drawer: AppDrawer(currentRoute: '/achievements'),
       body: Padding(padding: EdgeInsets.all(16.0),
       child: Column(children: [
         buildStatCard('Current Streak','${user.currentStreak}'),

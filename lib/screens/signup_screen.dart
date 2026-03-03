@@ -93,7 +93,63 @@ class SignupScreenState extends State<SignupScreen> {
       setState(() => isLoading = false);
     }
   }
+  Future<void> scheduleWorkoutsForCurrentWeek({required String userId, required List<Workout> starterWorkouts,required int preferredWorkoutsPerWeek}) async {
+    final now = DateTime.now();
+    final currentDayOfWeek = now.weekday;
+    final remainingDays = 7 - currentDayOfWeek + 1;
 
+    int maxWorkoutsThisWeek;
+    //adjust how many workouts can fit in the week according to how many days are remaining in the week
+    if (remainingDays >= 6) {
+      maxWorkoutsThisWeek = preferredWorkoutsPerWeek;
+    } else if (remainingDays == 5) {
+      maxWorkoutsThisWeek = preferredWorkoutsPerWeek > 4 ? 4 : preferredWorkoutsPerWeek;
+    } else if (remainingDays == 4) {
+      maxWorkoutsThisWeek = preferredWorkoutsPerWeek > 3 ? 3 : preferredWorkoutsPerWeek;
+    } else if (remainingDays == 3) {
+      maxWorkoutsThisWeek = preferredWorkoutsPerWeek > 2 ? 2 : preferredWorkoutsPerWeek;
+    } else if (remainingDays == 2) {
+      maxWorkoutsThisWeek = preferredWorkoutsPerWeek > 1 ? 1 : preferredWorkoutsPerWeek;
+    } else {
+      maxWorkoutsThisWeek = 1;
+    }
+    //actual number of workouts happening this week
+    final workoutsToSchedule = maxWorkoutsThisWeek;
+
+    if (workoutsToSchedule > 0) {
+      List<int> availableDays = [
+      ]; //build list of available days form today until end of the week
+      for (int i = currentDayOfWeek - 1; i < 7; i++) {
+        availableDays.add(i);
+      }
+      List<int> scheduledDays = [
+      ]; //list to add the workouts in available days
+      if (workoutsToSchedule == 1) { //if only 1 workout add it on same day
+        scheduledDays = [currentDayOfWeek - 1];
+      } else { //for multiple workouts space them evenly
+        double step = (availableDays.length - 1) / (workoutsToSchedule -
+            1); //how many steps to move forward for every new workout
+        for (int i = 0; i < workoutsToSchedule; i++) {
+          int index = (i * step).round();
+          scheduledDays.add(availableDays[index]);
+        }
+      }
+
+      final monday = now.subtract(Duration(days: now.weekday - 1));
+      for (int i = 0; i < workoutsToSchedule; i++) {
+        final scheduledDate = monday.add(Duration(days: scheduledDays[i]));
+        final scheduleDateToMidnight = DateTime(scheduledDate.year,scheduledDate.month,scheduledDate.day,0,0,0,0,0);
+        final scheduledWorkout = ScheduledWorkout(
+            id: Firestorm.randomID(),
+            userId: userId,
+            workoutId: starterWorkouts[i].id,
+            originalWorkoutId: starterWorkouts[i].id,
+            scheduledDate: Timestamp.fromDate(scheduleDateToMidnight),
+            isCompleted: false);
+        await FS.create.one(scheduledWorkout);
+      }
+    }
+  }
   Future<void> assignStarterWorkouts(String userId) async {
     final allExercises = await FS.list.allOfClass<Exercise>(Exercise);
     if (allExercises.isEmpty) return;
@@ -298,33 +354,9 @@ class SignupScreenState extends State<SignupScreen> {
         }
         starterWorkouts.add(workout);
       }
-
-      final now = DateTime.now();
-      final monday = now.subtract(Duration(days: now.weekday - 1));
-      List<int> scheduleDays;
-      if (preferredWorkoutsPerWeek == 1) {
-        scheduleDays = [0];
-      }
-      else if (preferredWorkoutsPerWeek == 2) {
-        scheduleDays = [0, 3];
-      } else if (preferredWorkoutsPerWeek == 3) {
-        scheduleDays = [0, 2, 4];
-      } else if (preferredWorkoutsPerWeek == 4) {
-        scheduleDays = [0, 1, 3, 5];
-      } else {
-        scheduleDays = [0, 2, 3, 5, 6];
-      }
-      for (int i = 0; i < starterWorkouts.length; i++) {
-        final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
-        final scheduledWorkout = ScheduledWorkout(
-            id: Firestorm.randomID(),
-            userId: userId,
-            workoutId: starterWorkouts[i].id,
-            originalWorkoutId: starterWorkouts[i].id,
-            scheduledDate: Timestamp.fromDate(scheduledDate),
-            isCompleted: false);
-        await FS.create.one(scheduledWorkout);
-      }
+      await scheduleWorkoutsForCurrentWeek(userId: userId,
+          starterWorkouts: starterWorkouts,
+          preferredWorkoutsPerWeek: preferredWorkoutsPerWeek!);
     }
     if (trainingType == 'Cardio') {
       List<List<String>> workoutPlanExerciseTypes = [];
@@ -561,32 +593,9 @@ class SignupScreenState extends State<SignupScreen> {
         }
         starterWorkouts.add(workout);
       }
-      final now = DateTime.now();
-      final monday = now.subtract(Duration(days: now.weekday - 1));
-      List<int> scheduleDays;
-      if (preferredWorkoutsPerWeek == 1) {
-        scheduleDays = [0];
-      }
-      else if (preferredWorkoutsPerWeek == 2) {
-        scheduleDays = [0, 3];
-      } else if (preferredWorkoutsPerWeek == 3) {
-        scheduleDays = [0, 2, 4];
-      } else if (preferredWorkoutsPerWeek == 4) {
-        scheduleDays = [0, 1, 3, 5];
-      } else {
-        scheduleDays = [0, 2, 3, 5, 6];
-      }
-      for (int i = 0; i < starterWorkouts.length; i++) {
-        final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
-        final scheduledWorkout = ScheduledWorkout(
-            id: Firestorm.randomID(),
-            userId: userId,
-            workoutId: starterWorkouts[i].id,
-            originalWorkoutId: starterWorkouts[i].id,
-            scheduledDate: Timestamp.fromDate(scheduledDate),
-            isCompleted: false);
-        await FS.create.one(scheduledWorkout);
-      }
+      await scheduleWorkoutsForCurrentWeek(userId: userId,
+          starterWorkouts: starterWorkouts,
+          preferredWorkoutsPerWeek: preferredWorkoutsPerWeek!);
     }
     if (trainingType == 'Aerobic') {
       const aerobicExerciseTypeId = '20260129-1023-8024-a295-ced66eef7c9c';
@@ -635,32 +644,9 @@ class SignupScreenState extends State<SignupScreen> {
         await FS.create.one(we);
       }
 
-      final now = DateTime.now();
-      final monday = now.subtract(Duration(days: now.weekday - 1));
-      List<int> scheduleDays;
-      if (preferredWorkoutsPerWeek == 1) {
-        scheduleDays = [0];
-      }
-      else if (preferredWorkoutsPerWeek == 2) {
-        scheduleDays = [0, 3];
-      } else if (preferredWorkoutsPerWeek == 3) {
-        scheduleDays = [0, 2, 4];
-      } else if (preferredWorkoutsPerWeek == 4) {
-        scheduleDays = [0, 1, 3, 5];
-      } else {
-        scheduleDays = [0, 2, 3, 5, 6];
-      }
-      for (int i = 0; i < starterWorkouts.length; i++) {
-        final scheduledDate = monday.add(Duration(days: scheduleDays[i]));
-        final scheduledWorkout = ScheduledWorkout(
-            id: Firestorm.randomID(),
-            userId: userId,
-            workoutId: starterWorkouts[i].id,
-            originalWorkoutId: starterWorkouts[i].id,
-            scheduledDate: Timestamp.fromDate(scheduledDate),
-            isCompleted: false);
-        await FS.create.one(scheduledWorkout);
-      }
+      await scheduleWorkoutsForCurrentWeek(userId: userId,
+          starterWorkouts: starterWorkouts,
+          preferredWorkoutsPerWeek: preferredWorkoutsPerWeek!);
     }
   }
 

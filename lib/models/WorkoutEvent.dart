@@ -1,10 +1,11 @@
 import 'package:me_fit/models/scheduled_workout.dart';
 
 class WorkoutEvent {
-  final String title;
+  String title;
   final ScheduledWorkout scheduledWorkout;
+  String? workoutName;
 
-  const WorkoutEvent(this.title,this.scheduledWorkout);
+  WorkoutEvent(this.title,this.scheduledWorkout, {this.workoutName});
 
   @override
   String toString() => title;

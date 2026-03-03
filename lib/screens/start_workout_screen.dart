@@ -2,6 +2,7 @@ import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/services/authentication_service.dart';
+import '../components/drawer_menu.dart';
 import '../components/workout_card.dart';
 import '../models/workout.dart';
 import 'active_workout_screen.dart';
@@ -72,7 +73,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
     if(isFutureWorkout(sw)) return false;
     return true;
   }
-  
+
   String buttonLabel(ScheduledWorkout sw){
     if(sw.isCompleted) return 'Completed';
     if(isFutureWorkout(sw)) return 'Locked';
@@ -89,10 +90,11 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Light background for contrast
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('Weekly Schedule', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
+      drawer: AppDrawer(currentRoute: '/start-workout'),
       body: RefreshIndicator(
         onRefresh: () async => setState(() => weeklyWorkouts = fetchWeeklyWorkouts()),
         child: FutureBuilder<Map<DateTime, List<ScheduledWorkout>>>(
@@ -163,6 +165,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
           ),
         ),
         ...workouts.map((scheduledWorkout) => WorkoutCard(
+          key: ValueKey(scheduledWorkout.id),
           scheduledWorkout: scheduledWorkout,
           onRefresh: () => setState(() => weeklyWorkouts = fetchWeeklyWorkouts()),
         )),

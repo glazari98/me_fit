@@ -1,6 +1,9 @@
 import 'dart:collection';
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
+import 'package:me_fit/components/drawer_menu.dart';
 import 'package:me_fit/models/WorkoutEvent.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/screens/achievements_screen.dart';
@@ -12,6 +15,7 @@ import 'package:me_fit/services/authentication_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../models/user.dart';
+import '../models/workout.dart';
 import 'completed_workouts_screen.dart';
 
 //TODO - Utility functions, should be moved to other classes/files.
@@ -21,20 +25,6 @@ bool isFutureWorkout(ScheduledWorkout sw){
 }
 
 //TODO - Dangling function, should be moved to a more appropriate place.
-LinkedHashMap<DateTime, List<WorkoutEvent>> buildWorkoutEventMap(List<ScheduledWorkout> workouts){
-  final map = LinkedHashMap<DateTime,List<WorkoutEvent>>(
-    equals: isSameDay,
-    hashCode: (date) => normaliseDate(date).hashCode
-  );
-
-  for (final sw in workouts){
-    final day = normaliseDate(sw.scheduledDate.toDate());
-    map.putIfAbsent(day, () => []).add(
-      WorkoutEvent('Workout: ${sw.workoutId}', sw),
-    );
-  }
-  return map;
-}
 
 class HomeScreen extends StatefulWidget{
   const HomeScreen({super.key});
@@ -68,7 +58,46 @@ class HomeScreenState extends State<HomeScreen>{
 
     loadSchedule();
   }
+  LinkedHashMap<DateTime, List<WorkoutEvent>> buildWorkoutEventMap(List<ScheduledWorkout> workouts){
+    final map = LinkedHashMap<DateTime,List<WorkoutEvent>>(
+        equals: isSameDay,
+        hashCode: (date) => normaliseDate(date).hashCode
+    );
 
+    for (final sw in workouts){
+      final day = normaliseDate(sw.scheduledDate.toDate());
+      map.putIfAbsent(day, () => []).add(
+        WorkoutEvent('Loading...', sw),
+      );
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_){
+      addWorkoutNameToEvent(map);
+    });
+    return map;
+  }
+
+  Future<void> addWorkoutNameToEvent(LinkedHashMap<DateTime, List<WorkoutEvent>> map) async {
+    bool updated = false;
+    for (final events in map.values){
+      for(final event in events){
+        final workout = await FS.get.one<Workout>(event.scheduledWorkout.workoutId);
+        if(workout != null){
+          event.title = workout.name;
+          event.workoutName  = workout.name;
+          updated = true;
+        }
+      }
+    }
+    if (updated && mounted) {
+      setState(() {
+        // Rebuild the UI
+        final normalisedSelectedDay = selectedDay != null ?
+        normaliseDate(selectedDay!) :
+        normaliseDate(DateTime.now());
+        selectedEvents.value = kEvents[normalisedSelectedDay] ?? [];
+      });
+    }
+  }
   Future<void> loadSchedule() async{
     final currentUser = authService.getCurrentUser();
     if(currentUser == null) return;
@@ -119,7 +148,11 @@ class HomeScreenState extends State<HomeScreen>{
       Navigator.push(context,MaterialPageRoute(builder: (context) => StartWorkoutScreen()));
     }
   }
-
+  Future<User?> loadCurrentUser() async {
+    final currentUser = authService.getCurrentUser();
+    if(currentUser == null) return null;
+    return await FS.get.one<User>(currentUser.uid);
+  }
   @override
   Widget build(BuildContext context){
     return Scaffold(
@@ -131,7 +164,28 @@ class HomeScreenState extends State<HomeScreen>{
       ],
       ),
       body: Column(
-        children: [
+              children: [
+                SizedBox(height: 5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.calendar_month,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Workout Calendar',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+
+
           TableCalendar<WorkoutEvent>(
             focusedDay: focusedDay,
             firstDay: DateTime.now().subtract(const Duration(days: 30)),
@@ -248,106 +302,63 @@ class HomeScreenState extends State<HomeScreen>{
                 builder: (context,value,_){
                   if(value.isEmpty) return const Center(child: Text('No workouts'));
                   return ListView.builder(
-                  itemCount: value.length,
-                  itemBuilder: (context,index){
-                    final workout = value[index];
-                    return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 12,vertical: 4),
-                    decoration: BoxDecoration(
-                    border: Border.all(),
-                    borderRadius: BorderRadius.circular(12),
+                    itemCount: value.length,
+                    itemBuilder: (context, index) {
+                      final event = value[index];
+                      final sw = event.scheduledWorkout;
+                      final scheduledDate = normaliseDate(sw.scheduledDate.toDate());
+                      final today = normaliseDate(DateTime.now());
 
-                    ),
-                    child: ListTile(
-                    title: Text(workout.title),
-                    onTap: (){},
-                    ),
-                    );
-                  },
+                      String statusText;
+                      IconData statusIcon;
+                      Color statusColor;
+
+                      if (sw.isCompleted){
+                        statusText = 'Completed';
+                        statusIcon = Icons.check_circle;
+                        statusColor = Colors.green;
+                      }else if(sw.isInProgress == true) {
+                        statusText = 'In Progress';
+                        statusIcon = Icons.fitness_center;
+                        statusColor = Colors.orange;
+                      }else if(scheduledDate.isAfter(today)){
+                        statusText = 'Locked';
+                        statusIcon = Icons.lock;
+                        statusColor = Colors.red;
+                      }else{
+                        statusText = 'Ready to go';
+                        statusIcon = Icons.play_circle_filled;
+                        statusColor = Colors.blue;
+                      }
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12)),
+                        child: ListTile(leading: Icon(statusIcon, color: statusColor, size: 32),
+                          title: Text( event.title,
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(statusText, style: TextStyle(color: statusColor)),
+                              Text('Scheduled for: ${sw.scheduledDate.toDate().day}/${sw.scheduledDate.toDate().month}'),
+                              if (sw.isCompleted && sw.completedDate != null)
+                                Text('Completed on: ${sw.completedDate?.toDate().day}/${sw.completedDate?.toDate().month}'
+                                    ' at ${sw.completedDate?.toDate().hour.toString().padLeft(2, '0')}:${sw.completedDate?.toDate().minute.toString().padLeft(2, '0')}'),
+                            ],
+                          ),
+
+                         )
+                      );
+                    },
                   );
-                },
-              ),
-            ),
+                }))
         ],
       ),
-      //TODO - Ideally the drawer is a reusable widget that can be used across multiple screens.
-      //TODO You can create a separate widget for the drawer and use it in all the screens that require it.
-      drawer: Drawer(
-        child: Column(
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.green.shade900,
-              ),
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: Text('MeFit',
-                style: TextStyle(color: Colors.white,fontSize: 24,fontWeight: FontWeight.bold)),
-              )),
-            ListTile(
-              leading: const Icon(Icons.list_alt),
-              title: const Text('My Workouts'),
-              onTap: (){
-                Navigator.pop(context);
-                Navigator.push(context,MaterialPageRoute(builder: (_) => MyWorkoutsScreen()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_view_week),
-              title: const Text('Weekly Workouts'),
-              onTap: () async{
-                Navigator.pop(context);
-                await Navigator.push(context,MaterialPageRoute(builder: (_) => WeeklyWorkoutsScreen(onWorkoutUpdated: (){ loadSchedule();})));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.play_arrow),
-              title: const Text('Start Workout'),
-              onTap: (){
-                Navigator.pop(context);
-                Navigator.push(context,MaterialPageRoute(builder: (_) => StartWorkoutScreen()))
-                .then((_){
-                  loadSchedule();
-                });
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.done),
-              title: const Text('Completed Workouts'),
-              onTap: (){
-                Navigator.pop(context);
-                Navigator.push(context,MaterialPageRoute(builder: (_) => CompletedWorkoutsScreen()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Profile'),
-              onTap: (){
-                Navigator.pop(context);
-                Navigator.push(context,MaterialPageRoute(builder: (_) => ProfileScreen()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.badge),
-              title: const Text('Achievements'),
-              onTap: () async {
-                Navigator.pop(context);
-                final currentUser = authService.getCurrentUser();
-                User? user = await FS.get.one<User>(currentUser!.uid);
-                if(user != null){
-                  Navigator.push(context,MaterialPageRoute(builder: (_) => AchievementsScreen(user: user,workouts: userSchedule)));
-                }else{
-                  null;
-                }
-
-              },
-            ),
-
-          ],
-        )
-      ),
+      drawer: AppDrawer(onWorkoutUpdated: loadSchedule,userSchedule: userSchedule,loadSchedule: loadSchedule, currentRoute: '/home',)
   );
 }
+
 }
 
 

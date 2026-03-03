@@ -141,121 +141,274 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
           IconButton(
             tooltip: sortAscending ? 'Sorted A->Z' : 'Sorted Z->A',
             icon: Icon(
-              sortAscending ? Icons.sort_by_alpha : Icons.arrow_upward,
+              sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
             ),
             onPressed: () {
               setState(() {
                 sortAscending = !sortAscending;
                 applyFiltersAndSearch();
               });
-            },
-          ),
+            }),
         ],
       ),
       body: SafeArea(
         child: Column(
           children: [
-            searchField(),
-            filters(),
+            Container(
+              margin: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,borderRadius: BorderRadius.circular(16)),
+              child: searchField(),
+            ),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              child: filters(),
+            ),
+            SizedBox(height: 8),
+            Padding( padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row( children: [
+                  Container( padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon( Icons.fitness_center,
+                      color: Theme.of(context).primaryColor,size: 16)),
+                SizedBox(width: 12),
+                  Text('EXERCISES',
+                    style: TextStyle(
+                      fontSize: 14,fontWeight: FontWeight.w600,
+                      letterSpacing: 1.2,color: Colors.grey[700],
+                    )),
+                  SizedBox(width: 8), Container(width: 4,height: 4,
+                    decoration: BoxDecoration(color: Colors.grey[400],
+                      shape: BoxShape.circle),
+                  ),
+                  SizedBox(width: 8), Text('${visibleExercises.length} of ${filteredExercises.length}',
+                    style: TextStyle(fontSize: 14,color: Colors.grey[600], fontWeight: FontWeight.w500)),
+                ]),
+            ),
+            SizedBox(height: 8),
             if (isLoadingExercises)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: CircularProgressIndicator(),
-              ),
+              const Padding(padding: EdgeInsets.all(32),
+                child: Center(child: CircularProgressIndicator())),
             Expanded(
               child: visibleExercises.isEmpty
-                  ? Center(
-                      child: isLoadingExercises
-                          ? const CircularProgressIndicator()
-                          : const Text('No exercises to show'),
-                    )
+                  ? buildEmptyState()
                   : ListView.builder(
-                      itemCount: visibleExercises.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index < visibleExercises.length) {
-                          final exercise = visibleExercises[index];
-                          final bodyPartNames = exercise.bodyParts
-                              .map((id) => bodyPartNameById[id])
-                              .whereType<String>()
-                              .join(' , ');
-                          final exerciseTypeName =
-                              exerciseTypeNameById[exercise.exerciseTypeId];
-                          return Card(
-                            key: ValueKey(exercise.id),
-                            child: ListTile(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ExerciseDetailsScreen(
-                                      exercise: exercise,
-                                      bodyParts: bodyParts,
-                                      exerciseTypes: exerciseTypes,
-                                    ),
-                                  ),
-                                );
-                              },
-                              title: Text(exercise.name),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (exerciseTypeName != null)
-                                    Text(
-                                      'Type: ${exerciseTypeName}',
-                                      style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  if (bodyPartNames.isNotEmpty)
-                                    Text(
-                                      'Body parts: ${bodyPartNames}',
-                                      style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              trailing: IconButton(
-                                onPressed: () {
-                                  Navigator.pop(context, exercise);
-                                },
-                                icon: Icon(
-                                  Icons.add,
-                                  color: Colors.green,
-                                  size: 30,
-                                ),
-                              ),
-                            ),
-                          );
-                        } else if (currentVisibleCount <
-                            filteredExercises.length) {
-                          return Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: ElevatedButton(
-                              onPressed: loadMore,
-                              child: const Text(
-                                'Load More',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          );
-                        } else {
-                          return const SizedBox.shrink();
-                        }
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
+                padding: const EdgeInsets.all(16),
+                itemCount: visibleExercises.length + 1,
+                itemBuilder: (context, index) {
+                  if (index < visibleExercises.length) {
+                    final exercise = visibleExercises[index];
+                    final bodyPartNames = exercise.bodyParts
+                        .map((id) => bodyPartNameById[id])
+                        .whereType<String>()
+                        .join(' • ');
+                    final exerciseTypeName =
+                    exerciseTypeNameById[exercise.exerciseTypeId];
+
+                    return buildExerciseCard(
+                      exercise: exercise,
+                      exerciseTypeName: exerciseTypeName,
+                      bodyPartNames: bodyPartNames,
+                      index: index,
+                    );
+                  } else if (currentVisibleCount <
+                      filteredExercises.length) {
+                    return buildLoadMoreButton();
+                  } else {
+                    return const SizedBox.shrink();
+                  }
+                }),
+            )],
+        )),
     );
+  }
+
+  Widget buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.grey[200],shape: BoxShape.circle),
+          child: Icon(Icons.fitness_center_outlined,size: 64,color: Colors.grey[600])),
+          const SizedBox(height: 24),
+          Text('No exercises found',
+            style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold,color: Colors.grey[800])),
+          SizedBox(height: 8),
+          Text('Try adjusting your filters or search',
+            style: TextStyle(
+              fontSize: 14,color: Colors.grey[600],
+            )),
+        ]),
+    );
+  }
+
+  Widget buildExerciseCard({required Exercise exercise,String? exerciseTypeName,required String bodyPartNames, required int index}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white, borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,offset: Offset(0, 5)),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context, MaterialPageRoute(
+                builder: (_) => ExerciseDetailsScreen(
+                  exercise: exercise,
+                  bodyParts: bodyParts,exerciseTypes: exerciseTypes,
+                )),
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Row(children: [
+                Container( width: 48, height: 48,
+                  decoration: BoxDecoration(
+                    color: getTypeColor(exerciseTypeName!),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).primaryColor.withOpacity(0.3),
+                        blurRadius: 8,offset: Offset(0, 4),
+                      )],
+                  ),
+                  child: Center(
+                    child: Icon(
+                      getExerciseIcon(exerciseTypeName), color: Colors.white,size: 24),
+                  )),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [Text(exercise.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      if (exerciseTypeName != null)
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: getTypeColor(exerciseTypeName).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12)),
+                          child: Row(mainAxisSize: MainAxisSize.min,
+                            children: [SizedBox(width: 4),
+                              Text(exerciseTypeName,
+                                style: TextStyle(fontSize: 11,
+                                  fontWeight: FontWeight.w600,color: getTypeColor(exerciseTypeName),
+                                ))],
+                          ),
+                        ),
+                      SizedBox(height: 8),
+                      if (bodyPartNames.isNotEmpty)
+                        Wrap(spacing: 4,runSpacing: 4,
+                          children: bodyPartNames.split(' • ').map((part) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,vertical: 2,
+                              ),decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(8),
+                              ),child: Text(
+                                part,style: TextStyle(
+                                  fontSize: 10,color: Colors.grey[700],
+                                  fontWeight: FontWeight.w500,
+                                )));
+                          }).toList(),
+                        )],
+                  )),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.pop(context, exercise);
+                    },
+                    icon:Icon(
+                      Icons.add_circle, color: Colors.green,size: 32),
+                    tooltip: 'Add exercise',
+                    padding: EdgeInsets.all(8),
+                  ))],
+            )),
+        )),
+    );
+  }
+
+  Widget buildLoadMoreButton() {
+    return Container(
+      margin:  EdgeInsets.symmetric(vertical: 16),
+      child: ElevatedButton(
+        onPressed: loadMore,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).primaryColor,
+          foregroundColor: Colors.white,
+          minimumSize:  Size(200, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),elevation: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.expand_more),
+            SizedBox(width: 8),
+            Text('Load More',
+              style: TextStyle( fontSize: 16,fontWeight: FontWeight.bold,letterSpacing: 1),
+            ),
+          ])),
+    );
+  }
+
+  IconData getExerciseIcon(String? typeName) {
+    switch (typeName) {
+      case 'STRENGTH':
+        return Icons.fitness_center;
+      case 'CARDIO':
+        return Icons.sports_gymnastics;
+      case 'PLYOMETRICS':
+        return Icons.sports_gymnastics;
+      case 'AEROBIC':
+        return Icons.directions_run;
+      case 'STRETCHING':
+        return Icons.self_improvement;
+      default:
+        return Icons.fitness_center;
+    }
+  }
+
+
+  Color getTypeColor(String typeName) {
+    switch (typeName) {
+      case 'STRENGTH':
+        return Colors.blue;
+      case 'CARDIO':
+        return Colors.green;
+      case 'PLYOMETRICS':
+        return Colors.orange;
+      case 'AEROBIC':
+        return Colors.purple;
+      case 'STRETCHING':
+        return Colors.teal;
+      default:
+        return Colors.grey;
+    }
   }
 
   Widget searchField() {

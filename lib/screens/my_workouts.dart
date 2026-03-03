@@ -1,5 +1,6 @@
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
+import 'package:me_fit/components/drawer_menu.dart';
 import 'package:me_fit/screens/edit_workout_screen.dart';
 import 'package:me_fit/screens/login_screen.dart';
 import 'package:me_fit/screens/view_workout_screen.dart';
@@ -25,12 +26,13 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
   bool isLoading = true;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     fetchWorkouts();
   }
+
   void sortList() {
-    allWorkouts.sort((a,b) {
+    allWorkouts.sort((a, b) {
       final aDate = a.createdOn?.toDate() ?? DateTime(0);
       final bDate = b.createdOn?.toDate() ?? DateTime(0);
 
@@ -38,14 +40,16 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
       return isLatestFirst ? bDate.compareTo(aDate) : aDate.compareTo(bDate);
     });
   }
-  Future<void> fetchWorkouts () async {
+
+  Future<void> fetchWorkouts() async {
     final user = authenticationService.getCurrentUser();
 
-    final result = await FS.list //TODO - This line causes an error: Unhandled Exception: type 'Timestamp' is not a subtype of type 'DateTime?' in type cast
-      .filter<Workout>(Workout)
-      .whereEqualTo('createdBy', user?.uid)
-      .whereEqualTo('isMyWorkout', true)
-      .fetch();
+    final result = await FS
+        .list //TODO - This line causes an error: Unhandled Exception: type 'Timestamp' is not a subtype of type 'DateTime?' in type cast
+        .filter<Workout>(Workout)
+        .whereEqualTo('createdBy', user?.uid)
+        .whereEqualTo('isMyWorkout', true)
+        .fetch();
 
     setState(() {
       allWorkouts = result.items;
@@ -53,133 +57,254 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
     });
     sortList();
   }
+
   List<Workout> get filteredList {
     return allWorkouts.where((workout) {
       return workout.name.toLowerCase()
           .contains(searchQuery.toLowerCase());
     }).toList();
   }
+
   void deleteWorkout(Workout workout) async {
     final confirm = await showDialog<bool>(
         context: context,
-        builder: (_) => AlertDialog(
-          title: const Row(children: [
-            Icon(Icons.warning_amber_rounded,color: Colors.red),
-            SizedBox(width: 8),Text('Delete Workout'),
-          ],),
-          content: Text('Are you sure you want to remove ${workout.name}'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context,false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                onPressed: () => Navigator.pop(context,true),
-                child: const Text('Delete',style: TextStyle(color: Colors.white))),
-          ],
-        ));
-    if(confirm != true) return;
+        builder: (_) =>
+            AlertDialog(
+              title: const Row(children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.red),
+                SizedBox(width: 8), Text('Delete Workout'),
+              ],),
+              content: Text('Are you sure you want to remove ${workout.name}'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text(
+                        'Delete', style: TextStyle(color: Colors.white))),
+              ],
+            ));
+    if (confirm != true) return;
 
     final exercises = await FS.list.filter<WorkoutExercises>(WorkoutExercises)
-                      .whereEqualTo('workoutId', workout.id)
-                        .fetch();
+        .whereEqualTo('workoutId', workout.id)
+        .fetch();
 
-    for (final we in exercises.items){
+    for (final we in exercises.items) {
       await FS.delete.one(we);
     }
     await FS.delete.one(workout);
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Workout deleted')));
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Workout deleted')));
     await fetchWorkouts();
   }
-  String formatDate(DateTime date){
+
+  String formatDate(DateTime date) {
     return "${date.day}/${date.month}/${date.year} "
-        "${date.hour.toString().padLeft(2,'0')}:"
-        "${date.minute.toString().padLeft(2,'0')}";
+        "${date.hour.toString().padLeft(2, '0')}:"
+        "${date.minute.toString().padLeft(2, '0')}";
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Workouts'),
-      actions: [
-        IconButton(
-          icon: Icon(isLatestFirst ? Icons.arrow_downward : Icons.arrow_upward),
-          onPressed: (){
-            setState(() {
-              isLatestFirst = !isLatestFirst;
-              sortList();
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(isLatestFirst ? 'Sorted by latest workouts' : 'Sorted by earliest workouts'),
-              duration: const Duration(seconds: 2))
-            );
-          } )
-        ],),
-        floatingActionButton: FloatingActionButton(
-          child: const Icon(Icons.add),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const CreateWorkoutScreen(),
-                ),
-              );
-              await fetchWorkouts();
-            }),
-        body: isLoading ? const Center(child: CircularProgressIndicator())
-        : Column(children: [
-        Padding( padding: const EdgeInsets.all(12),
-          child: TextField(
-            decoration: const InputDecoration(
-              hintText: 'Search workout name',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
-            ),
-            onChanged: (value){
-              setState(() {
-                searchQuery = value;
-              });
-            },
-          ),
-
+      appBar: AppBar(title: const Text('Custom Workouts'),
+        actions: [
+          IconButton(
+              icon: Icon(isLatestFirst ? Icons.arrow_upward : Icons.arrow_downward ,
+                color: Colors.white,
+              ),onPressed: () {
+                setState(() {
+                  isLatestFirst = !isLatestFirst;
+                  sortList();
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(
+                      isLatestFirst?'Sorted by latest workouts'
+                          :'Sorted by earliest workouts',
+                    ),behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 1),
+                  ));
+              }),
+        ]),
+      drawer: AppDrawer(currentRoute: '/my-workouts'),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          await Navigator.push(
+            context,  MaterialPageRoute(
+              builder: (_) =>  CreateWorkoutScreen(),
+            ));
+          await fetchWorkouts();
+        },
+        icon: Icon(Icons.add),label:  Text('Create'),backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 4,
       ),
-        Expanded(child: filteredList.isEmpty ? const Center(child: Text('No workouts found'))
-        : ListView.builder(
-            itemCount: filteredList.length,
-            itemBuilder: (context,index){
-              final workout = filteredList[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12,vertical: 6),
-                child: ListTile(onTap: () async {
-                  Navigator.push(
-                    context,MaterialPageRoute(builder: (_) =>ViewWorkoutScreen(workout: workout))
-                  );
-                },
-                title:Text(workout.name,style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: workout.createdOn != null ? Text('Created on: ${formatDate(workout.createdOn!.toDate())}')
-                  : null,
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        tooltip: 'Edit Workout', icon: Icon(Icons.edit,color: Colors.blue),
-                        onPressed: (){
-                          Navigator.push(context,MaterialPageRoute(builder: (_) => EditWorkoutScreen(workout: workout)));
-                        },
-
-                      ),
-                      IconButton(
-                        tooltip: 'Delete workout',
-                        onPressed: () => deleteWorkout(workout),
-                        icon:const Icon(Icons.delete, color: Colors.red)
-                      )
-                    ],
-                  ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(children: [
+          Container(
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,borderRadius: BorderRadius.circular(16),
+              boxShadow:[BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10, offset:Offset(0, 4),
+                )]),
+            child: TextField(decoration: InputDecoration(
+                hintText: 'Search workouts...',prefixIcon: Icon(
+                  Icons.search,color: Colors.grey[600]
                 ),
-              );
-            }))
-      ],)
+                suffixIcon: searchQuery.isNotEmpty
+                    ? IconButton(icon: Icon(Icons.clear,color: Colors.grey[600]),
+                  onPressed: () {
+                    setState(() {
+                      searchQuery = '';
+                    });
+                  }): null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,vertical: 14,
+                )),
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value;
+                });
+              })),
+          Padding(
+            padding:  EdgeInsets.symmetric(horizontal: 16),
+            child: Row(children: [
+                Text(
+                  '${filteredList.length} workouts',
+                  style: TextStyle(color: Colors.grey[600],fontSize: 14,fontWeight: FontWeight.w500,
+                  ))],
+            )),
+           SizedBox(height: 8),
+          Expanded(
+            child: filteredList.isEmpty
+                ? Center( child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(padding:  EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      shape: BoxShape.circle),
+                    child: Icon(Icons.fitness_center_outlined,size: 48,color: Colors.grey[600]),
+                  ),
+                   SizedBox(height: 16),
+                  Text( searchQuery.isNotEmpty
+                        ? 'No workouts match "$searchQuery"'
+                        : 'No custom workouts yet',
+                    style: TextStyle(color: Colors.grey[600],
+                      fontSize: 16, fontWeight: FontWeight.w500,
+                    )),
+                   SizedBox(height: 8),
+                  if (searchQuery.isNotEmpty)
+                    TextButton(onPressed: () {
+                        setState(() {
+                          searchQuery = '';
+                        });
+                      },child:  Text('Clear search'),
+                    )else Text(
+                      'Tap + to create your first workout',
+                      style: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 14,
+                      ))],
+              ),
+            )
+            : ListView.builder(
+              padding:  EdgeInsets.all(16),
+              itemCount: filteredList.length,
+              itemBuilder: (context, index) {
+                final workout = filteredList[index];
+                return buildWorkoutCard(workout);
+              },
+            ))],
+      ));
+  }
+
+  Widget buildWorkoutCard(Workout workout) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(color: Colors.white,borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15, offset: const Offset(0, 5),
+          )]),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,MaterialPageRoute(
+                builder: (_) => ViewWorkoutScreen(workout: workout),
+              ));
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(padding: const EdgeInsets.all(16),
+            child: Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16)),
+                  child: Icon(
+                    Icons.fitness_center, color: Theme.of(context).primaryColor,size: 28 )),
+                const SizedBox(width: 16),
+                Expanded( child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [Text(
+                        workout.name,style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16),
+                      ),const SizedBox(height: 4),
+                      if (workout.createdOn != null)
+                        Row(children: [
+                        Icon(Icons.calendar_today,size: 12,color: Colors.grey[500]),
+                            const SizedBox(width: 4),
+                            Text('Created ${workout.createdOn?.toDate().day}/${workout.createdOn?.toDate().month}'
+                                ' at ${workout.createdOn?.toDate().hour.toString().padLeft(2, '0')}:${workout.createdOn?.toDate().minute.toString().padLeft(2, '0')}',
+                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                            )]),
+                    ])),
+                Row( mainAxisSize: MainAxisSize.min,
+                  children: [
+                    buildActionButton(
+                      icon: Icons.edit,color: Colors.blue,
+                      tooltip: 'Edit Workout',
+                      onPressed: () {
+                        Navigator.push(
+                          context,MaterialPageRoute(
+                            builder: (_) => EditWorkoutScreen(workout: workout),
+                          ),
+                        );
+                      }),
+                    const SizedBox(width: 8),
+                    buildActionButton(icon: Icons.delete,
+                      color: Colors.red,tooltip: 'Delete Workout',
+                      onPressed: () => deleteWorkout(workout),
+                    )]),
+              ])),
+        )),
+    );
+  }
+
+  Widget buildActionButton({required IconData icon,required Color color,required String tooltip,required VoidCallback onPressed}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12)),
+      child: IconButton(icon: Icon(icon, color: color, size: 20),
+        onPressed: onPressed,tooltip: tooltip,
+        constraints: const BoxConstraints(
+          minWidth: 40,minHeight: 40),
+        padding: EdgeInsets.zero)
     );
   }
 }

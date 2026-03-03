@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import 'package:image_picker/image_picker.dart';import 'package:me_fit/services/authentication_service.dart';
 
+import '../components/drawer_menu.dart';
 import '../models/user.dart';class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -105,6 +106,7 @@ class ProfileScreenState extends State<ProfileScreen>{
       title: Text('Profile'),
       centerTitle: true,
     ),
+      drawer: AppDrawer(currentRoute: '/profile'),
     body: SingleChildScrollView( padding: EdgeInsets.all(20),
     child: Column(
       children: [

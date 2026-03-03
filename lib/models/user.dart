@@ -10,9 +10,9 @@ class User {
   double weight;
   String trainingType;
   bool hasAccessToGym;
-  int preferredWorkoutsPerWeek;
   String? aerobicType;
   double? aerobicDistance;
+  int preferredWorkoutsPerWeek;
   String? profileImageUrl;
   int currentStreak;
   int bestStreak;

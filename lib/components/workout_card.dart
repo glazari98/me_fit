@@ -6,12 +6,24 @@ import '../models/workout.dart';
 import '../screens/active_workout_screen.dart';
 
 /// A card widget that displays a scheduled workout with its status and allows the user to start or continue the workout.
-class WorkoutCard extends StatelessWidget {
-
+class WorkoutCard extends StatefulWidget {
   final ScheduledWorkout scheduledWorkout;
   final VoidCallback onRefresh;
 
   const WorkoutCard({super.key, required this.scheduledWorkout, required this.onRefresh});
+
+  @override
+  State<WorkoutCard> createState() => _WorkoutCardState();
+}
+
+class _WorkoutCardState extends State<WorkoutCard> {
+  late ScheduledWorkout scheduledWorkout;
+
+  @override
+  void initState() {
+    super.initState();
+    scheduledWorkout = widget.scheduledWorkout;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +96,12 @@ class WorkoutCard extends StatelessWidget {
                         context,
                         MaterialPageRoute(builder: (_) => ActiveWorkoutScreen(workout: workout, scheduledWorkout: scheduledWorkout)),
                       );
-                      onRefresh();
+                      final updated = await FS.get.one<ScheduledWorkout>(scheduledWorkout.id);
+                      if (updated != null && mounted) {
+                        setState(() => scheduledWorkout = updated);
+                      }
+                      widget.onRefresh();
+
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isInProgress ? Colors.orange.shade700 : Theme.of(context).primaryColor,
