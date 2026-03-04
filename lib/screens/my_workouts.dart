@@ -113,7 +113,7 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Custom Workouts'),
+      appBar: AppBar(title:  Text('Custom Workouts'), centerTitle: true,
         actions: [
           IconButton(
               icon: Icon(isLatestFirst ? Icons.arrow_upward : Icons.arrow_downward ,
@@ -132,7 +132,7 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
                   ));
               }),
         ]),
-      drawer: AppDrawer(currentRoute: '/my-workouts'),
+      drawer: AppDrawer(scaffoldContext: context,currentRoute: '/my-workouts'),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await Navigator.push(

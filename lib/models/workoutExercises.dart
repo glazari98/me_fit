@@ -10,7 +10,7 @@ class WorkoutExercises {
   int? repetitions;
   int? sets;
   int? restBetweenSets; //seconds
-  int? duration; //seconds
+  int? durationOfTimedSet; //seconds
   double? distance; //km
   int? setsCompleted;
   int? repsCompleted;
@@ -28,7 +28,7 @@ class WorkoutExercises {
     this.repetitions,
     this.sets,
     this.restBetweenSets,
-    this.duration,
+    this.durationOfTimedSet,
     this.distance,
     this.setsCompleted,
     this.repsCompleted,

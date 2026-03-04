@@ -78,8 +78,8 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
 
   String getExerciseType(WorkoutExercises we) {
     if(we.distance != null) return 'AEROBIC';
-    if(we.duration != null && we.sets != null) return 'CARDIO_PLYO';
-    if(we.duration != null && we.sets == null) return 'STRETCHING';
+    if(we.durationOfTimedSet != null && we.sets != null) return 'CARDIO_PLYO';
+    if(we.durationOfTimedSet != null && we.sets == null) return 'STRETCHING';
     return 'STRENGTH';
   }
 

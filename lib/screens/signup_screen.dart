@@ -29,8 +29,10 @@ class SignupScreenState extends State<SignupScreen> {
   final nameController = TextEditingController();
   final ageController = TextEditingController();
   final weightController = TextEditingController();
+  final heightController = TextEditingController();
 
-  String? trainingType;
+  String? trainingType = 'Strength';
+  String? trainingGoal = 'Muscle Building';
   bool hasAccessToGym = false;
   int? preferredWorkoutsPerWeek;
   String? aerobicType;
@@ -69,7 +71,9 @@ class SignupScreenState extends State<SignupScreen> {
         username: nameController.text.trim(),
         age: age,
         weight: double.parse(weightController.text.trim()),
+        height: int.parse(heightController.text.trim()),
         trainingType: trainingType!,
+        trainingGoal: trainingGoal!,
         hasAccessToGym: hasAccessToGym!,
         preferredWorkoutsPerWeek: preferredWorkoutsPerWeek!,
         aerobicType: aerobicType,
@@ -100,41 +104,37 @@ class SignupScreenState extends State<SignupScreen> {
 
     int maxWorkoutsThisWeek;
     //adjust how many workouts can fit in the week according to how many days are remaining in the week
-    if (remainingDays >= 6) {
+    if(remainingDays >= 6){
       maxWorkoutsThisWeek = preferredWorkoutsPerWeek;
-    } else if (remainingDays == 5) {
+    }else if(remainingDays == 5){
       maxWorkoutsThisWeek = preferredWorkoutsPerWeek > 4 ? 4 : preferredWorkoutsPerWeek;
-    } else if (remainingDays == 4) {
+    }else if(remainingDays == 4){
       maxWorkoutsThisWeek = preferredWorkoutsPerWeek > 3 ? 3 : preferredWorkoutsPerWeek;
-    } else if (remainingDays == 3) {
+    }else if(remainingDays == 3){
       maxWorkoutsThisWeek = preferredWorkoutsPerWeek > 2 ? 2 : preferredWorkoutsPerWeek;
-    } else if (remainingDays == 2) {
+    }else if(remainingDays == 2){
       maxWorkoutsThisWeek = preferredWorkoutsPerWeek > 1 ? 1 : preferredWorkoutsPerWeek;
-    } else {
+    }else{
       maxWorkoutsThisWeek = 1;
     }
     //actual number of workouts happening this week
     final workoutsToSchedule = maxWorkoutsThisWeek;
 
     if (workoutsToSchedule > 0) {
-      List<int> availableDays = [
-      ]; //build list of available days form today until end of the week
+      List<int> availableDays = []; //build list of available days form today until end of the week
       for (int i = currentDayOfWeek - 1; i < 7; i++) {
         availableDays.add(i);
       }
-      List<int> scheduledDays = [
-      ]; //list to add the workouts in available days
+      List<int> scheduledDays = []; //list to add the workouts in available days
       if (workoutsToSchedule == 1) { //if only 1 workout add it on same day
         scheduledDays = [currentDayOfWeek - 1];
       } else { //for multiple workouts space them evenly
-        double step = (availableDays.length - 1) / (workoutsToSchedule -
-            1); //how many steps to move forward for every new workout
+        double step = (availableDays.length - 1) / (workoutsToSchedule -1); //how many steps to move forward for every new workout
         for (int i = 0; i < workoutsToSchedule; i++) {
           int index = (i * step).round();
           scheduledDays.add(availableDays[index]);
         }
       }
-
       final monday = now.subtract(Duration(days: now.weekday - 1));
       for (int i = 0; i < workoutsToSchedule; i++) {
         final scheduledDate = monday.add(Duration(days: scheduledDays[i]));
@@ -339,16 +339,28 @@ class SignupScreenState extends State<SignupScreen> {
           if (exercisesForType.isEmpty) continue;
 
           final exercise = (exercisesForType..shuffle()).first;
-
+          //adjusting sets reps according to goal
+          int? sets;
+          int? reps;
+          int? rest;
+          if(trainingGoal == 'Muscle Building') {
+            sets = 3;
+            reps = 12;
+            rest = 90;
+          }else{ //power building (more sets/less reps)
+            sets = 5;
+            reps = 6;
+            rest = 180;
+          }
           final we = WorkoutExercises(
             id: Firestorm.randomID(),
             workoutId: workout.id,
             exerciseId: exercise.id,
             order: j + 1,
-            sets: isLastExercise ? null : 3,
-            repetitions: isLastExercise ? null : 12,
-            restBetweenSets: isLastExercise ? null : 5,
-            duration: isLastExercise ? 5 : null,
+            sets: isLastExercise ? null : sets,
+            repetitions: isLastExercise ? null : reps,
+            restBetweenSets: isLastExercise ? null : rest,
+            durationOfTimedSet: isLastExercise ? 300 : null,
           );
           await FS.create.one(we);
         }
@@ -379,7 +391,8 @@ class SignupScreenState extends State<SignupScreen> {
         workoutPlanExerciseTypes = [
           [
             'CARDIO',
-            'CARDIO' 'CARDIO',
+            'CARDIO',
+            'CARDIO',
             'CARDIO',
             'CARDIO',
             'CARDIO',
@@ -387,7 +400,8 @@ class SignupScreenState extends State<SignupScreen> {
           ],
           [
             'PLYOMETRICS',
-            'PLYOMETRICS' 'PLYOMETRICS',
+            'PLYOMETRICS',
+            'PLYOMETRICS',
             'PLYOMETRICS',
             'PLYOMETRICS',
             'PLYOMETRICS',
@@ -562,32 +576,46 @@ class SignupScreenState extends State<SignupScreen> {
 
           final exercise = (exerciseForType..shuffle()).first;
           WorkoutExercises we;
-
-          if (type == 'CARDIO') {
+          int workoutDuration = 2700; //45 mins
+          //spread duration across all exercises
+          int durationPerExercise = (workoutDuration / workoutPlanExerciseTypes.length -1).round(); //we don't count stretching
+          int? sets;
+          int? duration;
+          int? rest;
+          if(trainingGoal == 'Endurance'){
+            sets = 1;
+            duration = durationPerExercise;
+            rest = 120;
+          }else{ //fat loss (multiple sets, shorter intervals)
+            sets = 5;
+            duration = 60;
+            rest = 60;
+          }
+          if(type == 'CARDIO') {
             we = WorkoutExercises(
                 id: Firestorm.randomID(),
                 workoutId: workout.id,
                 exerciseId: exercise.id,
                 order: j + 1,
-                sets: 1,
-                duration: 5,
-                restBetweenSets: 5);
-          } else if (type == 'PLYOMETRICS') {
+                sets: sets,
+                durationOfTimedSet: duration,
+                restBetweenSets: rest);
+          }else if (type == 'PLYOMETRICS') {
             we = WorkoutExercises(
                 id: Firestorm.randomID(),
                 workoutId: workout.id,
                 exerciseId: exercise.id,
                 order: j + 1,
-                sets: 2,
-                duration: 5,
-                restBetweenSets: 5);
-          } else {
+                sets: sets,
+                durationOfTimedSet: duration,
+                restBetweenSets: rest);
+          }else{
             we = WorkoutExercises(
                 id: Firestorm.randomID(),
                 workoutId: workout.id,
                 exerciseId: exercise.id,
                 order: j + 1,
-                duration: 5);
+                durationOfTimedSet: 300);
           }
           await FS.create.one(we);
         }
@@ -596,8 +624,7 @@ class SignupScreenState extends State<SignupScreen> {
       await scheduleWorkoutsForCurrentWeek(userId: userId,
           starterWorkouts: starterWorkouts,
           preferredWorkoutsPerWeek: preferredWorkoutsPerWeek!);
-    }
-    if (trainingType == 'Aerobic') {
+    }if (trainingType == 'Aerobic') {
       const aerobicExerciseTypeId = '20260129-1023-8024-a295-ced66eef7c9c';
 
       List<double> distanceSplits;
@@ -688,17 +715,26 @@ class SignupScreenState extends State<SignupScreen> {
         final username = nameController.text.trim();
         final age = int.tryParse(ageController.text.trim());
         final weight = double.tryParse(weightController.text.trim());
+        final height = int.tryParse(heightController.text.trim());
 
-        if (username.isEmpty || age == null || weight == null) {
-          showError('Please complete all profile fields');
+        if (age == null || age < 18 || age > 50) {
+          showError('Age must be between 18 and 50');
           return;
         }
-
+        if (weight == null || weight < 45 || weight > 250) {
+          showError('Weight must be between 45kg and 250kg');
+          return;
+        }
+        if (height == null || height < 120 || height > 230) {
+          showError('Height must be between 100cm and 230cm');
+          return;
+        }
         setState(() => currentStep++);
         break;
 
       case 2:
-        if (trainingType == null || preferredWorkoutsPerWeek == null) {
+        if (trainingType == null || preferredWorkoutsPerWeek == null ||
+            (trainingType != 'Aerobic' && trainingGoal == null)) {
           showError('Please complete all training preferences');
           return;
         }
@@ -736,15 +772,76 @@ class SignupScreenState extends State<SignupScreen> {
       signup();
     }
   }
-    InputDecoration fieldDecoration(String label, IconData icon) {
-      //TODO Move to a theming class instead. Can be reused across the app for consistent styling of form fields.
-      return InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        filled: true,
-      );
-    }
-
+  InputDecoration fieldDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, size: 20),
+      filled: true,
+      fillColor: Colors.grey.shade50,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16),borderSide: BorderSide(color: Colors.grey.shade200),
+      ),
+      focusedBorder: OutlineInputBorder( borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Colors.red, width: 1)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
+  }
+  Widget buildTrainingTypeButton({required String value,required IconData icon,required String label,
+    required String selected,required Color color}) {
+    final isSelected = selected == value;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap:(){
+          setState((){
+            trainingType = value;
+            trainingGoal = null;
+          });
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+          decoration: BoxDecoration(
+            color: isSelected ? color : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon,color: isSelected ? Colors.white : color,
+                size: 24),
+               SizedBox(height: 4),
+              Text(label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.grey.shade700,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+              )]),
+        )),
+    );
+  }
+  Widget sectionTitle(String text) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8, left: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 4, height: 20,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+              borderRadius: BorderRadius.circular(4),
+            )),
+           SizedBox(width: 8),
+          Text(text,style: TextStyle(
+              fontSize: 15,fontWeight: FontWeight.w600,letterSpacing: 0.5),
+          )]),
+    );
+  }
     @override
     Widget build(BuildContext context) {
       return Scaffold(
@@ -758,7 +855,7 @@ class SignupScreenState extends State<SignupScreen> {
             Container(
               decoration: BoxDecoration(
                   gradient: LinearGradient(
-                      colors: [Color(0xFF1E3C72), Color(0xFF2A5298)],
+                      colors: [Color(0xFFC8E6C9), Color(0xFFA5D6A7)],
                       //TODO - Change this gradient to match the app's color scheme (Green!)
                       begin: Alignment.topCenter,
                       end: Alignment.topCenter)
@@ -789,19 +886,19 @@ class SignupScreenState extends State<SignupScreen> {
                             child: Row(
                               children: [
                                 if (currentStep > 0) ...[
-                                  const SizedBox(width: 12),
+                                  SizedBox(width: 12),
                                   Expanded(
                                     child: TextButton.icon(
                                       onPressed: details.onStepCancel,
-                                      icon: const Icon(Icons.arrow_back),
-                                      label: const Text('Back'),
+                                      icon: Icon(Icons.arrow_back),
+                                      label: Text('Back'),
                                     ),
                                   ),
                                 ],
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     style: ElevatedButton.styleFrom(
-                                      minimumSize: const Size.fromHeight(52),
+                                      minimumSize: Size.fromHeight(52),
                                     ),
                                     onPressed: details.onStepContinue,
                                     icon: Icon(
@@ -810,7 +907,7 @@ class SignupScreenState extends State<SignupScreen> {
                                           : Icons.arrow_forward,
                                     ),
                                     label: isLoading
-                                        ? const SizedBox(
+                                        ? SizedBox(
                                       height: 20,
                                       width: 20,
                                       child:
@@ -828,11 +925,11 @@ class SignupScreenState extends State<SignupScreen> {
                         },
                         steps: [
                           Step(
-                            title: const Text('Account'),
+                            title: Text('Account'),
                             subtitle:
-                            const Text('Login credentials'),
+                            Text('Login credentials'),
                             content: Padding(
-                              padding: const EdgeInsets.only(top: 8),
+                              padding: EdgeInsets.only(top: 8),
                               child: Column(
                                 children: [
                                   TextFormField(
@@ -854,7 +951,7 @@ class SignupScreenState extends State<SignupScreen> {
                                       return null;
                                     },
                                   ),
-                                  const SizedBox(height: 22),
+                                  SizedBox(height: 22),
                                   TextFormField(
                                     controller: passwordController,
                                     decoration: fieldDecoration(
@@ -893,11 +990,11 @@ class SignupScreenState extends State<SignupScreen> {
                             ),
                           ),
                           Step(
-                            title: const Text('Profile'),
+                            title: Text('Profile'),
                             subtitle:
-                            const Text('Personal details'),
+                            Text('Personal details'),
                             content: Padding(
-                              padding: const EdgeInsets.only(top: 8),
+                              padding: EdgeInsets.only(top: 8),
                               child: Column(
                                 children: [
                                   TextFormField(
@@ -908,7 +1005,7 @@ class SignupScreenState extends State<SignupScreen> {
                                         'Name',
                                         Icons.person_outline),
                                   ),
-                                  const SizedBox(height: 22),
+                                  SizedBox(height: 22),
                                   TextFormField(
                                     controller: ageController,
                                     decoration: fieldDecoration(
@@ -917,7 +1014,7 @@ class SignupScreenState extends State<SignupScreen> {
                                     keyboardType:
                                     TextInputType.number,
                                   ),
-                                  const SizedBox(height: 22),
+                                  SizedBox(height: 22),
                                   TextFormField(
                                     controller: weightController,
                                     decoration: fieldDecoration(
@@ -925,160 +1022,199 @@ class SignupScreenState extends State<SignupScreen> {
                                         Icons
                                             .monitor_weight_outlined),
                                     keyboardType:
-                                    const TextInputType
+                                    TextInputType
                                         .numberWithOptions(
                                         decimal: true),
+                                  ),
+                                  SizedBox(height: 22),
+                                  TextFormField(
+                                    controller: heightController,
+                                    decoration: fieldDecoration(
+                                        'Height (cm)',
+                                        Icons
+                                            .height),
+                                    keyboardType:
+                                    TextInputType.number
                                   ),
                                 ],
                               ),
                             ),
                           ),
                           Step(
-                            title:
-                            const Text('Training Setup'),
+                            title: Text('Training Setup'),
                             subtitle:
-                            const Text('Preferences'),
+                             Text('Training Preferences'),
                             content: Padding(
-                              padding: const EdgeInsets.only(top: 8),
+                              padding: EdgeInsets.only(top: 8),
                               child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const SizedBox(height: 8),
-                                  SegmentedButton<String>(
-                                    segments: const [
-                                      ButtonSegment(
-                                          value: 'Strength',
-                                          label:
-                                          Text('Strength')),
-                                      ButtonSegment(
-                                          value: 'Cardio',
-                                          label:
-                                          Text('Cardio')),
-                                      ButtonSegment(
-                                          value: 'Aerobic',
-                                          label:
-                                          Text('Aerobic')),
-                                    ],
-                                    selected: {
-                                      trainingType ??
-                                          'Strength'
-                                    },
-                                    onSelectionChanged:
-                                        (selection) {
-                                      setState(() =>
-                                      trainingType =
-                                          selection.first);
-                                    },
+                                  sectionTitle('Training Type'),
+                                   SizedBox(height: 8),
+                                  Container(padding: EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade50,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: Colors.grey.shade200)),
+                                    child: Row(
+                                      children: [
+                                        Expanded(child: buildTrainingTypeButton(
+                                            value: 'Strength',icon: Icons.fitness_center,
+                                            label: 'Strength',selected: trainingType ?? 'Strength',
+                                            color: Colors.blue,
+                                          )),
+                                        SizedBox(width: 4),
+                                        Expanded(
+                                          child: buildTrainingTypeButton(
+                                            value: 'Cardio',icon: Icons.directions_run,
+                                            label: 'Cardio',selected: trainingType ?? 'Strength',
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                        SizedBox(width: 4),
+                                        Expanded(child: buildTrainingTypeButton(
+                                            value: 'Aerobic',icon: Icons.directions_bike,
+                                            label: 'Aerobic',selected: trainingType ?? 'Strength',
+                                            color: Colors.purple,
+                                          )),
+                                      ]),
                                   ),
-                                  const SizedBox(height: 18),
-                                  if (trainingType !=
-                                      'Aerobic')
-                                    SwitchListTile(
-                                      value: hasAccessToGym,
-                                      title: const Text(
-                                          'Gym Access'),
-                                      onChanged: (v) =>
-                                          setState(() =>
-                                          hasAccessToGym =
-                                              v),
-                                    ),
-                                  const SizedBox(height: 18),
-                                  DropdownButtonFormField<int>(
-                                    value:
-                                    preferredWorkoutsPerWeek,
-                                    decoration:
-                                    const InputDecoration(
-                                      labelText:
-                                      'Workouts per Week',
-                                      filled: true,
-                                    ),
-                                    items: const [
-                                      DropdownMenuItem(
-                                          value: 1,
-                                          child:
-                                          Text('1 days')),
-                                      DropdownMenuItem(
-                                          value: 2,
-                                          child:
-                                          Text('2 days')),
-                                      DropdownMenuItem(
-                                          value: 3,
-                                          child:
-                                          Text('3 days')),
-                                      DropdownMenuItem(
-                                          value: 4,
-                                          child:
-                                          Text('4 days')),
-                                      DropdownMenuItem(
-                                          value: 5,
-                                          child:
-                                          Text('5 days')),
-                                    ],
-                                    onChanged: (v) =>
-                                        setState(() =>
-                                        preferredWorkoutsPerWeek =
-                                        v!),
-                                  ),
-                                  if (trainingType ==
-                                      'Aerobic') ...[
-                                    const SizedBox(
-                                        height: 22),
-                                    DropdownButtonFormField<
-                                        String>(
-                                      value: aerobicType,
-                                      decoration:
-                                      const InputDecoration(
-                                        labelText:
-                                        'Aerobic type',
-                                        filled: true,
+                                  if (trainingType == 'Strength' || trainingType == 'Cardio') ...[
+                                     SizedBox(height: 24),
+                                    sectionTitle('Training Goal'),
+                                     SizedBox(height: 8),
+                                    Container(
+                                      padding: EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade50,
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: Colors.grey.shade200),
                                       ),
-                                      items: const [
-                                        DropdownMenuItem(
-                                            value:
-                                            'Running',
-                                            child:
-                                            Text('Running')),
-                                        DropdownMenuItem(
-                                            value:
-                                            'Cycling',
-                                            child:
-                                            Text('Cycling')),
-                                        DropdownMenuItem(
-                                            value:
-                                            'Swimming',
-                                            child:
-                                            Text('Swimming')),
+                                      child: SegmentedButton<String>(
+                                        showSelectedIcon: false,
+                                        style: ButtonStyle(
+                                          backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                                                (states) {
+                                              if (states.contains(MaterialState.selected)) {
+                                                return trainingType == 'Strength'
+                                                    ? Colors.blue.shade400: Colors.orange.shade400;
+                                              }
+                                              return Colors.transparent;
+                                            },
+                                          ),
+                                          foregroundColor: MaterialStateProperty.resolveWith<Color>(
+                                                (states) {
+                                              if (states.contains(MaterialState.selected)) {
+                                                return Colors.white;
+                                              }
+                                              return Colors.grey.shade700;
+                                            },
+                                          ),
+                                          textStyle: MaterialStateProperty.all(
+                                            TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                          ),
+                                          padding: MaterialStateProperty.all(
+                                            EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                                          ),
+                                        ),
+                                        segments: trainingType == 'Strength'
+                                            ? [
+                                          ButtonSegment(
+                                            value: 'Muscle Building',label: Text('Muscle Building'),icon: Icon(Icons.fitness_center)),
+                                          ButtonSegment(
+                                            value: 'Power Building',label: Text('Power Building'),icon: Icon(Icons.bolt)),
+                                          ]: [
+                                          ButtonSegment(
+                                            value: 'Fat Loss',label: Text('Fat Loss'),icon: Icon(Icons.whatshot)),
+                                          ButtonSegment(
+                                            value: 'Endurance',label: Text('Endurance'),icon: Icon(Icons.timer)),
+                                        ],
+                                        selected: {
+                                          trainingGoal ?? (trainingType == 'Strength'? 'Muscle Building': 'Fat Loss') },
+                                        onSelectionChanged: (selection) {
+                                          setState(() => trainingGoal = selection.first);
+                                        },
+                                      ))],
+
+                                  if (trainingType != 'Aerobic') ...[
+                                    SizedBox(height: 24),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade50,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: Colors.grey.shade200),
+                                      ),
+                                      child: SwitchListTile(
+                                        value: hasAccessToGym,
+                                        title: Text('Gym Access',style: TextStyle(fontWeight: FontWeight.w600)),
+                                        subtitle: Text(
+                                          hasAccessToGym? 'Using gym equipment'
+                                              : 'Bodyweight only',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 12)),
+                                        activeColor: Theme.of(context).primaryColor,
+                                        onChanged: (v) => setState(() => hasAccessToGym = v),
+                                      )),
+                                  ],
+                                  SizedBox(height: 24),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade50,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: Colors.grey.shade200),
+                                    ),
+                                    child: DropdownButtonFormField<int>(
+                                      value: preferredWorkoutsPerWeek,
+                                      decoration: InputDecoration(
+                                        labelText: 'Workouts per Week',
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      ),
+                                      items: [
+                                        DropdownMenuItem(value: 1, child: Text('1 day per week')),
+                                        DropdownMenuItem(value: 2, child: Text('2 days per week')),
+                                        DropdownMenuItem(value: 3, child: Text('3 days per week')),
+                                        DropdownMenuItem(value: 4, child: Text('4 days per week')),
+                                        DropdownMenuItem(value: 5, child: Text('5 days per week')),
                                       ],
-                                      onChanged: (v) =>
-                                          setState(() =>
-                                          aerobicType =
-                                              v),
+                                      onChanged: (v) => setState(() => preferredWorkoutsPerWeek = v!),
+                                    )),
+                                  if (trainingType == 'Aerobic') ...[
+                                    SizedBox(height: 16),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade50,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: Colors.grey.shade200),
+                                      ),
+                                      child: DropdownButtonFormField<String>(
+                                        value: aerobicType,
+                                        decoration: InputDecoration(
+                                          labelText: 'Aerobic Type',
+                                          border: InputBorder.none,
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        ),
+                                        items: [
+                                          DropdownMenuItem(value: 'Running', child: Text('🏃 Running')),
+                                          DropdownMenuItem(value: 'Cycling', child: Text('🚴 Cycling')),
+                                          DropdownMenuItem(value: 'Swimming', child: Text('🏊 Swimming')),
+                                        ],
+                                        onChanged: (v) => setState(() => aerobicType = v),
+                                      ),
                                     ),
-                                    const SizedBox(
-                                        height: 22),
+                                    SizedBox(height: 16),
                                     TextFormField(
-                                      controller:
-                                      aerobicDistanceController,
-                                      decoration:
-                                      fieldDecoration(
-                                          'Weekly Distance (km)',
-                                          Icons
-                                              .directions_run_outlined),
-                                      keyboardType:
-                                      const TextInputType
-                                          .numberWithOptions(
-                                          decimal: true),
+                                      decoration: fieldDecoration('Weekly Distance Goal (km)', Icons.route),
+                                      controller: aerobicDistanceController,
+                                      keyboardType: TextInputType.numberWithOptions(decimal: true),
                                     ),
-                                  ]
+                                  ],
                                 ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                              )),
+                          )]),
                     ),
-                  ),
-                ),
-              ),
+                  ))),
             ),
             if (isLoading)
               Container(

@@ -134,11 +134,6 @@ class HomeScreenState extends State<HomeScreen>{
     });
   }
 
-  void logOut(BuildContext context) async{
-    //TODO - Important: Ask the user to confirm log out before logging them out. You can use an AlertDialog.
-    authService.logOutUser();
-    Navigator.pushReplacementNamed(context, '/login');
-  }
 
   void onItemTapped(int index){
     if(index == 0){
@@ -156,12 +151,8 @@ class HomeScreenState extends State<HomeScreen>{
   @override
   Widget build(BuildContext context){
     return Scaffold(
-      appBar: AppBar(title: const Text('Home'),
-      actions: [
-        IconButton(
-            onPressed: () => logOut(context),
-            icon: const Icon(Icons.logout),)
-      ],
+      appBar: AppBar(title:  Text('Home'),
+        centerTitle: true,
       ),
       body: Column(
               children: [
@@ -169,12 +160,10 @@ class HomeScreenState extends State<HomeScreen>{
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.calendar_month,
+                    Icon(Icons.calendar_month,
                       color: Theme.of(context).colorScheme.primary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 8),
+                      size: 24),
+                     SizedBox(width: 8),
                     Text(
                       'Workout Calendar',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -355,7 +344,7 @@ class HomeScreenState extends State<HomeScreen>{
                 }))
         ],
       ),
-      drawer: AppDrawer(onWorkoutUpdated: loadSchedule,userSchedule: userSchedule,loadSchedule: loadSchedule, currentRoute: '/home',)
+      drawer: AppDrawer(scaffoldContext: context,onWorkoutUpdated: loadSchedule,userSchedule: userSchedule,loadSchedule: loadSchedule, currentRoute: '/home',)
   );
 }
 

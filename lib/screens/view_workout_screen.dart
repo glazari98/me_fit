@@ -187,8 +187,8 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
     Duration totalDuration = Duration.zero;
 
     for (var we in exercises) {
-      if (we.duration != null) {
-        totalDuration += Duration(seconds: we.duration!);
+      if (we.durationOfTimedSet != null) {
+        totalDuration += Duration(seconds: we.durationOfTimedSet!);
       }
     }
     String totalTime = totalDuration.inHours > 0
@@ -382,10 +382,10 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
         text: '${we.repetitions} reps',
       ));
     }
-    if (we.duration != null) {
+    if (we.durationOfTimedSet != null) {
       tags.add(buildTag(
         icon: Icons.timer,
-        text: formatDuration(we.duration!),
+        text: formatDuration(we.durationOfTimedSet!),
       ));
     }
     if (we.restBetweenSets != null) {

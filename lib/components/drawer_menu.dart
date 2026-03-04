@@ -13,12 +13,14 @@ import 'package:me_fit/screens/weekly_workouts_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 
 class AppDrawer extends StatelessWidget {
+  final BuildContext scaffoldContext;
   final VoidCallback? onWorkoutUpdated;
   final List<ScheduledWorkout>? userSchedule;
   final Function()? loadSchedule;
   final String currentRoute;
 
   const AppDrawer({
+    required this.scaffoldContext,
     super.key,
     this.onWorkoutUpdated,
     this.userSchedule,
@@ -46,7 +48,7 @@ class AppDrawer extends StatelessWidget {
             title: 'Custom Workouts',route: '/my-workouts',
             onTap: () { Navigator.pop(context);
               if (currentRoute != '/my-workouts') {
-                Navigator.push(context,
+                Navigator.pushReplacement(context,
                   MaterialPageRoute(builder: (_) => const MyWorkoutsScreen()),
                 );
               }}),
@@ -57,7 +59,7 @@ class AppDrawer extends StatelessWidget {
             route: '/weekly-workouts',
             onTap: () async {  Navigator.pop(context);
               if (currentRoute != '/weekly-workouts') {
-                await Navigator.push( context,
+                await Navigator.pushReplacement( context,
                   MaterialPageRoute( builder: (_) => WeeklyWorkoutsScreen(
                       onWorkoutUpdated: onWorkoutUpdated ?? () {},
                     )),
@@ -69,7 +71,7 @@ class AppDrawer extends StatelessWidget {
             title: 'Start Workout', route: '/start-workout',
             onTap: () { Navigator.pop(context);
               if (currentRoute != '/start-workout') {
-                Navigator.push( context, MaterialPageRoute(builder: (_) =>  StartWorkoutScreen()),
+                Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) =>  StartWorkoutScreen()),
                 ).then((_) {
                   if (loadSchedule != null) {
                     loadSchedule!();
@@ -82,7 +84,7 @@ class AppDrawer extends StatelessWidget {
             title: 'Completed Workouts', route: '/completed-workouts',
             onTap: () { Navigator.pop(context);
               if (currentRoute != '/completed-workouts') {
-                Navigator.push(context,
+                Navigator.pushReplacement(context,
                   MaterialPageRoute(builder: (_) => const CompletedWorkoutsScreen()),
                 );}
             }),
@@ -92,7 +94,7 @@ class AppDrawer extends StatelessWidget {
             title: 'Profile', route: '/profile',
             onTap: () {Navigator.pop(context);
               if (currentRoute != '/profile') {
-                Navigator.push( context,
+                Navigator.pushReplacement( context,
                   MaterialPageRoute(builder: (_) => const ProfileScreen()),
                 );
               }}),
@@ -107,7 +109,7 @@ class AppDrawer extends StatelessWidget {
                 if (currentUser != null) {
                   User? user = await FS.get.one<User>(currentUser.uid);
                   if (user != null && context.mounted) {
-                    Navigator.push( context,
+                    Navigator.pushReplacement( context,
                       MaterialPageRoute(builder: (_) => AchievementsScreen(
                           user: user, workouts: userSchedule ?? [],
                         ),
@@ -119,13 +121,19 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
+  void logOut(BuildContext context) async{
+    final AuthenticationService authService = AuthenticationService();
+    //TODO - Important: Ask the user to confirm log out before logging them out. You can use an AlertDialog.
+    authService.logOutUser();
+    Navigator.pushReplacementNamed(context, '/login');
+  }
   Widget buildDrawerHeader(BuildContext context) {
     final authService = AuthenticationService();
     return FutureBuilder<User?>(
       future: loadCurrentUser(authService),
       builder: (context, snapshot) {
         return DrawerHeader(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(color: Colors.green.shade900),
           child: !snapshot.hasData? Align(
             alignment: Alignment.center,
@@ -168,7 +176,9 @@ class AppDrawer extends StatelessWidget {
                   color: Colors.white,fontSize: 20,
                   fontWeight: FontWeight.bold),
                 overflow: TextOverflow.ellipsis,
-              ))],
+              )), IconButton(
+            onPressed: () => logOut(scaffoldContext),
+            icon:  Icon(Icons.logout, color: Colors.white))],
         )],
     );
   }

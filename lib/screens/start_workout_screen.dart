@@ -91,10 +91,10 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Weekly Schedule', style: TextStyle(fontWeight: FontWeight.bold)),
+      appBar: AppBar(centerTitle: true,
+        title:  Text('Weekly Schedule', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
-      drawer: AppDrawer(currentRoute: '/start-workout'),
+      drawer: AppDrawer(scaffoldContext: context,currentRoute: '/start-workout'),
       body: RefreshIndicator(
         onRefresh: () async => setState(() => weeklyWorkouts = fetchWeeklyWorkouts()),
         child: FutureBuilder<Map<DateTime, List<ScheduledWorkout>>>(
@@ -109,7 +109,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
             }
 
             return ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding:  EdgeInsets.all(16),
               itemCount: groupedWorkouts.length,
               itemBuilder: (context, index) {
                 final entry = groupedWorkouts.entries.elementAt(index);

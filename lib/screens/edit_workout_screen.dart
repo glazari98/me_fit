@@ -51,7 +51,7 @@ class WorkoutExerciseInstance {
         sets: we.sets,
         reps: we.repetitions,
         rest: we.restBetweenSets,
-        duration: we.duration,
+        duration: we.durationOfTimedSet,
         distance: we.distance);
   }
 
@@ -59,7 +59,7 @@ class WorkoutExerciseInstance {
     workoutExercise.sets = sets;
     workoutExercise.repetitions = reps;
     workoutExercise.restBetweenSets = rest;
-    workoutExercise.duration = duration;
+    workoutExercise.durationOfTimedSet = duration;
     workoutExercise.distance = distance;
   }
 }

@@ -187,7 +187,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               }
             }else if(getExerciseType(we) == 'STRETCHING'){
               we.stretchingCompleted = true;
-              we.durationLasted = we.duration;
+              we.durationLasted = we.durationOfTimedSet;
               await FS.update.one(we);
               moveToNextExercise();
             }
@@ -217,8 +217,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   String getExerciseType(WorkoutExercises we){
     if(we.distance != null) return 'AEROBIC';
-    if(we.duration != null && we.sets != null) return 'CARDIO_PLYO';
-    if(we.duration != null && we.sets == null) return 'STRETCHING';
+    if(we.durationOfTimedSet != null && we.sets != null) return 'CARDIO_PLYO';
+    if(we.durationOfTimedSet != null && we.sets == null) return 'STRETCHING';
     return 'STRENGTH';
   }
 
@@ -344,7 +344,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     phaseTimer?.cancel();
     setState(() {
       phase = ExercisePhase.activeSet;
-      remainingSeconds = we.duration ?? 0;
+      remainingSeconds = we.durationOfTimedSet ?? 0;
     });
 
     phaseTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
@@ -484,7 +484,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     startWorkoutTimer();
     setState((){
       phase = ExercisePhase.activeSet;
-      remainingSeconds = we.duration!;
+      remainingSeconds = we.durationOfTimedSet!;
     });
 
     phaseTimer?.cancel();
@@ -494,7 +494,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       if (remainingSeconds <= 0) {
         t.cancel();
         we.stretchingCompleted = true;
-        we.durationLasted = we.duration;
+        we.durationLasted = we.durationOfTimedSet;
         await FS.update.one(we);
         moveToNextExercise();
       }
@@ -616,7 +616,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         radius: 110,
         lineWidth: 15,
         percent: percent.clamp(0.0, 1.0),
-        center: Text('$seconds', style: const TextStyle(fontSize: 64, fontWeight: FontWeight.w900)),
+        center: Text('${seconds}s', style: const TextStyle(fontSize: 64, fontWeight: FontWeight.w900)),
         circularStrokeCap: CircularStrokeCap.round,
         progressColor: isPaused ? Colors.grey : color,
         backgroundColor: Colors.grey.shade200,
@@ -847,7 +847,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
               const Divider(height: 32),
               _buildInfoRow('Sets', '${we.sets}'),
-              _buildInfoRow('Duration', '${we.duration}s'),
+              _buildInfoRow('Duration', '${we.durationOfTimedSet}s'),
             ]),
             const SizedBox(height: 24),
             _buildViewDetailsButton(ex),
@@ -865,7 +865,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             ]),
             const SizedBox(height: 30),
             _buildTimerCircle(
-              percent: we.duration != null && we.duration! > 0 ? (remainingSeconds / we.duration!) : 0.0,
+              percent: we.durationOfTimedSet != null && we.durationOfTimedSet! > 0 ? (remainingSeconds / we.durationOfTimedSet!) : 0.0,
               seconds: remainingSeconds,
             ),
             const SizedBox(height: 40),
@@ -969,7 +969,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
                 const Divider(height: 32),
-                _buildInfoRow('Target Duration', '${we.duration}s'),
+                _buildInfoRow('Target Duration', '${we.durationOfTimedSet}s'),
               ]),
               const SizedBox(height: 24),
               _buildViewDetailsButton(ex),
@@ -996,7 +996,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               ]),
               const SizedBox(height: 30),
               _buildTimerCircle(
-                percent: remainingSeconds / (we.duration ?? 1),
+                percent: remainingSeconds / (we.durationOfTimedSet ?? 1),
                 seconds: remainingSeconds,
               ),
               const SizedBox(height: 40),

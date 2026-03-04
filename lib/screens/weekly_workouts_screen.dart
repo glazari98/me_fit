@@ -82,9 +82,9 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
   @override
   Widget build (BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(centerTitle: true,
         title:  Text('Weekly Workout Program', style: TextStyle(fontWeight: FontWeight.bold)), // Added bold style
-      ),drawer: AppDrawer(currentRoute: '/weekly-workouts'),
+      ),drawer: AppDrawer(scaffoldContext: context,currentRoute: '/weekly-workouts'),
       body: RefreshIndicator(
         onRefresh: () async => setState(() => weeklyWorkouts = fetchWeeklyWorkouts()),
         child: FutureBuilder<Map<DateTime, List<ScheduledWorkout>>>(
@@ -175,13 +175,10 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
               decoration: BoxDecoration(
                 color: isCompleted ? Colors.green[50] : Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
+                boxShadow: [BoxShadow(
                     color: Colors.black.withOpacity(0.05),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
+                    blurRadius: 15,offset: Offset(0, 5),
+                  )],
               ),
               child: Padding( padding:  EdgeInsets.all(12),
             child: Row( children: [

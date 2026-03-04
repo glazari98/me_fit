@@ -88,7 +88,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
             sets: draftExercise.sets,
             repetitions: draftExercise.reps,
             restBetweenSets: draftExercise.rest,
-            duration: draftExercise.duration,
+            durationOfTimedSet: draftExercise.duration,
             distance: draftExercise.distance,)
       );
     }

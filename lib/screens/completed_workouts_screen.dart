@@ -100,8 +100,8 @@ class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
           .contains(searchQuery.toLowerCase());
     }).length;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Completed Workout'),
+      appBar:AppBar(centerTitle: true,
+        title:Text('Completed Workouts'),
         actions: [
           IconButton(icon: Icon(isLatestFirst ? Icons.arrow_downward : Icons.arrow_upward),
           onPressed: (){
@@ -114,11 +114,11 @@ class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
             ),duration: const Duration(seconds: 2)));
           })],
       ),
-      drawer: AppDrawer(currentRoute: '/completed-workouts'),
+      drawer: AppDrawer(scaffoldContext: context,currentRoute: '/completed-workouts'),
       body: Column(
         children: [Padding( padding: const EdgeInsets.all(12),
             child: TextField(
-              decoration: const InputDecoration(
+              decoration:  InputDecoration(
                 hintText: 'Search workout name', prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder()),
               onChanged: (value){setState(() {
@@ -131,7 +131,7 @@ class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
                 ? Center( child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [Icon(Icons.fitness_center_outlined, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
+                   SizedBox(height: 16),
                   Text('No completed workouts found',
                     style: TextStyle(color: Colors.grey[600], fontSize: 16),
                   )],
@@ -141,18 +141,18 @@ class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
               itemBuilder: (context, index) {
                 if(index >= filteredList.length){
                   return Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding:  EdgeInsets.all(12),
                     child: ElevatedButton(
                       onPressed: () {
                         setState(() {
                           visibleCount += 10;
                         });},
                       style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 48),
+                        minimumSize:  Size(double.infinity, 48),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         )),
-                      child: const Text('Load More'),
+                      child:  Text('Load More'),
                     ));
                 }
                 final sw = filteredList[index];

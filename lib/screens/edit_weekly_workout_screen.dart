@@ -106,7 +106,7 @@ class EditWeeklyWorkoutScreenState extends State<EditWeeklyWorkoutScreen>{
           repetitions: ex.repetitions,
           sets: ex.sets,
           restBetweenSets: ex.restBetweenSets,
-          duration: ex.duration,
+          durationOfTimedSet: ex.durationOfTimedSet,
           distance: ex.distance,
 
           setsCompleted: 0,

@@ -8,7 +8,9 @@ class User {
   String username;
   int age;
   double weight;
+  int height;
   String trainingType;
+  String trainingGoal;
   bool hasAccessToGym;
   String? aerobicType;
   double? aerobicDistance;
@@ -25,7 +27,9 @@ class User {
     required this.username,
     required this.age,
     required this.weight,
+   required this.height,
     required this.trainingType,
+   required this.trainingGoal,
     required this.hasAccessToGym,
     required this.preferredWorkoutsPerWeek,
     required this.currentStreak,
