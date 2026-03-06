@@ -313,7 +313,7 @@ class HomeScreenState extends State<HomeScreen>{
                       }else if(scheduledDate.isAfter(today)){
                         statusText = 'Locked';
                         statusIcon = Icons.lock;
-                        statusColor = Colors.red;
+                        statusColor = Colors.grey;
                       }else{
                         statusText = 'Ready to go';
                         statusIcon = Icons.play_circle_filled;

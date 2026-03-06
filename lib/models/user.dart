@@ -10,10 +10,11 @@ class User {
   double weight;
   int height;
   String trainingType;
-  String trainingGoal;
+  String? trainingGoal;
   bool hasAccessToGym;
   String? aerobicType;
-  double? aerobicDistance;
+  double? currentAerobicDistance;
+  double? aerobicDistanceGoal;
   int preferredWorkoutsPerWeek;
   String? profileImageUrl;
   int currentStreak;
@@ -29,7 +30,7 @@ class User {
     required this.weight,
    required this.height,
     required this.trainingType,
-   required this.trainingGoal,
+   this.trainingGoal,
     required this.hasAccessToGym,
     required this.preferredWorkoutsPerWeek,
     required this.currentStreak,
@@ -37,7 +38,8 @@ class User {
     required this.totalCompletedWorkouts,
     this.unlockedBadges,
     this.aerobicType,
-    this.aerobicDistance,
+    this.aerobicDistanceGoal,
+    this.currentAerobicDistance,
     this.profileImageUrl
 });
 

@@ -7,6 +7,7 @@ class WorkoutExerciseFeedback {
   String workoutExerciseId;
   int? setsCompleted;
   int? repsCompleted;
+  List<double>? setWeights;
   int? durationLasted;
   double? distanceCovered;
   int? timeForDistanceCovered;
@@ -19,6 +20,7 @@ class WorkoutExerciseFeedback {
     this.setsCompleted,
     this.repsCompleted,
     this.durationLasted,
+    this.setWeights,
     this.distanceCovered,
     this.timeForDistanceCovered,
     this.pace,

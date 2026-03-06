@@ -57,6 +57,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     final existingWorkouts = await FS.list.filter<Workout>(Workout)
         .whereEqualTo('createdBy',user.uid)
         .whereEqualTo('isMyWorkout',true)
+        .whereEqualTo('name', workoutName)
         .fetch();
 
     if (existingWorkouts.items.isNotEmpty) {

@@ -32,8 +32,8 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
   bool editedHasAccessToGym = false;
   int? editedPreferredWorkoutsPerWeek;
   String? editedAerobicType;
-  double? editedAerobicDistance;
-  final aerobicDistanceController = TextEditingController();
+  double? editedAerobicDistanceGoal;
+  final aerobicDistanceGoalController = TextEditingController();
   bool preferencesChanged = false;
 
   @override
@@ -68,9 +68,9 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
       editedHasAccessToGym = userResult.hasAccessToGym;
       editedPreferredWorkoutsPerWeek = userResult.preferredWorkoutsPerWeek;
       editedAerobicType = userResult.aerobicType;
-      editedAerobicDistance = userResult.aerobicDistance;
-      if (userResult.aerobicDistance != null) {
-        aerobicDistanceController.text = userResult.aerobicDistance.toString();
+      editedAerobicDistanceGoal = userResult.aerobicDistanceGoal;
+      if (userResult.aerobicDistanceGoal != null) {
+        aerobicDistanceGoalController.text = userResult.aerobicDistanceGoal.toString();
       }
 
       preferencesChanged = false; //reset
@@ -84,7 +84,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
     final changed = editedTrainingType != currentUserModel!.trainingType ||
     editedTrainingGoal != currentUserModel!.trainingGoal || editedHasAccessToGym != currentUserModel!.hasAccessToGym ||
     editedPreferredWorkoutsPerWeek != currentUserModel!.preferredWorkoutsPerWeek || editedAerobicType != currentUserModel!.aerobicType ||
-    editedAerobicDistance != currentUserModel!.aerobicDistance;
+    editedAerobicDistanceGoal != currentUserModel!.aerobicDistanceGoal;
     setState(() {
       preferencesChanged = changed;
     });
@@ -93,70 +93,97 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
   Future<void> savePreferences() async {
     if (currentUserModel == null) return;
 
-    //confirmation message
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) =>
-          AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20)),
-            title:  Row(
-              children: [Icon(Icons.info_outline, color: Colors.blue),
-                SizedBox(width: 8),Text('Save Preferences')],
+    if (editedTrainingType == 'Aerobic') {
+      final goalDistance = double.tryParse(aerobicDistanceGoalController.text.trim());
+
+      if (goalDistance == null || goalDistance < 1 || goalDistance > 200) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Long-term distance goal must be between 1 and 200 km'),
+            duration: Duration(seconds: 2)));
+        return;
+      }
+      if (goalDistance < currentUserModel!.currentAerobicDistance!) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                'Long-term goal must be greater than or equal to your current distance'),
+            duration: Duration(seconds: 2))
+        );
+        return;
+      }
+    }
+      //confirmation message
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) =>
+            AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [Icon(Icons.info_outline, color: Colors.blue),
+                  SizedBox(width: 8), Text('Save Preferences')],
+              ),
+              content: Text(
+                  'If you save your changes, your workouts will be generated with your new preferences starting from next week.',
+                  style: TextStyle(fontSize: 16)),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text('Cancel')),
+                ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Save')),
+              ],
             ),
-            content: Text('If you save your changes, your workouts will be generated with your new preferences starting from next week.',
-                style: TextStyle(fontSize: 16)),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child:  Text('Cancel')),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white),
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Save')),
-            ],
-          ),
-    );
-    if (confirm != true) return;
-    //update user with new preferences
-    final updatedUser = User(
-      id: currentUserModel!.id,
-      emailAddress: currentUserModel!.emailAddress,
-      username: currentUserModel!.username,
-      age: currentUserModel!.age,
-      weight: currentUserModel!.weight,
-      height: currentUserModel!.height,
-      trainingType: editedTrainingType ?? currentUserModel!.trainingType,
-      trainingGoal: editedTrainingGoal ?? currentUserModel!.trainingGoal,
-      hasAccessToGym: editedHasAccessToGym,
-      preferredWorkoutsPerWeek: editedPreferredWorkoutsPerWeek ??
-          currentUserModel!.preferredWorkoutsPerWeek,
-      aerobicType: editedAerobicType,
-      aerobicDistance: editedAerobicDistance,
-      profileImageUrl: currentUserModel!.profileImageUrl,
-      currentStreak: currentUserModel!.currentStreak,
-      bestStreak: currentUserModel!.bestStreak,
-      totalCompletedWorkouts: currentUserModel!.totalCompletedWorkouts,
-      unlockedBadges: currentUserModel!.unlockedBadges,
-    );
+      );
+      if (confirm != true) return;
+      //update user with new preferences
+      final updatedUser = User(
+        id: currentUserModel!.id,
+        emailAddress: currentUserModel!.emailAddress,
+        username: currentUserModel!.username,
+        age: currentUserModel!.age,
+        weight: currentUserModel!.weight,
+        height: currentUserModel!.height,
+        trainingType: editedTrainingType ?? currentUserModel!.trainingType,
+        trainingGoal: editedTrainingGoal ?? currentUserModel!.trainingGoal,
+        hasAccessToGym: editedHasAccessToGym,
+        preferredWorkoutsPerWeek: editedPreferredWorkoutsPerWeek ??
+            currentUserModel!.preferredWorkoutsPerWeek,
+        aerobicType: editedAerobicType,
+        aerobicDistanceGoal: editedAerobicDistanceGoal,
+        profileImageUrl: currentUserModel!.profileImageUrl,
+        currentStreak: currentUserModel!.currentStreak,
+        bestStreak: currentUserModel!.bestStreak,
+        totalCompletedWorkouts: currentUserModel!.totalCompletedWorkouts,
+        unlockedBadges: currentUserModel!.unlockedBadges,
+      );
 
-    await FS.update.one<User>(updatedUser);
+      await FS.update.one<User>(updatedUser);
 
-    setState(() {
-      currentUserModel = updatedUser;
-      preferencesChanged = false; //reset save button after changes are made
-    });
+      setState(() {
+        currentUserModel = updatedUser;
+        preferencesChanged = false; //reset save button after changes are made
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Preferences saved successfully!'))
-    );
-  }
-    //this is called in personal details tab if a field is edited
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Preferences saved successfully!'))
+      );
+    }
+    //if a field is edited in personal details tab this is called automatically
     Future<void> updateUser() async {
       if (currentUserModel == null) return;
-
+      final result = await FS.list.filter<User>(User)
+          .whereNotEqualTo('id', currentUserModel!.id)
+          .whereEqualTo('username', usernameController.text.trim())
+          .fetch();
+      if(result.items.isNotEmpty){
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('The username is already taken by another user'),duration: Duration(seconds: 2)));
+        return;
+      }
       final updatedUser = User(
         id: currentUserModel!.id,
         emailAddress: currentUserModel!.emailAddress,
@@ -169,7 +196,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
         hasAccessToGym: currentUserModel!.hasAccessToGym,
         preferredWorkoutsPerWeek: currentUserModel!.preferredWorkoutsPerWeek,
         aerobicType: currentUserModel!.aerobicType,
-        aerobicDistance: currentUserModel!.aerobicDistance,
+        aerobicDistanceGoal: currentUserModel!.aerobicDistanceGoal,
         profileImageUrl: currentUserModel!.profileImageUrl,
         currentStreak: currentUserModel!.currentStreak,
         bestStreak: currentUserModel!.bestStreak,
@@ -609,6 +636,45 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                     ),
                     Divider(height: 24),
                     Row(
+                        children: [
+                          Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(Icons.flag, color: Colors.blue)),
+                          SizedBox(width: 12),
+                          Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Starting Weekly Distance',
+                                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                                  SizedBox(height: 4),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.grey.shade300),
+                                    ),
+                                    child: Text(
+                                      currentUserModel!.currentAerobicDistance != null
+                                          ? '${currentUserModel!.currentAerobicDistance!.toStringAsFixed(1)} km'
+                                          : 'Not set',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey.shade800,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )),
+                        ]),
+                    SizedBox(height: 16),
+                    Row(
                       children: [
                         Container(
                           padding: EdgeInsets.all(8),
@@ -622,11 +688,11 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Weekly Distance Goal (km)',
+                              Text('Long-term Weekly Distance Goal (km)',
                                 style: TextStyle(fontWeight: FontWeight.w600,fontSize: 16)),
                               SizedBox(height: 4),
                               TextField(
-                                controller: aerobicDistanceController,
+                                controller: aerobicDistanceGoalController,
                                 keyboardType: TextInputType.numberWithOptions(
                                     decimal: true),
                                 decoration: InputDecoration(
@@ -637,7 +703,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                                       horizontal: 12, vertical: 8)),
                                 onChanged: (value) {
                                   setState(() {
-                                    editedAerobicDistance = double.tryParse(value);
+                                    editedAerobicDistanceGoal = double.tryParse(value);
                                     checkPreferencesChanged();
                                   });
                                 },
@@ -647,9 +713,9 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                       ])],
                 ),
               )],
-            SizedBox(height: 30),
+            SizedBox(height: 10),
           if (preferencesChanged) ...[
-            SizedBox(height: 30),
+            SizedBox(height:10),
             SizedBox(
               width: double.infinity,child: ElevatedButton(
                 onPressed: savePreferences,

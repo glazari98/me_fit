@@ -53,6 +53,10 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   bool isLastSetRest = false;
   bool isPaused = false;
 
+  List<TextEditingController> weightControllers = [];
+  bool showWeightInput = false;
+
+
 
   List<BodyPart> bodyParts = [];
   List<ExerciseType> exerciseTypes = [];
@@ -231,6 +235,9 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     hasLocationPermission = false;
     mapController = null;
 
+    weightControllers.clear();
+    showWeightInput = false;
+
     phase = ExercisePhase.idle;
     currentSet = 1;
 
@@ -269,7 +276,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           durationLasted: we.durationLasted,
           distanceCovered: we.distanceCovered,
           timeForDistanceCovered: we.timeForDistanceCovered,
-          stretchingCompleted: we.stretchingCompleted);
+          stretchingCompleted: we.stretchingCompleted,
+          setWeights: we.actualSetWeights);
       await FS.create.one(feedback);
     }
     final scheduled = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
@@ -328,7 +336,9 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
     we.setsCompleted = (we.setsCompleted ?? 0) + 1;
     we.repsCompleted = (we.repsCompleted ?? 0) + (we.repetitions ?? 0);
-
+    if(we.targetSetWeights != null && we.targetSetWeights!.isNotEmpty){
+      we.actualSetWeights?.add(we.targetSetWeights![currentSet - 1]);
+    }
     await FS.update.one(we);
     setState(() => isTransitioning = false);
     if(currentSet >= we.sets!){
@@ -527,6 +537,10 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final type = getExerciseType(we);
     if(type == 'CARDIO_PLYO'){
       startTimedSet();
+      setState(() {
+        currentSet++;
+      });
+
       return;
     }
     setState(() {
@@ -684,11 +698,20 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       we.repsCompleted = 0;
       we.durationLasted = 0;
       we.distanceCovered = 0;
+      we.targetSetWeights = null;
+      we.actualSetWeights = null;
       we.timeForDistanceCovered = 0;
       we.stretchingCompleted = false;
       we.routePoints = null;
       await FS.update.one(we);
     }
+
+    for (var controller in weightControllers) {
+      controller.dispose();
+    }
+    weightControllers.clear();
+    showWeightInput = false;
+
     if(!mounted) return;
     Navigator.pop(context,true);
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout cancelled.'),duration: Duration(seconds: 2)));
@@ -793,14 +816,130 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               _buildInfoRow('Reps', '${we.repetitions}'),
               _buildInfoRow('Rest', '${we.restBetweenSets}s'),
             ]),
-            const SizedBox(height: 24),
+            //show eights input
+            if (!showWeightInput)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: _buildSecondaryActionButton(
+                  label: 'ADD WEIGHTS (OPTIONAL)',
+                  icon: Icons.fitness_center,
+                  color: Colors.blue,
+                  onPressed: () {
+                    setState(() {
+                      showWeightInput = true;
+                      //create controllers for each set
+                      weightControllers = List.generate(
+                        we.sets!,
+                            (index) => TextEditingController(),
+                      );
+                    });
+                  },
+                  isFullWidth: true,
+                )),
+            if (showWeightInput) ...[
+              SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration( color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row( mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(children: [
+                            Icon(Icons.fitness_center, size: 20, color: Colors.blue.shade700),
+                            SizedBox(width: 8),
+                            Text('Weight per set (kg)',
+                              style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w600, color: Colors.blue)),
+                          ]),
+                        IconButton(
+                          icon: Icon(Icons.close, size: 20),
+                          onPressed: () {
+                            setState(() {
+                              showWeightInput = false;
+                              weightControllers.clear();
+                            });
+                          }
+                        )]),
+                    SizedBox(height: 12),
+                    SizedBox(
+                      height: 168,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: List.generate(we.sets!, (index) {
+                            return Padding(
+                              padding:  EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                children: [
+                                  Container(width: 30, height: 30,
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.shade100,
+                                      shape: BoxShape.circle),
+                                    child: Center(
+                                      child: Text('${index + 1}',
+                                        style: TextStyle(fontWeight: FontWeight.bold,
+                                          color: Colors.blue.shade800),
+                                      ))),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: weightControllers[index],
+                                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                      decoration: InputDecoration(
+                                        hintText: 'Enter weight (kg)',
+                                        suffixText: 'kg',border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      ),
+                                    ))],
+                              ));
+                          }),
+                        )),
+                    ),
+                    //show there are more sets if any
+                    if (we.sets! > 3)
+                      Padding(
+                        padding: EdgeInsets.only(top: 4),
+                        child: Center(
+                          child: Text('Scroll to see more sets',
+
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                              fontStyle: FontStyle.italic,
+                            )),
+                        ))],
+                ))],
+            SizedBox(height: 24),
             _buildViewDetailsButton(ex),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _buildActionButton(
               label: 'START EXERCISE',
               icon: Icons.play_arrow,
               color: Colors.green,
-              onPressed: startStrengthSet,
+              onPressed: () {
+                if (showWeightInput && weightControllers.isNotEmpty) {
+                  List<double> targetWeights = [];
+                  for (int i = 0; i < weightControllers.length; i++) {
+                    final weight = double.tryParse(weightControllers[i].text);
+                    if(weight! < 0.5 || weight > 400 ){
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Weight must vary between 0.5 kg and 400 kg'),duration: Duration(seconds: 2)));
+                      return;
+                    }
+                    targetWeights.add(weight != null && weight > 0 ? weight : 0);
+                  }
+
+                  if (targetWeights.any((w) => w > 0)) {
+                    we.targetSetWeights = targetWeights;
+                    FS.update.one(we);
+                  }
+                }
+                startStrengthSet();
+              },
               isFullWidth: true,
             ),
           ]);
@@ -813,15 +952,36 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               const Divider(height: 24),
               Text('SET $currentSet OF ${we.sets}',
-                  style: const TextStyle(letterSpacing: 1.5, fontWeight: FontWeight.w900, fontSize: 18, color: Colors.green)),
+                  style: TextStyle(letterSpacing: 1.5, fontWeight: FontWeight.w900, fontSize: 18, color: Colors.green)),
+              if (we.targetSetWeights != null && currentSet <= we.targetSetWeights!.length &&
+                  we.targetSetWeights![currentSet - 1] > 0)
+                Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Target Weight: ${we.targetSetWeights![currentSet - 1]} kg',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.blue.shade800),
+                    ),
+                  ),
+                ),
             ]),
+
             const SizedBox(height: 40),
             Row(children: [
               Expanded(child: _buildActionButton(
                   label: 'SKIP', icon: Icons.skip_next, color: Colors.orange.shade700,
                   iconAlignment: IconAlignment.end,
-                  onPressed: () {
+                  onPressed: () async {
                     phaseTimer?.cancel();
+                    if(we.targetSetWeights != null && we.targetSetWeights!.isNotEmpty) {
+                      we.actualSetWeights?.add(0);
+                      await FS.update.one(we);
+                    }
                     (currentSet >= (we.sets ?? 1)) ? startRest(we.restBetweenSets ?? 0, postExercise: true) : startRest(we.restBetweenSets ?? 0);
                   }
               )),
@@ -1072,6 +1232,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   @override
   void dispose(){
+
+    weightControllers.clear();
     workoutTimer?.cancel();
     phaseTimer?.cancel();
     positionStream?.cancel();

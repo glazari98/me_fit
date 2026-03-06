@@ -22,6 +22,13 @@ function getNextWeekMonday() {
   nextMonday.setHours(0, 0, 0, 0);
   return nextMonday;
 }
+// function to help in grouping weeks
+function getWeekKey(date) {
+  const startOfYear = new Date(date.getFullYear(), 0, 1);
+  const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
+  const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+  return `${date.getFullYear()}-W${weekNumber}`;
+}
 
 // algorithm for distributing workouts
 function distributeWorkouts(numWorkouts, startDate) {
@@ -369,11 +376,77 @@ exports.generateNextWeekWorkouts = functions.https.onRequest(async (req, res) =>
           }
         } else if (userData.trainingType === 'Aerobic') {
           const aerobicExerciseTypeId = '20260129-1023-8024-a295-ced66eef7c9c';
-          const preferredWorkouts = userData.preferredWorkoutsPerWeek || 3;
-          const aerobicDistance = userData.aerobicDistance || 5.0;
+          const preferredWorkouts = userData.preferredWorkoutsPerWeek;
+          const currentDistance = userData.currentAerobicDistance || 5.0; // starting point
+          const goalDistance = userData.aerobicDistanceGoal || 10.0; // target goal
           const aerobicType = userData.aerobicType || 'Running';
 
-          // distance according to user's goal on weekly distance and workouts per week
+          // increase by 0.5 km per week
+          const weeklyIncrement = 0.5; // km per week
+
+          // get workouts up to 4 weeks ago to track progress
+          const fourWeeksAgo = new Date();
+          fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+
+          const recentWorkouts = await db.collection('ScheduledWorkout')
+              .where('userId', '==', userId)
+              .where('isCompleted', '==', true)
+              .where('completedDate', '>=', fourWeeksAgo)
+              .get();
+
+          // find the most recent week's distance starting form first week user signed up
+          let lastWeekDistance = currentDistance;
+
+          if (recentWorkouts.size > 0) {
+            const weeklyTotals = {};
+
+            for (const workout of recentWorkouts.docs) {
+              const workoutData = workout.data();
+              const completedDate = workoutData.completedDate.toDate();
+
+              const weekKey = getWeekKey(completedDate);
+
+              // get the distance for that workout
+              const workoutExercisesSnapshot = await db.collection('WorkoutExercises')
+                  .where('workoutId', '==', workoutData.workoutId)
+                  .get();
+
+              let workoutDistance = 0;
+              workoutExercisesSnapshot.docs.forEach((exDoc) => {
+                const exData = exDoc.data();
+                if (exData.distance) {
+                  workoutDistance += exData.distance;
+                }
+              });
+
+              if (workoutDistance > 0) {
+                if (!weeklyTotals[weekKey]) weeklyTotals[weekKey] = 0;
+                weeklyTotals[weekKey] += workoutDistance;
+              }
+            }
+
+            // calculate total distance for that week
+            const weeks = Object.keys(weeklyTotals).sort();
+            if (weeks.length > 0) {
+              const mostRecentWeek = weeks[weeks.length - 1];
+              lastWeekDistance = weeklyTotals[mostRecentWeek];
+              console.log(`Most recent week (${mostRecentWeek}) distance: ${lastWeekDistance.toFixed(1)}km`);
+            }
+          }
+
+          // calculate this week's target distance
+          let thisWeekDistance;
+
+          if (lastWeekDistance >= goalDistance) {
+            // already reached goal, then just continue with the same distance
+            thisWeekDistance = goalDistance;
+          } else {
+            // increment distance
+            thisWeekDistance = Math.min(lastWeekDistance + weeklyIncrement, goalDistance);
+            console.log(`Progressing from ${lastWeekDistance.toFixed(1)}km to ${thisWeekDistance.toFixed(1)}km`);
+          }
+
+          // distance splits based on preferred workouts per week
           let distanceSplits;
           if (preferredWorkouts === 1) {
             distanceSplits = [1.0];
@@ -386,6 +459,7 @@ exports.generateNextWeekWorkouts = functions.https.onRequest(async (req, res) =>
           } else { // 5 workouts
             distanceSplits = [0.2, 0.15, 0.25, 0.25, 0.15];
           }
+
           // get next workout number for user's new workout
           const startWorkoutNumber = await getNextWorkoutNumber(userId);
 
@@ -402,8 +476,9 @@ exports.generateNextWeekWorkouts = functions.https.onRequest(async (req, res) =>
               isMyWorkout: false,
               createdOn: admin.firestore.FieldValue.serverTimestamp(),
             });
-            const workoutDistance = aerobicDistance * distanceSplits[i];
 
+            let workoutDistance = thisWeekDistance * distanceSplits[i];
+            workoutDistance = Math.round(workoutDistance * 1000) / 1000;
             // filter exercise for the aerobic type
             const matchingExercises = allExercises.filter((e) => {
               const typeMatch = e.exerciseTypeId === aerobicExerciseTypeId;
@@ -415,6 +490,7 @@ exports.generateNextWeekWorkouts = functions.https.onRequest(async (req, res) =>
               console.log(`No matching exercises found for aerobic type: ${aerobicType}`);
               continue;
             }
+
             // shuffle through that
             const exercise = matchingExercises[Math.floor(Math.random() * matchingExercises.length)];
 
@@ -472,14 +548,14 @@ exports.generateNextWeekWorkouts = functions.https.onRequest(async (req, res) =>
   }
 });
 
-// AI Suggestions logic
+// AI suggestions logic
 const {GoogleGenerativeAI} = require('@google/generative-ai');
 
-// Initialize Gemini
+// initialize Gemini
 const genAI = new GoogleGenerativeAI('AIzaSyBdTMJDtPvxDCZLOGoXqgMQJEjtANN5j-g');
 
 exports.generateAISuggestions = functions.https.onRequest(async (req, res) => {
-  // Secret key for security
+  // secret key for security
   const secretKey = 'ftwe87ftfdc78ewter7tfc98y';
   if (req.query.secret !== secretKey) {
     res.status(403).send('Unauthorized');
@@ -487,7 +563,7 @@ exports.generateAISuggestions = functions.https.onRequest(async (req, res) => {
   }
 
   try {
-    // Get all users (or a specific user for testing)
+    // get all users
     const usersSnapshot = await db.collection('User').get();
 
     for (const userDoc of usersSnapshot.docs) {
@@ -502,27 +578,27 @@ exports.generateAISuggestions = functions.https.onRequest(async (req, res) => {
 });
 
 async function processUserForAISuggestions(userId) {
-  // 1. Get user data
+  // get user data
   const userDoc = await db.collection('User').doc(userId).get();
   const userData = userDoc.data();
 
-  // 2. Get user's completed workouts from last 2 weeks
-  const twoWeeksAgo = new Date();
-  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+  // get user's completed workouts from last 4 weeks
+  const fourWeeksAgo = new Date();
+  fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
 
   const completedWorkouts = await db.collection('ScheduledWorkout')
       .where('userId', '==', userId)
       .where('isCompleted', '==', true)
-      .where('completedDate', '>=', twoWeeksAgo)
+      .where('completedDate', '>=', fourWeeksAgo)
       .get();
 
-  // 3. Get exercise library (filtered by training type and gym access)
+  // get exercise library filtered by training type and goal
   const exercisesSnapshot = await db.collection('Exercise').get();
   const exerciseTypesSnapshot = await db.collection('ExerciseType').get();
   const bodyPartsSnapshot = await db.collection('BodyPart').get();
   const equipmentSnapshot = await db.collection('Equipment').get();
 
-  // Create maps for lookups
+  // maps to search in exercises body parts and equipments
   const typeMap = {};
   exerciseTypesSnapshot.docs.forEach((doc) => {
     typeMap[doc.id] = doc.data().name;
@@ -538,19 +614,44 @@ async function processUserForAISuggestions(userId) {
     equipmentMap[doc.id] = doc.data().name;
   });
 
-  // Format exercises for the prompt
+
+  // adjust exercises to be used in the prompt
+  // adjust exercises to be used in the prompt
   const formattedExercises = exercisesSnapshot.docs
       .filter((doc) => {
         const ex = doc.data();
-        // Filter by training type
         const typeName = typeMap[ex.exerciseTypeId];
-        if (userData.trainingType === 'Strength' && typeName !== 'STRENGTH') return false;
-        if (userData.trainingType === 'Cardio' && !['CARDIO', 'PLYOMETRICS'].includes(typeName)) return false;
-        if (userData.trainingType === 'Aerobic' && typeName !== 'AEROBIC') return false;
-
-        // Filter by gym access
         const equipmentName = equipmentMap[ex.equipmentId];
-        if (!userData.hasAccessToGym && equipmentName !== 'BODYWEIGHT') return false;
+
+        // Convert to uppercase for case-insensitive comparison
+        const userTrainingType = (userData.trainingType || '').toUpperCase();
+        const exerciseType = (typeName || '').toUpperCase();
+
+        // FILTER BY TRAINING TYPE
+        if (userTrainingType === 'STRENGTH') {
+          // Only include STRENGTH exercises
+          if (exerciseType !== 'STRENGTH') return false;
+        } else if (userTrainingType === 'CARDIO') {
+          // Only include CARDIO or PLYOMETRICS exercises
+          if (!['CARDIO', 'PLYOMETRICS'].includes(exerciseType)) return false;
+        } else if (userTrainingType === 'AEROBIC') {
+          // For aerobic, match by exercise name with user's aerobic type
+          const aerobicType = (userData.aerobicType || '').toLowerCase();
+          const exerciseName = (ex.name || '').toLowerCase();
+
+          // Check if exercise name contains the aerobic type (running, cycling, swimming)
+          if (aerobicType === 'running' && !exerciseName.includes('running')) return false;
+          if (aerobicType === 'cycling' && !exerciseName.includes('cycling')) return false;
+          if (aerobicType === 'swimming' && !exerciseName.includes('swimming')) return false;
+        }
+
+        // FILTER BY GYM ACCESS
+        if (!userData.hasAccessToGym) {
+          // No gym access - only include BODYWEIGHT exercises
+          const equipmentUpper = (equipmentName || '').toUpperCase();
+          if (equipmentUpper !== 'BODY WEIGHT') return false;
+        }
+        // If hasAccessToGym is true, include all equipment types
 
         return true;
       })
@@ -566,37 +667,112 @@ async function processUserForAISuggestions(userId) {
         };
       });
 
-  // 4. Build the prompt
-  const prompt = buildPrompt(userData, completedWorkouts, formattedExercises);
+  console.log(`Total exercises after filtering: ${formattedExercises.length}`);
+  // calculate performance
+  let workoutPerformance = '';
 
-  // 5. Call Gemini
+  if (completedWorkouts.size > 0) {
+    workoutPerformance = '\nRECENT WORKOUT PERFORMANCE:\n';
+
+    for (const workout of completedWorkouts.docs) {
+      const workoutData = workout.data();
+      const completedDate = workoutData.completedDate.toDate();
+
+
+      const workoutDoc = await db.collection('Workout').doc(workoutData.workoutId).get();
+      const workoutName = workoutDoc.exists ? workoutDoc.data().name : 'Unknown Workout';
+
+      // retrieve workout exercises of scheduled workouts
+      const workoutExercisesSnapshot = await db.collection('WorkoutExercises')
+          .where('workoutId', '==', workoutData.workoutId)
+          .get();
+
+      workoutPerformance += `\nWorkout: ${workoutName} (${completedDate.toLocaleDateString()}):\n`;
+
+      let totalExercises = 0;
+      let completedExercises = 0;
+
+      for (const weDoc of workoutExercisesSnapshot.docs) {
+        const weData = weDoc.data();
+        const exercise = formattedExercises.find((e) => e.id === weData.exerciseId);
+
+        if (exercise) {
+          totalExercises++;
+          let completionRate = 0;
+          // for strength get the sets and reps completed
+          if (exercise.type === 'STRENGTH') {
+            const prescribedSets = weData.sets || 0;
+            const completedSets = weData.setsCompleted || 0;
+            const prescribedReps = weData.repetitions || 0;
+            const completedReps = weData.repsCompleted || 0;
+
+            // Calculate total weight lifted if actual weights exist
+            let totalWeightLifted = 0;
+            let weightInfo = '';
+
+            if (weData.actualSetWeights && weData.actualSetWeights.length > 0) {
+              for (const weight of weData.actualSetWeights) {
+                totalWeightLifted += weight;
+              }
+              if (totalWeightLifted > 0) {
+                weightInfo = ` (total weight: ${totalWeightLifted}kg)`;
+              }
+            }
+
+            if (prescribedSets > 0) {
+              const setCompletion = completedSets / prescribedSets;
+              const repCompletion = prescribedReps > 0 ? (completedReps / (prescribedSets * prescribedReps)) : 0;
+              completionRate = (setCompletion + repCompletion) / 2;
+            }
+
+            workoutPerformance += `  - ${exercise.name}: Completed ${completedSets}/${prescribedSets} sets, ${completedReps}/${prescribedSets * prescribedReps} reps${weightInfo}\n`;
+          } else if (exercise.type === 'CARDIO' || exercise.type === 'PLYOMETRICS') {
+            const prescribedSets = weData.sets || 0;
+            const completedSets = weData.setsCompleted || 0;
+
+            if (prescribedSets > 0) {
+              completionRate = completedSets / prescribedSets;
+            }
+            workoutPerformance += `  - ${exercise.name}: Completed ${completedSets}/${prescribedSets} sets\n`;
+          } else if (exercise.type === 'AEROBIC') { // for aerobic get the distance covered
+            const prescribedDistance = weData.distance || 0;
+            const coveredDistance = weData.distanceCovered || 0;
+
+            if (prescribedDistance > 0) {
+              completionRate = Math.min(coveredDistance / prescribedDistance, 1);
+            }
+            workoutPerformance += `  - ${exercise.name}: Covered ${coveredDistance.toFixed(1)}/${prescribedDistance.toFixed(1)} km\n`;
+          }
+
+          if (completionRate >= 0.9) completedExercises++;
+        }
+      }
+
+      const workoutCompletionRate = totalExercises > 0 ? (completedExercises / totalExercises * 100).toFixed(0) : 0;
+      workoutPerformance += `  → Workout completion: ${workoutCompletionRate}%\n`;
+    }
+  }
+
+  // build the prompt with all pre-calculated data
+  const prompt = buildPrompt(userData, formattedExercises, workoutPerformance);
+
+  // call Gemini
   const model = genAI.getGenerativeModel({model: 'gemini-2.5-flash'});
   const result = await model.generateContent(prompt);
   const response = result.response.text();
 
-  // 6. Clean and parse JSON response
+  // clean JSON response
   try {
-    // Remove markdown code blocks if present
     let cleanedResponse = response;
-
-    // Remove ```json and ``` markers
     cleanedResponse = cleanedResponse.replace(/```json\n?/g, '');
     cleanedResponse = cleanedResponse.replace(/```\n?/g, '');
-
-    // Trim any whitespace
     cleanedResponse = cleanedResponse.trim();
-
-    console.log('Cleaned response:', cleanedResponse);
-
     const suggestions = JSON.parse(cleanedResponse);
 
-    // 7. Store in database
     await storeSuggestions(userId, suggestions, userData);
   } catch (e) {
     console.error('Failed to parse Gemini response:', e);
     console.error('Original response was:', response);
-
-    // Optional: Save failed responses for debugging
     await db.collection('FailedSuggestions').add({
       userId: userId,
       prompt: prompt,
@@ -607,33 +783,31 @@ async function processUserForAISuggestions(userId) {
   }
 }
 
-function buildPrompt(userData, completedWorkouts, exercises) {
-  // Format completed workouts data with more detail
-  const workoutHistory = completedWorkouts.docs.map((doc) => {
-    const sw = doc.data();
-    return `Completed on: ${sw.completedDate.toDate()}`;
-  }).join('\n');
-
-  // Format exercise list with clear type indicators
+function buildPrompt(userData, exercises, workoutPerformance) {
   const exerciseList = exercises.slice(0, 50).map((ex) =>
     `ID: ${ex.id}, Name: ${ex.name}, Type: ${ex.type}, Body Parts: ${ex.bodyParts}, Equipment: ${ex.equipment}`,
   ).join('\n');
 
-  // Build type-specific instructions based on user's training type and goal
   let typeSpecificInstructions = '';
   let jsonFormatExample = '';
 
   if (userData.trainingType === 'Strength') {
-    // Match your exact strength logic
     const strengthParams = userData.trainingGoal === 'Muscle Building'?
       {sets: 3, reps: 12, rest: 90, description: 'hypertrophy focus (3x12, 90s rest)'}:
       {sets: 5, reps: 6, rest: 180, description: 'power building focus (5x6, 180s rest)'};
 
+    // Get a sample exercise ID from the list (if available)
+    const sampleExerciseId = exercises.length > 0 ? exercises[0].id : 'USE_ACTUAL_ID_FROM_LIST';
     typeSpecificInstructions = `
 - For STRENGTH exercises: Include sets (${strengthParams.sets}), reps (${strengthParams.reps}), and rest seconds (${strengthParams.rest})
+- IMPORTANT: You MUST use the EXACT exercise IDs from the AVAILABLE EXERCISES list above
+- IMPORTANT: Include a "targetSetWeights" array that matches the number of sets
+  Example for ${strengthParams.sets} sets: "targetSetWeights": [60, 60, 65] (one weight per set)
+- If the user has weight data from previous workouts, suggest progressive overload by increasing weights slightly (2.5-5kg)
+- If no weight data exists, you can set the targetSetWeights field to null
 - Aim for 6-8 exercises per workout
 - GOAL: ${userData.trainingGoal} - ${strengthParams.description}
-- Each exercise should follow this pattern unless there's a specific reason to vary`;
+- Based on recent performance, suggest exercises where the user has high completion rates`;
 
     jsonFormatExample = `{
   "workoutName": "Upper Body Strength",
@@ -642,27 +816,28 @@ function buildPrompt(userData, completedWorkouts, exercises) {
   "confidenceScore": 0.92,
   "exercises": [
     {
-      "exerciseId": "ex_001",
+      "exerciseId": "${sampleExerciseId}",
       "sets": ${strengthParams.sets},
       "reps": ${strengthParams.reps},
       "restSeconds": ${strengthParams.rest},
+      "targetSetWeights": [60, 60, 65],
       "order": 1,
       "type": "STRENGTH"
     }
   ]
 }`;
   } else if (userData.trainingType === 'Cardio') {
-    // Match your exact cardio logic
     const cardioParams = userData.trainingGoal === 'Endurance'?
-      {sets: 1, duration: 'durationPerExercise', rest: 120, description: 'longer duration, fewer sets'}:
+      {sets: 1, duration: 180, rest: 120, description: 'longer duration, fewer sets'}:
       {sets: 5, duration: 60, rest: 60, description: 'short bursts, more sets'};
 
+    const sampleExerciseId = exercises.length > 0 ? exercises[0].id : 'USE_ACTUAL_ID_FROM_LIST';
+
     typeSpecificInstructions = `
-- For CARDIO/PLYOMETRICS exercises: Include sets, duration in seconds, and rest seconds
+- For CARDIO/PLYOMETRICS exercises: Include sets (${cardioParams.sets}), duration (${cardioParams.duration} seconds), and rest seconds (${cardioParams.rest})
+- IMPORTANT: You MUST use the EXACT exercise IDs from the AVAILABLE EXERCISES list above
 - GOAL: ${userData.trainingGoal} - ${cardioParams.description}
-- ${userData.trainingGoal === 'Endurance'?
-    'Use longer duration per exercise (aim for 2-5 minutes) with 1 set and 120s rest between exercises':
-    'Use short bursts (45-60 seconds) with 5 sets and 60s rest between sets'}`;
+- Based on recent performance, suggest exercises where the user has high completion rates`;
 
     jsonFormatExample = `{
   "workoutName": "HIIT Cardio Blast",
@@ -671,9 +846,9 @@ function buildPrompt(userData, completedWorkouts, exercises) {
   "confidenceScore": 0.88,
   "exercises": [
     {
-      "exerciseId": "ex_002",
+      "exerciseId": "${sampleExerciseId}",
       "sets": ${cardioParams.sets},
-      "duration": ${cardioParams.duration === 'durationPerExercise' ? 180 : 60},
+      "duration": ${cardioParams.duration},
       "restSeconds": ${cardioParams.rest},
       "order": 1,
       "type": "CARDIO"
@@ -681,11 +856,14 @@ function buildPrompt(userData, completedWorkouts, exercises) {
   ]
 }`;
   } else if (userData.trainingType === 'Aerobic') {
+    const sampleExerciseId = exercises.length > 0 ? exercises[0].id : 'USE_ACTUAL_ID_FROM_LIST';
+
     typeSpecificInstructions = `
 - For AEROBIC exercises: Include distance in km
-- Progressive overload based on weekly goal: ${userData.aerobicDistance}km total for the week
-- Distances should sum to approximately the weekly goal when spread across workouts
-- Each workout should have exactly 1 aerobic exercise`;
+- Weekly goal: ${userData.aerobicDistanceGoal}km total
+- Each workout should have exactly 1 aerobic exercise
+- IMPORTANT: You MUST use the EXACT exercise IDs from the AVAILABLE EXERCISES list above
+- Based on recent performance, suggest appropriate distances for progression`;
 
     jsonFormatExample = `{
   "workoutName": "Long Run",
@@ -694,7 +872,7 @@ function buildPrompt(userData, completedWorkouts, exercises) {
   "confidenceScore": 0.95,
   "exercises": [
     {
-      "exerciseId": "ex_003",
+      "exerciseId": "${sampleExerciseId}",
       "distance": 5.2,
       "order": 1,
       "type": "AEROBIC"
@@ -711,26 +889,27 @@ USER PROFILE:
 - Training Goal: ${userData.trainingGoal || 'Not specified'}
 - Gym Access: ${userData.hasAccessToGym}
 - Workouts per week: ${userData.preferredWorkoutsPerWeek}
-${userData.trainingType === 'Aerobic' ? `- Weekly Distance Goal: ${userData.aerobicDistance}km` : ''}
+${userData.trainingType === 'Aerobic' ? `- Weekly Distance Goal: ${userData.aerobicDistanceGoal}km` : ''}
 
-RECENT COMPLETED WORKOUTS (last 14 days):
-${workoutHistory || 'No recent workouts'}
+${workoutPerformance || 'No recent workout data available.'}
 
-AVAILABLE EXERCISES (use ONLY these):
+AVAILABLE EXERCISES (use ONLY these IDs):
 ${exerciseList}
 
 TASK:
 Suggest ONE optimized workout to replace a day in their upcoming weekly schedule.
 The workout should match their goal and use available exercises.
+Consider their recent performance - suggest exercises they complete successfully.
 
 ${typeSpecificInstructions}
 
 IMPORTANT:
-- For STRENGTH exercises: Use "sets", "reps", "restSeconds"
+- For STRENGTH: Use "sets", "reps", "restSeconds", and optionally "targetSetWeights"
 - For CARDIO/PLYOMETRICS: Use "sets", "duration" (seconds), "restSeconds"
-- For AEROBIC exercises: Use "distance" (km)
-- Include a "type" field for each exercise (STRENGTH, CARDIO, PLYOMETRICS, AEROBIC, STRETCHING)
-- For STRETCHING exercises (if included as last exercise): Use "duration" (seconds) only, no sets/reps/rest
+- For AEROBIC: Use "distance" (km)
+- Include "type" field for each exercise
+- For STRETCHING: Use "duration" (seconds) only
+- CRITICAL: The "exerciseId" MUST be one of the actual IDs from the AVAILABLE EXERCISES list above
 
 Return ONLY valid JSON in this exact format:
 
@@ -739,64 +918,66 @@ ${jsonFormatExample}
 }
 
 async function storeSuggestions(userId, suggestions, userData) {
-  // Create a workout document for the suggestion
+  // create workout record for workout suggestion
   const workoutId = generateRandomId();
   await db.collection('Workout').doc(workoutId).set({
     id: workoutId,
-    name: suggestions.workoutName,
+    name: suggestions.workoutName || 'Unknown Workout',
     createdBy: userId,
     isMyWorkout: false,
     createdOn: admin.firestore.FieldValue.serverTimestamp(),
   });
 
-  // Create workout exercises based on their type
+  // create workout exercises for workout suggestion
   for (const ex of suggestions.exercises) {
     const weId = generateRandomId();
     const exerciseData = {
       id: weId,
       workoutId: workoutId,
-      exerciseId: ex.exerciseId,
-      order: ex.order,
+      exerciseId: ex.exerciseId || '',
+      order: ex.order || 0,
     };
 
-    // Add type-specific fields matching your database structure
+    // add exercise types with null checks for all fields
     switch (ex.type) {
       case 'STRENGTH':
-        exerciseData.sets = ex.sets;
-        exerciseData.repetitions = ex.reps;
-        exerciseData.restBetweenSets = ex.restSeconds;
+        exerciseData.sets = ex.sets !== undefined ? ex.sets : null;
+        exerciseData.repetitions = ex.reps !== undefined ? ex.reps : null;
+        exerciseData.restBetweenSets = ex.restSeconds !== undefined ? ex.restSeconds : null;
+        exerciseData.targetSetWeights = ex.targetSetWeights || null;
         break;
 
       case 'CARDIO':
       case 'PLYOMETRICS':
-        exerciseData.sets = ex.sets;
-        exerciseData.duration = ex.duration; // duration per set
-        exerciseData.restBetweenSets = ex.restSeconds;
+        exerciseData.sets = ex.sets !== undefined ? ex.sets : null;
+        exerciseData.duration = ex.duration !== undefined ? ex.duration : null;
+        exerciseData.restBetweenSets = ex.restSeconds !== undefined ? ex.restSeconds : null;
         break;
 
       case 'AEROBIC':
-        exerciseData.distance = ex.distance;
+        exerciseData.distance = ex.distance !== undefined ? ex.distance : null;
         break;
 
       case 'STRETCHING':
-        exerciseData.duration = ex.duration || 300; // default 5 minutes if not specified
+        exerciseData.duration = ex.duration !== undefined ? ex.duration : 300;
         break;
 
       default:
         console.log('Unknown exercise type:', ex.type);
     }
 
-    // Initialize completion tracking fields to 0/null
+    // set completion fields to 0 or null (never undefined)
     exerciseData.setsCompleted = 0;
     exerciseData.repsCompleted = 0;
     exerciseData.durationLasted = 0;
     exerciseData.distanceCovered = 0;
-    exerciseData.stretchingCompleted = false;
+    exerciseData.stretchingCompleted = null;
+    exerciseData.timeForDistanceCovered = null;
 
     await db.collection('WorkoutExercises').doc(weId).set(exerciseData);
   }
 
-  // Store the suggestion
+  // create workout suggestion
   const suggestionId = generateRandomId();
   await db.collection('WorkoutSuggestions').doc(suggestionId).set({
     id: suggestionId,
@@ -804,8 +985,8 @@ async function storeSuggestions(userId, suggestions, userData) {
     forWeekStart: getNextWeekMonday(),
     scheduledWorkoutId: null,
     suggestedWorkoutId: workoutId,
-    replacementReason: suggestions.replacementReason,
-    confidenceScore: suggestions.confidenceScore,
+    replacementReason: suggestions.replacementReason || '',
+    confidenceScore: suggestions.confidenceScore || 0,
     status: 'pending',
     trainingType: userData.trainingType,
     trainingGoal: userData.trainingGoal,

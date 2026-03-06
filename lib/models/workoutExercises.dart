@@ -10,6 +10,8 @@ class WorkoutExercises {
   int? repetitions;
   int? sets;
   int? restBetweenSets; //seconds
+  List<double>? targetSetWeights; //weights the user sets before starting the exercise
+  List<double>? actualSetWeights; //weights after the exercise finishes
   int? durationOfTimedSet; //seconds
   double? distance; //km
   int? setsCompleted;
@@ -27,6 +29,8 @@ class WorkoutExercises {
     required this.order,
     this.repetitions,
     this.sets,
+    this.targetSetWeights,
+    this.actualSetWeights,
     this.restBetweenSets,
     this.durationOfTimedSet,
     this.distance,

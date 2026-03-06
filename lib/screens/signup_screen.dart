@@ -36,8 +36,10 @@ class SignupScreenState extends State<SignupScreen> {
   bool hasAccessToGym = false;
   int? preferredWorkoutsPerWeek;
   String? aerobicType;
-  double? aerobicDistance;
-  final aerobicDistanceController = TextEditingController();
+  double? aerobicDistanceGoal;
+  final aerobicDistanceGoalController = TextEditingController();
+  double? currentAerobicDistance;
+  final currentAerobicDistanceController = TextEditingController();
 
   bool obscurePassword = true;
 
@@ -73,11 +75,12 @@ class SignupScreenState extends State<SignupScreen> {
         weight: double.parse(weightController.text.trim()),
         height: int.parse(heightController.text.trim()),
         trainingType: trainingType!,
-        trainingGoal: trainingGoal!,
+        trainingGoal: trainingGoal,
         hasAccessToGym: hasAccessToGym!,
         preferredWorkoutsPerWeek: preferredWorkoutsPerWeek!,
         aerobicType: aerobicType,
-        aerobicDistance: aerobicDistance,
+        currentAerobicDistance: currentAerobicDistance,
+        aerobicDistanceGoal: aerobicDistanceGoal,
         currentStreak: 0,
         bestStreak: 0,
         totalCompletedWorkouts: 0,
@@ -627,6 +630,7 @@ class SignupScreenState extends State<SignupScreen> {
     }if (trainingType == 'Aerobic') {
       const aerobicExerciseTypeId = '20260129-1023-8024-a295-ced66eef7c9c';
 
+
       List<double> distanceSplits;
       if (preferredWorkoutsPerWeek == 1) {
         distanceSplits = [1.0];
@@ -635,7 +639,7 @@ class SignupScreenState extends State<SignupScreen> {
       } else if (preferredWorkoutsPerWeek == 3) {
         distanceSplits = [0.25, 0.30, 0.45];
       } else if (preferredWorkoutsPerWeek == 4) {
-        distanceSplits = [0.25, 0.30, 0.45];
+        distanceSplits = [0.25, 0.30, 0.25,0.2];
       } else {
         distanceSplits = [0.2, 0.15, 0.25, 0.25, 0.15];
       }
@@ -651,7 +655,7 @@ class SignupScreenState extends State<SignupScreen> {
         await FS.create.one(workout);
         starterWorkouts.add(workout);
 
-        final workoutDistance = aerobicDistance! * distanceSplits[i];
+        final workoutDistance = currentAerobicDistance! * distanceSplits[i];
 
         final matchingExercises = allExercises.where((e) {
           final typeMatch = e.exerciseTypeId == aerobicExerciseTypeId;
@@ -688,7 +692,15 @@ class SignupScreenState extends State<SignupScreen> {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
   }
+  //check if username entered is taken by another user
+  Future<bool> isUsernameTaken(String username) async {
+    if (username.isEmpty) return false;
+    final result = await FS.list.filter<User>(User)
+        .whereEqualTo('username', username)
+        .fetch();
 
+    return result.items.isNotEmpty;
+  }
   Future<void> nextStep() async {
     switch (currentStep) {
       case 0:
@@ -716,17 +728,27 @@ class SignupScreenState extends State<SignupScreen> {
         final age = int.tryParse(ageController.text.trim());
         final weight = double.tryParse(weightController.text.trim());
         final height = int.tryParse(heightController.text.trim());
-
+        if(username.length < 2){
+          showError('Username must be at least two characters');
+          return;
+        }
+        final result = await FS.list.filter<User>(User)
+            .whereEqualTo('username', username)
+            .fetch();
+        if(result.items.isNotEmpty){
+          showError('This username is already taken by another user.');
+          return;
+        }
         if (age == null || age < 18 || age > 50) {
-          showError('Age must be between 18 and 50');
+          showError('Age must be between 18 and 50.');
           return;
         }
         if (weight == null || weight < 45 || weight > 250) {
-          showError('Weight must be between 45kg and 250kg');
+          showError('Weight must be between 45kg and 250kg.');
           return;
         }
         if (height == null || height < 120 || height > 230) {
-          showError('Height must be between 100cm and 230cm');
+          showError('Height must be between 100cm and 230cm.');
           return;
         }
         setState(() => currentStep++);
@@ -734,10 +756,33 @@ class SignupScreenState extends State<SignupScreen> {
 
       case 2:
         if (trainingType == null || preferredWorkoutsPerWeek == null ||
-            (trainingType != 'Aerobic' && trainingGoal == null)) {
+            (trainingType != 'Aerobic' && trainingGoal == null)){
           showError('Please complete all training preferences');
           return;
         }
+        if (trainingType == 'Aerobic'){
+          final currentDistance = double.tryParse(currentAerobicDistanceController.text.trim());
+          final goalDistance = double.tryParse(aerobicDistanceGoalController.text.trim());
+
+          if (currentDistance == null || currentDistance <= 0 || currentDistance > 100) {
+            showError('Current weekly distance must be between 0.1 and 100 km');
+            return;
+          }
+          if (goalDistance == null || goalDistance <= 1 || goalDistance > 200){
+            showError('Long-term distance goal must be between 1 and 200 km');
+            return;
+          }
+
+          if (goalDistance < currentDistance){
+            showError('Long-term goal must be greater than or equal to your current distance');
+            return;
+          }
+          currentAerobicDistance = currentDistance;
+          aerobicDistanceGoal = goalDistance;
+          hasAccessToGym = false;
+          setState((){});
+        }
+
         showThesisAgreementDialog();
         break;
     }
@@ -799,7 +844,13 @@ class SignupScreenState extends State<SignupScreen> {
         onTap:(){
           setState((){
             trainingType = value;
-            trainingGoal = null;
+            if(trainingType == 'Strength'){
+              trainingGoal = 'Muscle Building';
+            }else if(trainingType == 'Cardio') {
+              trainingGoal = 'Fat Loss';
+            }else{
+              trainingGoal =null;
+            }
           });
         },
         borderRadius: BorderRadius.circular(16),
@@ -1002,7 +1053,7 @@ class SignupScreenState extends State<SignupScreen> {
                                         .words,
                                     controller: nameController,
                                     decoration: fieldDecoration(
-                                        'Name',
+                                        'Username',
                                         Icons.person_outline),
                                   ),
                                   SizedBox(height: 22),
@@ -1067,8 +1118,10 @@ class SignupScreenState extends State<SignupScreen> {
                                         Expanded(
                                           child: buildTrainingTypeButton(
                                             value: 'Cardio',icon: Icons.directions_run,
-                                            label: 'Cardio',selected: trainingType ?? 'Strength',
+                                            label: 'Cardio',
+                                            selected: trainingType ?? 'Strength',
                                             color: Colors.green,
+
                                           ),
                                         ),
                                         SizedBox(width: 4),
@@ -1205,8 +1258,14 @@ class SignupScreenState extends State<SignupScreen> {
                                     ),
                                     SizedBox(height: 16),
                                     TextFormField(
-                                      decoration: fieldDecoration('Weekly Distance Goal (km)', Icons.route),
-                                      controller: aerobicDistanceController,
+                                      decoration: fieldDecoration('Your Current Distance Weekly (km)', Icons.directions_run),
+                                      controller: currentAerobicDistanceController,
+                                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                    ),
+                                    SizedBox(height: 16),
+                                    TextFormField(
+                                      decoration: fieldDecoration('Long-term Distance Goal Weekly (km)', Icons.route),
+                                      controller: aerobicDistanceGoalController,
                                       keyboardType: TextInputType.numberWithOptions(decimal: true),
                                     ),
                                   ],

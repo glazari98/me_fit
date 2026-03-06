@@ -228,11 +228,18 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
   {
     switch (type){
       case 'STRENGTH':
+        double totalWeightLifted = 0;
+        if (we.actualSetWeights != null) {
+          for (var weight in we.actualSetWeights!) {
+            totalWeightLifted += weight;
+          }
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text('Sets completed: ${feedback?.setsCompleted ?? 0} / ${we.sets ?? 0}'),
             Text('Reps completed: ${we.repsCompleted ?? 0}'),
+             if(totalWeightLifted != 0)Text('Total weight lifted: $totalWeightLifted kg' ),
           ],
         );
 
