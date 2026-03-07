@@ -6,11 +6,11 @@ class WorkoutSuggestions {
   String id;
   String userId;
   Timestamp forWeekStart;
-  String? scheduledWorkoutId;
+  String? scheduledWorkoutId; //workout to be replaced, not set, user has to choose
   String suggestedWorkoutId;
   String replacementReason;
   double confidenceScore;
-  String status;
+  String status; //pending, accepted, declined
   String trainingType;
   Timestamp createdAt;
 

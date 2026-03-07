@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 
@@ -23,8 +24,21 @@ class _WorkoutCardState extends State<WorkoutCard> {
   void initState() {
     super.initState();
     scheduledWorkout = widget.scheduledWorkout;
+    fixScheduledDateIfNeeded();
   }
-
+  Future<void> fixScheduledDateIfNeeded() async {
+    final date = scheduledWorkout.scheduledDate.toDate();
+    //check if time is not in this format 00:00:00
+    if (date.hour != 0 || date.minute != 0 || date.second != 0) {
+      //update it to make it available at midnight
+      final fixedDate = DateTime(date.year,date.month,date.day,0, 0, 0, 0, 0);
+      scheduledWorkout.scheduledDate = Timestamp.fromDate(fixedDate);
+      await FS.update.one(scheduledWorkout);
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Workout?>(

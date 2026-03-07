@@ -1,3 +1,4 @@
+import 'package:firestorm/fs/fs.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 
 import '../models/user.dart';
@@ -18,7 +19,7 @@ class AchievementService{
       }
     }
   }
-  void checkWeeklyCompletion(User user, List<ScheduledWorkout> workouts) {
+  Future<void> checkWeeklyCompletion(User user, List<ScheduledWorkout> workouts) async {
     final now = DateTime.now();
 
     final currentMonday = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
@@ -42,8 +43,10 @@ class AchievementService{
     final completedThisWeek = currentWeekWorkouts.where((w) => w.isCompleted).length;
     if(completedThisWeek > 0) {
       user.currentStreak = completedThisWeek;
+      await FS.update.one(user);
     }else{
       user.currentStreak = 0;
+      await FS.update.one(user);
     }
   }
 

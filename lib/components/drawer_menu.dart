@@ -30,6 +30,7 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return Drawer( child: Column(
         children:[ buildDrawerHeader(context),
           //home
@@ -103,19 +104,9 @@ class AppDrawer extends StatelessWidget {
             context,icon: Icons.badge,
             title: 'Achievements', route: '/achievements',
             onTap: () async { Navigator.pop(context);
-              if (currentRoute != '/achievements') {
-                final authService = AuthenticationService();
-                final currentUser = authService.getCurrentUser();
-                if (currentUser != null) {
-                  User? user = await FS.get.one<User>(currentUser.uid);
-                  if (user != null && context.mounted) {
                     Navigator.pushReplacement( context,
-                      MaterialPageRoute(builder: (_) => AchievementsScreen(
-                          user: user, workouts: userSchedule ?? [],
-                        ),
-                      ),
-                    );
-                  }}}
+                      MaterialPageRoute(builder: (_) => AchievementsScreen()));
+
             })],
       ),
     );

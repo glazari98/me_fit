@@ -151,6 +151,7 @@ extension UserModel on User {
 
 	 Map<String, dynamic> toMap() {
 		 return {
+       'newScheduleMessageShown': newScheduleMessageShown,
 			 'unlockedBadges': unlockedBadges,
 			 'totalCompletedWorkouts': totalCompletedWorkouts,
 			 'bestStreak': bestStreak,
@@ -192,6 +193,7 @@ extension UserModel on User {
 			aerobicDistanceGoal: map['aerobicDistanceGoal'] as double?,
 			currentAerobicDistance: map['currentAerobicDistance'] as double?,
 			profileImageUrl: map['profileImageUrl'] as String?,
+      newScheduleMessageShown: map['newScheduleMessageShown'] as bool
 		 );
 		 return object;
 	}

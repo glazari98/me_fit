@@ -10,13 +10,15 @@ import 'package:me_fit/screens/achievements_screen.dart';
 import 'package:me_fit/screens/my_workouts.dart';
 import 'package:me_fit/screens/profile_screen.dart';
 import 'package:me_fit/screens/start_workout_screen.dart';
-import 'package:me_fit/screens/weekly_workouts_screen.dart';
+import 'package:me_fit/screens/suggestion_view_screen.dart';
+import 'package:me_fit/screens/view_workout_screen.dart';
+import 'package:me_fit/screens/workout_feedback_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 import 'package:table_calendar/table_calendar.dart';
-
+import '../models/WorkoutSuggestions.dart';
 import '../models/user.dart';
 import '../models/workout.dart';
-import 'completed_workouts_screen.dart';
+import '../models/workoutExercises.dart';
 
 //TODO - Utility functions, should be moved to other classes/files.
 DateTime normaliseDate(DateTime date) => DateTime(date.year,date.month,date.day);
@@ -24,7 +26,7 @@ bool isFutureWorkout(ScheduledWorkout sw){
   return normaliseDate(sw.scheduledDate.toDate()).isAfter(normaliseDate(DateTime.now()));
 }
 
-//TODO - Dangling function, should be moved to a more appropriate place.
+
 
 class HomeScreen extends StatefulWidget{
   const HomeScreen({super.key});
@@ -44,7 +46,150 @@ class HomeScreenState extends State<HomeScreen>{
   DateTime focusedDay = DateTime.now();
   DateTime? selectedDay;
   CalendarFormat calendarFormat = CalendarFormat.month;
+  //variables for showing welcome message
+  bool showWelcomeMessage = false;
+  bool isSunday = false;
+  int workoutsScheduled = 0;
+  int remainingDays = 0;
+  //variables for showing message when new workouts are generated every week
+  bool showNewScheduleMessage = false;
+  int newWorkoutsCount = 0;
 
+  List<WorkoutSuggestions> pendingSuggestions = [];
+  bool isLoadingSuggestions = false;
+  bool showSuggestions = true;
+
+  @override
+  void didChangeDependencies(){
+    super.didChangeDependencies();
+
+    final arguments = ModalRoute.of(context)?.settings.arguments as Map?;
+    if(arguments != null && arguments['justSignedUp'] == true) {
+      setState(() {
+        isSunday = arguments['isSunday'] ?? false;;
+        workoutsScheduled = arguments['workoutsScheduled'] ?? 0;
+        remainingDays = arguments['remainingDays'];
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showWelcomeDialog();
+      });
+
+
+    }
+  }
+  void showWelcomeDialog() {
+    String message;
+    IconData icon;
+    Color color;
+
+    if(isSunday){
+      message = "Since you signed up on a Sunday, your first weekly schedule will be generated tomorrow (Monday). Every Monday you'll receive a new workout schedule for the week with $workoutsScheduled workout${workoutsScheduled > 1 ? 's' : ''}.";
+      icon = Icons.weekend;
+      color = Colors.orange;
+    }else{
+      message = "A workout schedule has been generated for you for the remaining $remainingDays day${remainingDays > 1 ? 's' : ''} of this week. Every Monday you'll receive a new weekly schedule with $workoutsScheduled workout${workoutsScheduled > 1 ? 's' : ''}";
+      icon = Icons.calendar_today;
+      color = Colors.green;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 28),
+              ),
+              SizedBox(width: 12),
+              Text('Welcome to MeFit! 🎉', style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold))],
+          ),
+          content: Text(
+            message,style: TextStyle(fontSize: 16, height: 1.5)),
+          actions: [
+            TextButton(
+              onPressed:(){
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).pushReplacementNamed(
+                    '/home',arguments: null);
+                });
+              },style: TextButton.styleFrom(foregroundColor: color),
+              child: Text('Got it!'),
+            )
+          ]);
+      });
+  }
+  Future<void> checkForNewScheduleMessage() async {
+    final currentUser = authService.getCurrentUser();
+    if (currentUser == null) return;
+
+    final user= await FS.get.one<User>(currentUser.uid);
+
+    if (user != null && !user.newScheduleMessageShown) {
+      // Get workouts count for this week to show in dialog
+      final now = DateTime.now();
+      final thisMonday = now.subtract(Duration(days: now.weekday - 1));
+      final thisMondayNormalised = normaliseDate(thisMonday);
+
+      final thisWeekWorkouts = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
+          .whereEqualTo('userId', currentUser.uid)
+          .whereGreaterThanOrEqualTo('scheduledDate', Timestamp.fromDate(thisMondayNormalised))
+          .whereLessThan('scheduledDate', Timestamp.fromDate(thisMondayNormalised.add(Duration(days: 7))))
+          .fetch();
+      user.newScheduleMessageShown = true;
+      await FS.update.one(user);
+      setState(() {
+        showNewScheduleMessage = true;
+        newWorkoutsCount = thisWeekWorkouts.items.length;
+      });
+    }
+  }
+
+  void showNewScheduleDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12)),
+                child:  Icon(Icons.calendar_view_week, color: Colors.blue, size: 20),
+              ),
+               SizedBox(width: 12),
+               Text('New Weekly Schedule!',style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold)
+              ),
+            ]),
+          content: Text(
+            'Your new weekly schedule has been generated with $newWorkoutsCount workout${newWorkoutsCount > 1 ? 's' : ''} for this week.\n\n'
+                'Check your calendar to see the scheduled workouts.',
+            style:  TextStyle(fontSize: 16, height: 1.5)),
+          actions: [
+            TextButton(
+              onPressed: (){
+                Navigator.of(context).pop();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+              ), child: Text('Got it!'),
+            )]);
+      },
+    );
+  }
   @override
   void initState(){
     super.initState();
@@ -55,15 +200,14 @@ class HomeScreenState extends State<HomeScreen>{
       hashCode: (date) => normaliseDate(date).hashCode,
     );
     selectedEvents = ValueNotifier([]);
-
     loadSchedule();
+    loadSuggestions();
   }
   LinkedHashMap<DateTime, List<WorkoutEvent>> buildWorkoutEventMap(List<ScheduledWorkout> workouts){
     final map = LinkedHashMap<DateTime,List<WorkoutEvent>>(
         equals: isSameDay,
         hashCode: (date) => normaliseDate(date).hashCode
     );
-
     for (final sw in workouts){
       final day = normaliseDate(sw.scheduledDate.toDate());
       map.putIfAbsent(day, () => []).add(
@@ -90,7 +234,7 @@ class HomeScreenState extends State<HomeScreen>{
     }
     if (updated && mounted) {
       setState(() {
-        // Rebuild the UI
+        //refresh UI
         final normalisedSelectedDay = selectedDay != null ?
         normaliseDate(selectedDay!) :
         normaliseDate(DateTime.now());
@@ -105,7 +249,6 @@ class HomeScreenState extends State<HomeScreen>{
     final result = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
                               .whereEqualTo('userId', currentUser.uid)
                               .fetch();
-
     final tempMap = buildWorkoutEventMap(result.items);
 
     setState(() {
@@ -118,8 +261,8 @@ class HomeScreenState extends State<HomeScreen>{
           normaliseDate(DateTime.now());
       selectedEvents.value = kEvents[normalisedSelectedDay] ?? [];
     });
+    await checkForNewScheduleMessage();
   }
-
 
   List<WorkoutEvent> getEventsForDay(DateTime day){
     return kEvents[normaliseDate(day)] ?? [];
@@ -134,7 +277,6 @@ class HomeScreenState extends State<HomeScreen>{
     });
   }
 
-
   void onItemTapped(int index){
     if(index == 0){
       Navigator.push(context,MaterialPageRoute(builder: (context) => MyWorkoutsScreen()));
@@ -148,14 +290,281 @@ class HomeScreenState extends State<HomeScreen>{
     if(currentUser == null) return null;
     return await FS.get.one<User>(currentUser.uid);
   }
+
+  Future<void> viewWorkout(WorkoutEvent event) async {
+    final sw = event.scheduledWorkout;
+    final workout = await FS.get.one<Workout>(sw.workoutId);
+    if (workout == null) return;
+    //if completed go to feedback screen
+    if (sw.isCompleted) {
+      final exerciseResult = await FS.list
+          .filter<WorkoutExercises>(WorkoutExercises)
+          .whereEqualTo('workoutId', workout.id)
+          .fetch();
+
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WorkoutFeedbackScreen(
+            workout: workout,
+            exercises: exerciseResult.items,
+          ),
+        ),
+      );
+    } else {
+      //if not completed yet, view the workout exercises in view workout screen
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ViewWorkoutScreen(workout: workout),
+        ),
+      );
+    }    
+    loadSchedule();
+  }
+
+  Future<void> loadSuggestions() async {
+    final currentUser = authService.getCurrentUser();
+    if (currentUser == null) return;
+
+    setState(() => isLoadingSuggestions = true);
+
+  
+    final now = DateTime.now();
+    //get this week's monday
+    final thisMonday = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1));
+    final normalizedMonday = DateTime(thisMonday.year, thisMonday.month, thisMonday.day);
+
+    //get pending suggestion
+    final allPending = await FS.list.filter<WorkoutSuggestions>(WorkoutSuggestions)
+        .whereEqualTo('userId', currentUser.uid)
+        .whereEqualTo('status', 'pending')
+        .fetch();
+
+    //get suggestions that match for this week
+    final matchingSuggestions = allPending.items.where((s) {
+      final suggestionDate = s.forWeekStart.toDate();
+      return suggestionDate.year == normalizedMonday.year &&
+          suggestionDate.month == normalizedMonday.month &&
+          suggestionDate.day == normalizedMonday.day;
+    }).toList();
+
+    if (mounted) {
+      setState(() {
+        pendingSuggestions = matchingSuggestions;
+        isLoadingSuggestions = false;
+      });
+    }
+    
+  }
+
+  Widget buildSuggestionsSection() {
+    return Container(
+      margin: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.3),width: 2),
+        borderRadius: BorderRadius.circular(20)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Container(decoration: BoxDecoration(color: Colors.white),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [             
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.05),
+                  border: Border(
+                    bottom: BorderSide( color: Colors.grey,width: 0.5)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12)),
+                      child: Icon(
+                        Icons.auto_awesome,
+                        color: Theme.of(context).primaryColor,size: 20)),
+                    SizedBox(width: 12),
+                    Text('AI COACH SUGGESTION',
+                      style: TextStyle(fontSize: 14,fontWeight: FontWeight.w600,letterSpacing: 1.2),
+                    ),
+                    Spacer(),
+                    if (pendingSuggestions.isNotEmpty)
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8,vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColor,
+                          borderRadius: BorderRadius.circular(12)),
+                        child: Text('${pendingSuggestions.length} new',
+                          style:  TextStyle(color: Colors.white,fontSize: 11,fontWeight: FontWeight.w600),
+                        )),
+                    IconButton(
+                      icon: Icon(
+                        showSuggestions ? Icons.expand_less : Icons.expand_more,
+                        color: Colors.grey.shade600),
+                      onPressed: () {
+                        setState(() {
+                          showSuggestions = !showSuggestions;
+                        });
+                      },
+                    )]),
+              ),
+              if (showSuggestions)
+                if (isLoadingSuggestions)
+                  Container(
+                    padding: EdgeInsets.all(20),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (pendingSuggestions.isEmpty)
+                  Container(
+                    padding: EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            Icons.auto_awesome,color: Colors.grey, size: 24),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('AI Coach',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 16),
+                              ),
+                              SizedBox(height: 4),
+                              Text( userSchedule.where((w) => w.isCompleted).length >= 3
+                                    ? 'No new suggestions this week. Check back next week!'
+                                    : 'Complete more workouts to get personalized AI suggestions!',
+                                style: TextStyle(color: Colors.grey[600],fontSize: 13),
+                              )]),
+                        )],
+                    ))
+                else
+                  Column(children: pendingSuggestions.map((suggestion) =>
+                        buildSuggestionCard(suggestion)).toList(),
+                  )]),
+        )),
+    );
+  }
+
+  Widget buildSuggestionCard(WorkoutSuggestions suggestion) {
+    return FutureBuilder<Workout?>(
+      future: FS.get.one<Workout>(suggestion.suggestedWorkoutId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return SizedBox();
+        }
+        final workout = snapshot.data!;
+        final confidencePercent = (suggestion.confidenceScore * 100).round();
+        return Container(
+          margin: EdgeInsets.fromLTRB(12, 8, 12, 8),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200)),
+          child: Padding(
+            padding: EdgeInsets.all(12),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding:  EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10)),
+                      child: Icon(
+                        Icons.fitness_center,
+                        color: Theme.of(context).primaryColor,
+                        size: 16),
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(workout.name,style:  TextStyle(fontWeight: FontWeight.w600,
+                              fontSize: 14)),
+                          SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(Icons.thumb_up,size: 10,color: confidencePercent >= 80
+                                    ? Colors.green:confidencePercent >= 60
+                                    ? Colors.orange:Colors.grey),
+                              SizedBox(width: 2),
+                              Text('$confidencePercent% match',style: TextStyle(fontSize: 10,
+                                  color: confidencePercent >= 80
+                                      ? Colors.green:confidencePercent >= 60
+                                      ? Colors.orange:Colors.grey,
+                                fontWeight: FontWeight.w500),
+                              )]),
+                        ]),
+                    )],
+                ),
+                SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => viewSuggestion(suggestion, workout),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                          side: BorderSide(color: Theme.of(context).primaryColor)),
+                        child: Text('VIEW DETAILS',style: TextStyle(fontSize: 11,
+                            color: Theme.of(context).primaryColor,
+                          ))),
+                    ),
+                  ]),
+              ])));
+      },
+    );
+  }
+
+  Future<void> viewSuggestion(WorkoutSuggestions suggestion,Workout workout) async {
+    final result = await Navigator.push(context,MaterialPageRoute(
+        builder: (_) => SuggestionPreviewScreen(suggestion: suggestion,suggestedWorkout: workout,
+          onAccepted: () {
+            loadSuggestions();
+            loadSchedule();
+          },
+          onDeclined: () {
+            loadSuggestions();
+          },
+        )));
+  }
+
   @override
   Widget build(BuildContext context){
+    if (showNewScheduleMessage) {
+      setState(() {
+        showNewScheduleMessage = false;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          showNewScheduleDialog();
+        }
+      });
+
+    }
     return Scaffold(
       appBar: AppBar(title:  Text('Home'),
         centerTitle: true,
       ),
       body: Column(
               children: [
+                buildSuggestionsSection(),
                 SizedBox(height: 5),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -173,8 +582,6 @@ class HomeScreenState extends State<HomeScreen>{
                     ),
                   ],
                 ),
-
-
           TableCalendar<WorkoutEvent>(
             focusedDay: focusedDay,
             firstDay: DateTime.now().subtract(const Duration(days: 30)),
@@ -255,7 +662,6 @@ class HomeScreenState extends State<HomeScreen>{
                 fontWeight: FontWeight.w500,
               ),
             ),
-
             calendarBuilders: CalendarBuilders(
               markerBuilder: (context, day, events) {
                 final workoutEvents = events.cast<WorkoutEvent>();
@@ -277,19 +683,16 @@ class HomeScreenState extends State<HomeScreen>{
                           color: color,
                           shape: BoxShape.circle,
                         ),
-                      ),
-                    ),
-                  ),
+                      ))),
                 );
               },
             ),
           ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Expanded(
               child: ValueListenableBuilder<List<WorkoutEvent>>(
                 valueListenable: selectedEvents,
                 builder: (context,value,_){
-                  if(value.isEmpty) return const Center(child: Text('No workouts'));
                   return ListView.builder(
                     itemCount: value.length,
                     itemBuilder: (context, index) {
@@ -319,30 +722,62 @@ class HomeScreenState extends State<HomeScreen>{
                         statusIcon = Icons.play_circle_filled;
                         statusColor = Colors.blue;
                       }
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(12)),
-                        child: ListTile(leading: Icon(statusIcon, color: statusColor, size: 32),
-                          title: Text( event.title,
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(statusText, style: TextStyle(color: statusColor)),
-                              Text('Scheduled for: ${sw.scheduledDate.toDate().day}/${sw.scheduledDate.toDate().month}'),
-                              if (sw.isCompleted && sw.completedDate != null)
-                                Text('Completed on: ${sw.completedDate?.toDate().day}/${sw.completedDate?.toDate().month}'
-                                    ' at ${sw.completedDate?.toDate().hour.toString().padLeft(2, '0')}:${sw.completedDate?.toDate().minute.toString().padLeft(2, '0')}'),
+                      return GestureDetector(
+                        onTap: () => viewWorkout(event),
+                        child: Container(
+                          margin: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
                             ],
                           ),
-
-                         )
+                          child: ListTile(
+                            leading: Icon(
+                              statusIcon,
+                              color: statusColor,
+                              size: 32,
+                            ),
+                            title: Text(
+                              event.title,
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  statusText,
+                                  style: TextStyle(color: statusColor),
+                                ),
+                                Text(
+                                  'Scheduled for: ${sw.scheduledDate.toDate().day}/${sw.scheduledDate.toDate().month}',
+                                ),
+                                if (sw.isCompleted && sw.completedDate != null)
+                                  Text(
+                                    'Completed on: ${sw.completedDate?.toDate().day}/${sw.completedDate?.toDate().month} '
+                                        'at ${sw.completedDate?.toDate().hour.toString().padLeft(2, '0')}:${sw.completedDate?.toDate().minute.toString().padLeft(2, '0')}',
+                                  ),
+                                ],
+                            ),
+                            trailing: Icon(
+                              Icons.chevron_right,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                        ),
                       );
                     },
                   );
-                }))
-        ],
+                },
+              ),
+            ),
+              ],
       ),
       drawer: AppDrawer(scaffoldContext: context,onWorkoutUpdated: loadSchedule,userSchedule: userSchedule,loadSchedule: loadSchedule, currentRoute: '/home',)
   );

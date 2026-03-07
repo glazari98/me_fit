@@ -181,44 +181,6 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
     );
   }
 
-  Widget buildWorkoutStats(List<WorkoutExercises> exercises) {
-    int totalExercises = exercises.length;
-    int totalSets = exercises.fold(0, (sum, we) => sum + (we.sets ?? 0));
-    Duration totalDuration = Duration.zero;
-
-    for (var we in exercises) {
-      if (we.durationOfTimedSet != null) {
-        totalDuration += Duration(seconds: we.durationOfTimedSet!);
-      }
-    }
-    String totalTime = totalDuration.inHours > 0
-        ? '${totalDuration.inHours}h ${totalDuration.inMinutes.remainder(60)}min': totalDuration.inMinutes > 0
-        ? '${totalDuration.inMinutes}min':'${totalDuration.inSeconds}s';
-
-    return Container(
-      margin: const EdgeInsets.all(16),padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(gradient: LinearGradient(
-          begin: Alignment.topLeft,end: Alignment.bottomRight,
-          colors: [Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withOpacity(0.8)]),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(
-            color: Theme.of(context).primaryColor.withOpacity(0.3),
-            blurRadius: 20,offset: const Offset(0, 8))]),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children:[buildStatItem(
-            icon: Icons.fitness_center,value: '$totalExercises',label: 'Exercises'),
-          Container(height: 40,width: 1,
-            color: Colors.white.withOpacity(0.3)),
-          buildStatItem(icon: Icons.repeat,
-            value: '$totalSets',label: 'Total Sets'),
-          Container(height: 40, width: 1,
-            color: Colors.white.withOpacity(0.3)),
-          buildStatItem(icon: Icons.timer,value: totalTime,label: 'Est. Time'),
-        ],
-      ));
-  }
 
   Widget buildStatItem({required IconData icon,required String value,required String label}) {
     return Column(

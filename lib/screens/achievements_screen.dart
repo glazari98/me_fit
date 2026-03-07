@@ -1,37 +1,73 @@
+import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/services/acheivement_service.dart';
+import 'package:me_fit/services/authentication_service.dart';
 
 import '../components/drawer_menu.dart';
 import '../models/user.dart';
 
 class AchievementsScreen extends StatefulWidget {
-  final User user;
-  final List<ScheduledWorkout> workouts;
 
-  const AchievementsScreen({super.key, required this.user,required this.workouts});
-    
+  const AchievementsScreen({super.key});
+
   @override
   State<AchievementsScreen> createState() => AchievementsScreenState();
 
 }
 
 class AchievementsScreenState extends State<AchievementsScreen> {
-
   late User user;
   late List<int> unlockedBadges;
-
+  bool isLoading = true;
   @override
   void initState() {
     super.initState();
-    user = widget.user;
-    AchievementService().checkWeeklyCompletion(user, widget.workouts);
-    unlockedBadges =
-        AchievementService.calculateUnlockedBadges(user.totalCompletedWorkouts);
+    loadData();
+
   }
+  Future<void> loadData() async {
+    final currentUser = AuthenticationService().getCurrentUser();
+    if (currentUser == null) {
+      setState(() => isLoading = false);
+      return;
+    }
+   final scheduledWorkouts = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
+        .whereEqualTo('userId', currentUser.uid)
+        .fetch();
+  //retrieve user to pass him into achievement service call
+   final userData = await FS.get.one<User>(currentUser.uid);
+    if (userData == null) {
+      setState(() => isLoading = false);
+      return;
+    }
+    AchievementService().checkWeeklyCompletion(userData, scheduledWorkouts.items);
+    //retrieve user again after check weekly completion to see if there are changes with the streak
+    final updatedUser = await FS.get.one<User>(currentUser.uid);
+
+    if (updatedUser != null && mounted) {
+      setState(() {
+        user = updatedUser;
+        unlockedBadges = AchievementService.calculateUnlockedBadges(updatedUser.totalCompletedWorkouts);
+        isLoading = false;
+      });
+    }
+
+  }
+
+// ... rest of your code remains the same
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('Achievements'),
+          centerTitle: true,
+        ),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(appBar: AppBar(
       title: Text('Achievements'), centerTitle: true,
     ),

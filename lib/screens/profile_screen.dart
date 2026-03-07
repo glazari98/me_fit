@@ -34,6 +34,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
   String? editedAerobicType;
   double? editedAerobicDistanceGoal;
   final aerobicDistanceGoalController = TextEditingController();
+  final startingAerobicDistanceController = TextEditingController();
   bool preferencesChanged = false;
 
   @override
@@ -81,10 +82,29 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
  //check if preferences changed
   void checkPreferencesChanged() {
     if (currentUserModel == null) return;
+
+    //if we edit distance goal but change to another training type, mark it as unchanged. Give it the value in database
+    if((editedAerobicDistanceGoal != currentUserModel?.aerobicDistanceGoal || editedAerobicType != currentUserModel!.aerobicType) && editedTrainingType != 'Aerobic'){
+      editedAerobicDistanceGoal = currentUserModel?.aerobicDistanceGoal;
+      editedAerobicType = currentUserModel?.aerobicType;
+    }
+
+    bool startingDistanceChanged = false;
+    if(editedTrainingType  == 'Aerobic') {
+      //check  if there is current weekly distance value in database
+      if (currentUserModel!.currentAerobicDistance == null) {
+        //check if field is not empty
+        startingDistanceChanged = startingAerobicDistanceController.text.trim().isNotEmpty;
+      }
+      if(editedHasAccessToGym != currentUserModel!.hasAccessToGym){
+        editedHasAccessToGym = currentUserModel!.hasAccessToGym;
+      }
+
+    }
     final changed = editedTrainingType != currentUserModel!.trainingType ||
     editedTrainingGoal != currentUserModel!.trainingGoal || editedHasAccessToGym != currentUserModel!.hasAccessToGym ||
-    editedPreferredWorkoutsPerWeek != currentUserModel!.preferredWorkoutsPerWeek || editedAerobicType != currentUserModel!.aerobicType ||
-    editedAerobicDistanceGoal != currentUserModel!.aerobicDistanceGoal;
+    editedPreferredWorkoutsPerWeek != currentUserModel!.preferredWorkoutsPerWeek || editedAerobicType != currentUserModel!.aerobicType
+    || editedAerobicDistanceGoal != currentUserModel!.aerobicDistanceGoal ||startingDistanceChanged;
     setState(() {
       preferencesChanged = changed;
     });
@@ -95,6 +115,15 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
 
     if (editedTrainingType == 'Aerobic') {
       final goalDistance = double.tryParse(aerobicDistanceGoalController.text.trim());
+      final startingDistance = double.tryParse(startingAerobicDistanceController.text.trim());
+      if(currentUserModel!.currentAerobicDistance == null) {
+        if (startingDistance == null || startingDistance <= 0 || startingDistance > 100) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Starting weekly distance must be between 0.1 and 100 km'),
+              duration: Duration(seconds: 2)));
+          return;
+        }
+      }
 
       if (goalDistance == null || goalDistance < 1 || goalDistance > 200) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -102,13 +131,14 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
             duration: Duration(seconds: 2)));
         return;
       }
-      if (goalDistance < currentUserModel!.currentAerobicDistance!) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-                'Long-term goal must be greater than or equal to your current distance'),
-            duration: Duration(seconds: 2))
-        );
-        return;
+
+      if (startingDistance != null) {
+        if (goalDistance < startingDistance) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Long-term goal must be greater than or equal to your current distance'),
+              duration: Duration(seconds: 2)));
+          return;
+        }
       }
     }
       //confirmation message
@@ -148,17 +178,18 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
         weight: currentUserModel!.weight,
         height: currentUserModel!.height,
         trainingType: editedTrainingType ?? currentUserModel!.trainingType,
-        trainingGoal: editedTrainingGoal ?? currentUserModel!.trainingGoal,
+        trainingGoal: editedTrainingType == 'Aerobic' ? null : (editedTrainingGoal ?? currentUserModel!.trainingGoal),
         hasAccessToGym: editedHasAccessToGym,
-        preferredWorkoutsPerWeek: editedPreferredWorkoutsPerWeek ??
-            currentUserModel!.preferredWorkoutsPerWeek,
+        preferredWorkoutsPerWeek: editedPreferredWorkoutsPerWeek ?? currentUserModel!.preferredWorkoutsPerWeek,
         aerobicType: editedAerobicType,
+        currentAerobicDistance: currentUserModel!.currentAerobicDistance ?? double.tryParse(startingAerobicDistanceController.text.trim()),
         aerobicDistanceGoal: editedAerobicDistanceGoal,
         profileImageUrl: currentUserModel!.profileImageUrl,
         currentStreak: currentUserModel!.currentStreak,
         bestStreak: currentUserModel!.bestStreak,
         totalCompletedWorkouts: currentUserModel!.totalCompletedWorkouts,
         unlockedBadges: currentUserModel!.unlockedBadges,
+        newScheduleMessageShown:  currentUserModel!.newScheduleMessageShown
       );
 
       await FS.update.one<User>(updatedUser);
@@ -202,6 +233,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
         bestStreak: currentUserModel!.bestStreak,
         totalCompletedWorkouts: currentUserModel!.totalCompletedWorkouts,
         unlockedBadges: currentUserModel!.unlockedBadges,
+        newScheduleMessageShown: currentUserModel!.newScheduleMessageShown
       );
 
       await FS.update.one<User>(updatedUser);
@@ -382,6 +414,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                         setState(() {
                           editedTrainingType = 'Aerobic';
                           editedTrainingGoal = null; //aerobic has no goal (it has weekly distance goal!)
+                          editedAerobicType = editedAerobicType ?? 'Running';
                           checkPreferencesChanged();
                         });
                       },
@@ -649,27 +682,42 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Starting Weekly Distance',
+                                  Text('Starting Weekly Distance (km)',
                                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
                                   SizedBox(height: 4),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade100,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.grey.shade300),
-                                    ),
-                                    child: Text(
-                                      currentUserModel!.currentAerobicDistance != null
-                                          ? '${currentUserModel!.currentAerobicDistance!.toStringAsFixed(1)} km'
-                                          : 'Not set',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.grey.shade800,
+                                  if (currentUserModel!.currentAerobicDistance != null)
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.grey.shade300),
                                       ),
+                                      child: Text(
+                                        '${currentUserModel!.currentAerobicDistance!.toStringAsFixed(1)} km',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.grey.shade800,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    TextField(
+                                      controller: startingAerobicDistanceController,
+                                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      ),
+                                      onChanged: (value) {
+                                        setState(() {
+                                          checkPreferencesChanged();
+                                        });
+                                      },
                                     ),
-                                  ),
                                 ],
                               )),
                         ]),
@@ -696,7 +744,6 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                                 keyboardType: TextInputType.numberWithOptions(
                                     decimal: true),
                                 decoration: InputDecoration(
-                                  hintText: 'Enter distance in km',
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12)),
                                   contentPadding: const EdgeInsets.symmetric(

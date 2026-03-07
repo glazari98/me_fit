@@ -85,13 +85,24 @@ class SignupScreenState extends State<SignupScreen> {
         bestStreak: 0,
         totalCompletedWorkouts: 0,
         unlockedBadges: [],
+        newScheduleMessageShown: true
       );
 
       await FS.create.one(user);
-      await assignStarterWorkouts(user.id);
+      final now = DateTime.now();
+      final currentDayOfWeek = now.weekday;
+      final bool isSunday = currentDayOfWeek == 7;
+      if(!isSunday) {
+        await assignStarterWorkouts(user.id);
+      }
 
       if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false,
+        arguments: {
+          'justSignedUp': true, 'isSunday': isSunday,
+          'workoutsScheduled': preferredWorkoutsPerWeek ?? 0,
+          'remainingDays': isSunday ? 0 : 7 - now.weekday + 1,
+        },);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),
@@ -103,11 +114,15 @@ class SignupScreenState extends State<SignupScreen> {
   Future<void> scheduleWorkoutsForCurrentWeek({required String userId, required List<Workout> starterWorkouts,required int preferredWorkoutsPerWeek}) async {
     final now = DateTime.now();
     final currentDayOfWeek = now.weekday;
-    final remainingDays = 7 - currentDayOfWeek + 1;
+    final bool isSunday = currentDayOfWeek == 7; //check if the user signs up on a sunday
+    final remainingDays = isSunday ? 0 : 7 - currentDayOfWeek + 1; //if it is a sunday don't assign workouts
 
     int maxWorkoutsThisWeek;
     //adjust how many workouts can fit in the week according to how many days are remaining in the week
-    if(remainingDays >= 6){
+    if(isSunday){
+      maxWorkoutsThisWeek = 0;
+    }
+    else if(remainingDays >= 6){
       maxWorkoutsThisWeek = preferredWorkoutsPerWeek;
     }else if(remainingDays == 5){
       maxWorkoutsThisWeek = preferredWorkoutsPerWeek > 4 ? 4 : preferredWorkoutsPerWeek;
@@ -117,8 +132,10 @@ class SignupScreenState extends State<SignupScreen> {
       maxWorkoutsThisWeek = preferredWorkoutsPerWeek > 2 ? 2 : preferredWorkoutsPerWeek;
     }else if(remainingDays == 2){
       maxWorkoutsThisWeek = preferredWorkoutsPerWeek > 1 ? 1 : preferredWorkoutsPerWeek;
-    }else{
+    }else if(remainingDays == 1){
       maxWorkoutsThisWeek = 1;
+    }else{
+      maxWorkoutsThisWeek =0;
     }
     //actual number of workouts happening this week
     final workoutsToSchedule = maxWorkoutsThisWeek;
@@ -581,7 +598,8 @@ class SignupScreenState extends State<SignupScreen> {
           WorkoutExercises we;
           int workoutDuration = 2700; //45 mins
           //spread duration across all exercises
-          int durationPerExercise = (workoutDuration / workoutPlanExerciseTypes.length -1).round(); //we don't count stretching
+          int exerciseCount = workoutPlanExerciseTypes[i].length - 1; //we don't count stretching
+          int durationPerExercise = (workoutDuration / exerciseCount).round();
           int? sets;
           int? duration;
           int? rest;

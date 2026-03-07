@@ -21,6 +21,7 @@ class User {
   int bestStreak;
   int totalCompletedWorkouts;
   List<int>? unlockedBadges;
+  bool newScheduleMessageShown;
 
  User({
     required this.id,
@@ -40,7 +41,8 @@ class User {
     this.aerobicType,
     this.aerobicDistanceGoal,
     this.currentAerobicDistance,
-    this.profileImageUrl
+    this.profileImageUrl,
+    required this.newScheduleMessageShown
 });
 
 }
