@@ -453,8 +453,8 @@ class HomeScreenState extends State<HomeScreen>{
                               ),
                               SizedBox(height: 4),
                               Text( userSchedule.where((w) => w.isCompleted).length >= 3
-                                    ? 'No new suggestions this week. Check back next week!'
-                                    : 'Complete more workouts to get personalized AI suggestions!',
+                                    ? 'Suggestion is generated every start of the week! Check back on Monday!'
+                                    : 'Complete more workouts to get personalized AI suggestion!',
                                 style: TextStyle(color: Colors.grey[600],fontSize: 13),
                               )]),
                         )],

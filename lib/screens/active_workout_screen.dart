@@ -163,6 +163,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     phaseTimer?.cancel();
     positionStream?.pause();
     setState(() => isPaused = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Workout paused.'),duration: Duration(seconds: 2)));
   }
 
   void resumeWorkout() {
@@ -203,6 +205,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       } else {
         positionStream?.resume();
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Resuming workout.'),duration: Duration(seconds: 2)));
       setState(() => isPaused = false);
     }
   }
@@ -718,10 +722,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     showWeightInput = false;
 
     if(!mounted) return;
-    Navigator.pop(context,true);
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout cancelled.'),duration: Duration(seconds: 2)));
-
-
+    Navigator.pop(context,true);
   }
   @override
   Widget build(BuildContext context){
@@ -766,7 +768,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   Text(formatDuration(elapsedSeconds),
                       style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold)),
                 ]),
-              const SizedBox(height: 20),
+              const SizedBox(height: 5),
               Expanded(
                 child: buildExerciseControls(),
               ),
@@ -842,9 +844,9 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   isFullWidth: true,
                 )),
             if (showWeightInput) ...[
-              SizedBox(height: 8),
+              SizedBox(height: 5),
               Container(
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.all(10),
                 decoration: BoxDecoration( color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200)),
                 child: Column(
