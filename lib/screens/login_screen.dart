@@ -37,6 +37,9 @@ class LoginScreenState extends State<LoginScreen>{
           password: password);
 
       if(!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You have successfully logged in'),duration: Duration(seconds: 2)),
+      );
       Navigator.pushReplacementNamed(context, '/home');
     } on FirebaseAuthException catch(e) {
       String message = 'Login Failed';
@@ -62,15 +65,31 @@ class LoginScreenState extends State<LoginScreen>{
   @override
   Widget build(BuildContext context){
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(title: Text('Login'),centerTitle: true),
       body: Padding(
         padding:  EdgeInsets.all(16),
-
         child: Column(
           children: [
-
-            //TODO - Place the app logo here.
-
+            Container(
+              height: 200,
+              width: 200,
+              margin: EdgeInsets.symmetric(vertical: 20),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey[200],
+                      child: Icon(
+                        Icons.fitness_center,
+                        size: 60,
+                        color: Colors.grey,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
             TextFormField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,

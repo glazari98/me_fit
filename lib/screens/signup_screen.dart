@@ -74,6 +74,7 @@ class SignupScreenState extends State<SignupScreen> {
         age: age,
         weight: double.parse(weightController.text.trim()),
         height: int.parse(heightController.text.trim()),
+        signUpDate: Timestamp.fromDate(DateTime.now()),
         trainingType: trainingType!,
         trainingGoal: trainingGoal,
         hasAccessToGym: hasAccessToGym!,
@@ -343,7 +344,7 @@ class SignupScreenState extends State<SignupScreen> {
 
             if (isLastExercise) {
               return e.exerciseTypeId ==
-                  '20260129-1023-8223-a819-4e81b08f7f14' && //stretching
+                  '20260307-1515-8d30-b580-4af3ea41bbc2' && //stretching
                   equipmentMatch;
             }
             final bodyPartId = bodyPartNameToId[workoutPlanBodyParts[i][j]];
@@ -352,7 +353,7 @@ class SignupScreenState extends State<SignupScreen> {
 
             return bodyPartMatch && equipmentMatch &&
                 e.exerciseTypeId ==
-                    '20260129-1023-8922-8643-a9a2984d73d5'; //strength
+                    '20260307-1515-8c28-a740-f8764502a705'; //strength
           }).toList();
 
 
@@ -578,11 +579,11 @@ class SignupScreenState extends State<SignupScreen> {
 
           String exerciseTypeId;
           if (type == 'CARDIO') {
-            exerciseTypeId = '20260129-1023-8c23-9480-a118b95f118c';
+            exerciseTypeId = '20260307-1515-8b30-9154-48cd11b8abce';
           } else if (type == 'PLYOMETRICS') {
-            exerciseTypeId = '20260129-1023-8923-b650-e37111665694';
+            exerciseTypeId = '20260307-1515-8630-b366-53e94b68f829';
           } else {
-            exerciseTypeId = '20260129-1023-8223-a819-4e81b08f7f14';
+            exerciseTypeId = '20260307-1515-8d30-b580-4af3ea41bbc2';
           }
 
           final exerciseForType = allExercises.where((e) {
@@ -646,7 +647,7 @@ class SignupScreenState extends State<SignupScreen> {
           starterWorkouts: starterWorkouts,
           preferredWorkoutsPerWeek: preferredWorkoutsPerWeek!);
     }if (trainingType == 'Aerobic') {
-      const aerobicExerciseTypeId = '20260129-1023-8024-a295-ced66eef7c9c';
+      const aerobicExerciseTypeId = '20260307-1515-8931-9171-8f83ef2b3e0c';
 
 
       List<double> distanceSplits;
@@ -917,8 +918,7 @@ class SignupScreenState extends State<SignupScreen> {
         appBar: AppBar(
           title: Text(
             'Sign Up',
-          ),
-        ),
+          )),
         body: Stack(
           children: [
             Container(
@@ -1070,14 +1070,11 @@ class SignupScreenState extends State<SignupScreen> {
                                     textCapitalization: TextCapitalization
                                         .words,
                                     controller: nameController,
-                                    decoration: fieldDecoration(
-                                        'Username',
-                                        Icons.person_outline),
+                                    decoration: fieldDecoration('Username',Icons.person_outline),
                                   ),
                                   SizedBox(height: 22),
                                   TextFormField(
-                                    controller: ageController,
-                                    decoration: fieldDecoration(
+                                    controller: ageController, decoration: fieldDecoration(
                                         'Age',
                                         Icons.cake_outlined),
                                     keyboardType:
@@ -1085,11 +1082,9 @@ class SignupScreenState extends State<SignupScreen> {
                                   ),
                                   SizedBox(height: 22),
                                   TextFormField(
-                                    controller: weightController,
-                                    decoration: fieldDecoration(
+                                    controller: weightController,decoration: fieldDecoration(
                                         'Weight (kg)',
-                                        Icons
-                                            .monitor_weight_outlined),
+                                        Icons.monitor_weight_outlined),
                                     keyboardType:
                                     TextInputType
                                         .numberWithOptions(

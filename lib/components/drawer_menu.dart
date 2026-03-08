@@ -8,6 +8,7 @@ import 'package:me_fit/screens/completed_workouts_screen.dart';
 import 'package:me_fit/screens/home_screen.dart';
 import 'package:me_fit/screens/my_workouts.dart';
 import 'package:me_fit/screens/profile_screen.dart';
+import 'package:me_fit/screens/statistics_screen.dart';
 import 'package:me_fit/screens/start_workout_screen.dart';
 import 'package:me_fit/screens/weekly_workouts_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
@@ -89,16 +90,7 @@ class AppDrawer extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const CompletedWorkoutsScreen()),
                 );}
             }),
-          //profile
-          buildDrawerItem(
-            context, icon: Icons.person,
-            title: 'Profile', route: '/profile',
-            onTap: () {Navigator.pop(context);
-              if (currentRoute != '/profile') {
-                Navigator.pushReplacement( context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                );
-              }}),
+
           //achievements
           buildDrawerItem(
             context,icon: Icons.badge,
@@ -107,17 +99,70 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pushReplacement( context,
                       MaterialPageRoute(builder: (_) => AchievementsScreen()));
 
-            })],
+            }),
+          //progress
+          buildDrawerItem(
+              context,icon: Icons.analytics,
+              title: 'Statistics', route: '/statistics',
+              onTap: () async { Navigator.pop(context);
+              Navigator.pushReplacement( context,
+                  MaterialPageRoute(builder: (_) => StatisticsScreen()));
+
+              }),
+          const Spacer(),
+          //profile
+          buildDrawerItem(
+              context, icon: Icons.person,
+              title: 'Profile', route: '/profile',
+              onTap: () {Navigator.pop(context);
+              if (currentRoute != '/profile') {
+                Navigator.pushReplacement( context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              }}),
+        ],
       ),
     );
   }
 
   void logOut(BuildContext context) async{
     final AuthenticationService authService = AuthenticationService();
-    //TODO - Important: Ask the user to confirm log out before logging them out. You can use an AlertDialog.
-    authService.logOutUser();
-    Navigator.pushReplacementNamed(context, '/login');
-  }
+    final confirmLogOut = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(children: [Icon(Icons.logout, color: Colors.red),
+            SizedBox(width: 8),Text('Log Out'),
+          ]),
+        content: Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red,foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Log Out'),
+          ),
+        ],
+      ),
+    );
+
+    // Only log out if user confirmed
+    if (confirmLogOut == true) {
+      await authService.logOutUser();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('You have successfully logged out'),duration: Duration(seconds: 2)),
+        );
+        Navigator.pushNamedAndRemoveUntil(context, '/login',(route)=>false);
+      }
+    }
+
   Widget buildDrawerHeader(BuildContext context) {
     final authService = AuthenticationService();
     return FutureBuilder<User?>(

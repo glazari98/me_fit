@@ -5,6 +5,7 @@ import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/models/workoutExerciseFeedback.dart';
 import 'package:me_fit/models/workoutExercises.dart';
 import 'package:me_fit/screens/my_workouts.dart';
+import 'package:me_fit/services/acheivement_service.dart';
 
 
 import '../models/exercise.dart';
@@ -13,11 +14,15 @@ import '../models/workout.dart';
 class WorkoutFeedbackScreen extends StatefulWidget {
   final Workout workout;
   final List<WorkoutExercises> exercises;
+  final bool showBadgeUnlocked;
+  final int badgeMilestone;
 
   const WorkoutFeedbackScreen({
     super.key,
     required this.workout,
     required this.exercises,
+    this.showBadgeUnlocked = false,
+    this.badgeMilestone = 0,
   });
 
   @override
@@ -31,6 +36,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
   Map<String, WorkoutExerciseFeedback> feedbackMap = {};
   Map<String, Exercise> exerciseMap = {};
   GoogleMapController? mapController;
+
   @override
   void initState(){
     super.initState();
@@ -41,7 +47,47 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
     await loadScheduledWorkout();
     await loadFeedback();
     await loadExercises();
+
+    if (widget.showBadgeUnlocked && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showBadgeUnlockedDialog();
+      });
+    }
     setState((){});
+  }
+
+  void showBadgeUnlockedDialog() {
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            SizedBox(width: 8),Text('New Badge Unlocked!')],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(AchievementService().getBadgeImage(widget.badgeMilestone),
+              height: 100,width: 100),
+            SizedBox(height: 16),
+             Text('Congratulations!',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            SizedBox(height: 8),
+            Text('You\'ve earned a new achievement badge!',
+              textAlign: TextAlign.center,
+            )],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Continue'),
+          )],
+      ));
   }
 
   Future<void> loadExercises() async{
@@ -128,20 +174,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
           title: const Text('Workout Summary'),
           centerTitle: true,
         ),
-        // floatingActionButton: FloatingActionButton.extended(
-        //   backgroundColor: Theme.of(context).primaryColor,
-        //   onPressed: () {
-        //     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => MyWorkoutsScreen(),),(route) => false,);
-        //   },
-        //   label: Row(
-        //     children: [
-        //       const Icon(Icons.check, color: Colors.white,),
-        //       const SizedBox(width: 8),
-        //       Text('Done', style: TextStyle(color: Colors.white),),
-        //     ],
-        //   ),
-        // ),
-        body: Padding(
+         body: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [

@@ -207,14 +207,14 @@ exports.generateNextWeekWorkouts = functions.https.onRequest(async (req, res) =>
                   e.equipmentId === '20260129-1024-8a43-b037-3d29faa316f7';
 
                 if (isLastExercise) {
-                  return e.exerciseTypeId === '20260129-1023-8223-a819-4e81b08f7f14' && equipmentMatch; // assigned strength exercise type id manually
+                  return e.exerciseTypeId === '20260307-1515-8d30-b580-4af3ea41bbc2' && equipmentMatch; // assigned strength exercise type id manually
                 }
 
                 const bodyPartId = bodyPartNameToId[workoutPlanBodyParts[i][j]];
                 const bodyPartMatch = e.bodyParts && e.bodyParts.includes(bodyPartId);
 
                 return bodyPartMatch && equipmentMatch &&
-                  e.exerciseTypeId === '20260129-1023-8922-8643-a9a2984d73d5';
+                  e.exerciseTypeId === '20260307-1515-8c28-a740-f8764502a705';
               });
 
               if (exercisesForType.length === 0) continue;
@@ -314,11 +314,11 @@ exports.generateNextWeekWorkouts = functions.https.onRequest(async (req, res) =>
               // assign exercise type to Id manually
               let exerciseTypeId;
               if (type === 'CARDIO') {
-                exerciseTypeId = '20260129-1023-8c23-9480-a118b95f118c';
+                exerciseTypeId = '20260307-1515-8b30-9154-48cd11b8abce';
               } else if (type === 'PLYOMETRICS') {
-                exerciseTypeId = '20260129-1023-8923-b650-e37111665694';
+                exerciseTypeId = '20260307-1515-8630-b366-53e94b68f829';
               } else { // stretching
-                exerciseTypeId = '20260129-1023-8223-a819-4e81b08f7f14';
+                exerciseTypeId = '20260307-1515-8d30-b580-4af3ea41bbc2';
               }
 
               // filter exercises according to if user has access to the gym or not.
@@ -374,10 +374,10 @@ exports.generateNextWeekWorkouts = functions.https.onRequest(async (req, res) =>
             starterWorkouts.push({id: workoutId});
           }
         } else if (userData.trainingType === 'Aerobic') {
-          const aerobicExerciseTypeId = '20260129-1023-8024-a295-ced66eef7c9c';
+          const aerobicExerciseTypeId = '20260307-1515-8931-9171-8f83ef2b3e0c';
           const preferredWorkouts = userData.preferredWorkoutsPerWeek;
-          const currentDistance = userData.currentAerobicDistance || 5.0; // starting point
-          const goalDistance = userData.aerobicDistanceGoal || 10.0; // target goal
+          const currentDistance = userData.currentAerobicDistance || 5.0;
+          const goalDistance = userData.aerobicDistanceGoal || 10.0;
           const aerobicType = userData.aerobicType || 'Running';
 
           // increase by 0.5 km per week
@@ -476,7 +476,7 @@ exports.generateNextWeekWorkouts = functions.https.onRequest(async (req, res) =>
             });
 
             let workoutDistance = thisWeekDistance * distanceSplits[i];
-            workoutDistance = Math.round(workoutDistance * 1000) / 1000;
+            workoutDistance = Math.round(workoutDistance * 100) / 100;
             // filter exercise for the aerobic type
             const matchingExercises = allExercises.filter((e) => {
               const typeMatch = e.exerciseTypeId === aerobicExerciseTypeId;

@@ -55,7 +55,6 @@ class AchievementsScreenState extends State<AchievementsScreen> {
 
   }
 
-// ... rest of your code remains the same
 
   @override
   Widget build(BuildContext context) {
@@ -93,8 +92,6 @@ class AchievementsScreenState extends State<AchievementsScreen> {
                 Icons.local_fire_department, Colors.orange),
             SizedBox(height: 12),
             buildStatCard('Best Streak', '${user.bestStreak}', Icons.emoji_events,Colors.amber),
-             SizedBox(height: 12),
-            buildStatCard('Total Workouts', '${user.totalCompletedWorkouts}', Icons.fitness_center, Colors.green),
             SizedBox(height: 24),
             Padding(
               padding: EdgeInsets.only(left: 4, bottom: 8),
@@ -238,7 +235,7 @@ class AchievementsScreenState extends State<AchievementsScreen> {
                       : 'assets/images/${milestone}locked.png',
                   height: 100, width: 100),
                 SizedBox(height: 16),
-                Text('Complete $milestone workouts',
+                Text('Completed $milestone workouts',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

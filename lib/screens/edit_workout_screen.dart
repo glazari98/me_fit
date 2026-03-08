@@ -163,6 +163,9 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
                     if (type == 'STRETCHING') {
                       instance.duration = int.parse(duration.text);
                     }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Changes saved'),duration: Duration(seconds: 2),),
+                    );
                     Navigator.pop(context, instance);
                   },
                   child: const Text('Save'))
@@ -249,7 +252,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
   Future<void> addExerciseFlow() async {
     if (exercises.length >= 50) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You can add up to 50 exercises')),
+        SnackBar(content: Text('You can add up to 50 exercises'),duration: Duration(seconds: 2),),
       );
       return;
     }
@@ -349,6 +352,9 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
                     exercises[i].workoutExercise.order = i + 1;
                     await FS.update.one(exercises[i].workoutExercise);
                   }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Changes saved'),duration: Duration(seconds: 2),),
+                  );
                   setState(() {});
                 },
                 itemBuilder: (context, index) {

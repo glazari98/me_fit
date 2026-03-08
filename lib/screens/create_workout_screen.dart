@@ -93,6 +93,9 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
             distance: draftExercise.distance,)
       );
     }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Workout successfully created'),duration: Duration(seconds: 2),),
+    );
     Navigator.pop(context, true);
   }
 
@@ -233,7 +236,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
                     }
                     Navigator.pop(context, instance);
                   },
-                  child: const Text('Save'))
+                  child: Text('Save'))
             ],
           );
         }

@@ -87,6 +87,13 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
     return days[date.weekday - 1];
   }
 
+  Future<void> refreshData() async {
+    weeklyWorkouts = fetchWeeklyWorkouts();
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,7 +103,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
       ),
       drawer: AppDrawer(scaffoldContext: context,currentRoute: '/start-workout'),
       body: RefreshIndicator(
-        onRefresh: () async => setState(() => weeklyWorkouts = fetchWeeklyWorkouts()),
+        onRefresh: refreshData,
         child: FutureBuilder<Map<DateTime, List<ScheduledWorkout>>>(
           future: weeklyWorkouts,
           builder: (context, snapshot) {
@@ -167,7 +174,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
         ...workouts.map((scheduledWorkout) => WorkoutCard(
           key: ValueKey(scheduledWorkout.id),
           scheduledWorkout: scheduledWorkout,
-          onRefresh: () => setState(() => weeklyWorkouts = fetchWeeklyWorkouts()),
+          onRefresh: refreshData,
         )),
       ],
     );

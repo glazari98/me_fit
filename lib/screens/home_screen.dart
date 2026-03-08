@@ -88,7 +88,8 @@ class HomeScreenState extends State<HomeScreen>{
       icon = Icons.weekend;
       color = Colors.orange;
     }else{
-      message = "A workout schedule has been generated for you for the remaining $remainingDays day${remainingDays > 1 ? 's' : ''} of this week. Every Monday you'll receive a new weekly schedule with $workoutsScheduled workout${workoutsScheduled > 1 ? 's' : ''}";
+      int days = remainingDays - 1;
+      message = "A workout schedule has been generated for you for the remaining $days day${days > 1 ? 's' : ''} of this week. Every Monday you'll receive a new weekly schedule with $workoutsScheduled workout${workoutsScheduled > 1 ? 's' : ''}";
       icon = Icons.calendar_today;
       color = Colors.green;
     }
@@ -202,6 +203,7 @@ class HomeScreenState extends State<HomeScreen>{
     selectedEvents = ValueNotifier([]);
     loadSchedule();
     loadSuggestions();
+    showSuggestions = false;
   }
   LinkedHashMap<DateTime, List<WorkoutEvent>> buildWorkoutEventMap(List<ScheduledWorkout> workouts){
     final map = LinkedHashMap<DateTime,List<WorkoutEvent>>(
@@ -251,17 +253,21 @@ class HomeScreenState extends State<HomeScreen>{
                               .fetch();
     final tempMap = buildWorkoutEventMap(result.items);
 
-    setState(() {
-      userSchedule = result.items;
-      kEvents.clear();
-      kEvents.addAll(tempMap);
+    if (mounted) {
+      setState(() {
+        userSchedule = result.items;
+        kEvents.clear();
+        kEvents.addAll(tempMap);
 
-      final normalisedSelectedDay = selectedDay != null ?
-          normaliseDate(selectedDay!) :
-          normaliseDate(DateTime.now());
-      selectedEvents.value = kEvents[normalisedSelectedDay] ?? [];
-    });
-    await checkForNewScheduleMessage();
+        final normalisedSelectedDay = selectedDay != null ?
+        normaliseDate(selectedDay!) :
+        normaliseDate(DateTime.now());
+        selectedEvents.value = kEvents[normalisedSelectedDay] ?? [];
+      });
+    }
+    if(mounted) {
+      await checkForNewScheduleMessage();
+    }
   }
 
   List<WorkoutEvent> getEventsForDay(DateTime day){
@@ -322,7 +328,9 @@ class HomeScreenState extends State<HomeScreen>{
         ),
       );
     }    
-    loadSchedule();
+    if(mounted) {
+      loadSchedule();
+    }
   }
 
   Future<void> loadSuggestions() async {
@@ -356,6 +364,7 @@ class HomeScreenState extends State<HomeScreen>{
       setState(() {
         pendingSuggestions = matchingSuggestions;
         isLoadingSuggestions = false;
+        showSuggestions = pendingSuggestions.isNotEmpty;
       });
     }
     

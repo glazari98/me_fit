@@ -42,6 +42,7 @@ class _SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
 
     final result = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
         .whereEqualTo('userId', currentUser.uid)
+        .whereEqualTo('isCompleted', false)  // ADD THIS LINE - only show non-completed workouts
         .whereGreaterThanOrEqualTo('scheduledDate', Timestamp.fromDate(thisMonday))
         .whereLessThan('scheduledDate', Timestamp.fromDate(nextMonday))
         .fetch();
@@ -93,7 +94,7 @@ class _SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Suggestion declined'),duration: Duration(seconds: 2),
+          content: Text(weeklyWorkouts.isEmpty ? 'Suggestion dismissed': 'Suggestion declined'),duration: Duration(seconds: 2),
         ),
       );
       setState(() => isLoading = false);
@@ -195,14 +196,38 @@ class _SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
                 )),
             ),
             SizedBox(height: 24),
-            if (weeklyWorkouts.isNotEmpty) ...[
-              Text('REPLACE WORKOUT',
-                style: TextStyle(fontSize: 14,fontWeight: FontWeight.w600,letterSpacing: 1.2),
+            //if all scheduled workouts for this week are completed show informational message
+            if (weeklyWorkouts.isEmpty)
+              Column(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade300)),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.orange),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text('No workouts available to replace this week. All workouts are completed!',
+                            style: TextStyle(fontSize: 14)),
+                        )],
+                    )),
+                  SizedBox(height: 20),
+                ])
+            else ...[ //show dropdown to replace if not all scheduled workouts are completed
+              Text('REPLACE WORKOUT',style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 1.2),
               ),
               SizedBox(height: 12),
-              Container(padding: EdgeInsets.symmetric(horizontal: 16),decoration: BoxDecoration(
-                  color: Colors.grey.shade50,borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade300)),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<ScheduledWorkout>(
                     value: selectedWorkout,
@@ -210,46 +235,66 @@ class _SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
                     isExpanded: true,
                     items: weeklyWorkouts.map((workout) {
                       return DropdownMenuItem(
-                        value: workout,child: FutureBuilder<Workout?>(
+                        value: workout,
+                        child: FutureBuilder<Workout?>(
                           future: FS.get.one<Workout>(workout.workoutId),
                           builder: (context, snapshot) {
                             final name = snapshot.data?.name ?? 'Loading...';
                             final date = workout.scheduledDate.toDate();
                             return Text('$name (${date.day}/${date.month})');
-                          }),
+                          },
+                        ),
                       );
                     }).toList(),
                     onChanged: (value) {
                       setState(() => selectedWorkout = value);
                     },
-                  )),
-              ),
+                  ))),
               SizedBox(height: 20),
             ],
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: declineSuggestion,
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+            //if not all scheduled workouts for this week are completed show accept/decline buttons
+            if (weeklyWorkouts.isNotEmpty)
+              Row(
+                children: [
+                  Expanded(
+                      child: OutlinedButton(
+                        onPressed: declineSuggestion,
+                        style: OutlinedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(color: Colors.red),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            )),
+                        child: Text('DECLINE', style: TextStyle(color: Colors.red)),
                       )),
-                    child: Text('DECLINE',style: TextStyle(color: Colors.red)),
-                  )),
-                SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: acceptSuggestion,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green,
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                    child: Text('ACCEPT'),
-                  ))],
-            )],
+                  SizedBox(width: 12),
+                  Expanded(
+                      child: ElevatedButton(
+                        onPressed: acceptSuggestion,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: Text('ACCEPT'),
+                      )),
+                ],
+              )
+            else
+              Row(
+                children : [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: declineSuggestion,
+                      style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          side: BorderSide(color: Colors.red),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          )),
+                      child: Text('Dismiss', style: TextStyle(color: Colors.red)),
+                    ))],
+              )],
         )),
     );
   }

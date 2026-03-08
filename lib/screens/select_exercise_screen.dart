@@ -144,6 +144,9 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
               sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
             ),
             onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(sortAscending ? 'Sorted Z->A': 'Sorted A->Z'),duration: Duration(seconds: 2),),
+              );
               setState(() {
                 sortAscending = !sortAscending;
                 applyFiltersAndSearch();

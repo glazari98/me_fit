@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firestorm/annotations/firestorm_object.dart';
 
 @FirestormObject()
@@ -9,6 +10,7 @@ class User {
   int age;
   double weight;
   int height;
+  Timestamp? signUpDate;
   String trainingType;
   String? trainingGoal;
   bool hasAccessToGym;
@@ -29,7 +31,8 @@ class User {
     required this.username,
     required this.age,
     required this.weight,
-   required this.height,
+    required this.height,
+    this.signUpDate,
     required this.trainingType,
    this.trainingGoal,
     required this.hasAccessToGym,

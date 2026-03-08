@@ -301,6 +301,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final userId = AuthenticationService().getCurrentUser()?.uid;
     if(userId == null) return;
     User? user = await FS.get.one<User>(userId);
+    //keep track of old badges before user is updated
+    final oldBadges = AchievementService.calculateUnlockedBadges(user!.totalCompletedWorkouts);
     final userScheduledWorkouts = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
         .whereEqualTo('userId', user?.id)
         .fetch();
@@ -308,6 +310,10 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     AchievementService().checkWeeklyCompletion(user!, userScheduledWorkouts.items);
 
     await FS.update.one(user);
+    //keep track of new badges if unlocked after user is updated
+    final newBadges = AchievementService.calculateUnlockedBadges(user!.totalCompletedWorkouts);
+    final hasNewBadge = newBadges.length > oldBadges.length; //compare
+    final badgeMilestone = hasNewBadge ? newBadges.last : 0;
 
     await Navigator.push(
       context,
@@ -315,6 +321,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         builder: (_) => WorkoutFeedbackScreen(
           workout: widget.workout,
           exercises: workoutExercises,
+          showBadgeUnlocked: hasNewBadge,//pass boolean to know if in feedback the dialog of unlocked badge needs to show
+          badgeMilestone: badgeMilestone,
         ),
       ),
     );
@@ -537,16 +545,13 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final type = getExerciseType(we);
     if(type == 'CARDIO_PLYO'){
       startTimedSet();
+      return;
+    }
       setState(() {
+        phase = ExercisePhase.activeSet;
         currentSet++;
       });
 
-      return;
-    }
-    setState(() {
-      phase = ExercisePhase.activeSet;
-      currentSet++;
-    });
   }
 
   Future<void> saveWorkoutProgress() async {
@@ -925,8 +930,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 if (showWeightInput && weightControllers.isNotEmpty) {
                   List<double> targetWeights = [];
                   for (int i = 0; i < weightControllers.length; i++) {
-                    final weight = double.tryParse(weightControllers[i].text);
-                    if(weight! < 0.5 || weight > 400 ){
+                    final weight = double.tryParse(weightControllers[i].text) ?? 0;
+                    if(weight < 0 || weight > 400 ){
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Weight must vary between 0.5 kg and 400 kg'),duration: Duration(seconds: 2)));
                       return;
                     }
