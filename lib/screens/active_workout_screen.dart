@@ -549,6 +549,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final type = getExerciseType(we);
     if(type == 'CARDIO_PLYO'){
       startTimedSet();
+      currentSet++;
       return;
     }
       setState(() {
