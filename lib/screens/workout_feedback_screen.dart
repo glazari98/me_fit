@@ -78,7 +78,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
              Text('Congratulations!',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             SizedBox(height: 8),
-            Text('You\'ve earned a new achievement badge!',
+            Text('You\'ve completed ${widget.badgeMilestone} workout${widget.badgeMilestone > 1 ? 's' : ''}!',
               textAlign: TextAlign.center,
             )],
         ),
@@ -255,7 +255,19 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
   }
 
 
+  double calculateActualWeightLifted(WorkoutExercises we) {
+    if (we.actualSetWeights == null || we.actualSetWeights!.isEmpty) return 0;
 
+    //total weight lifted calculation
+    double actualTotal = 0;
+    for (int i = 0; i < we.actualSetWeights!.length; i++) {
+      if (we.actualSetWeights![i] > 0) {
+        actualTotal += we.actualSetWeights![i] * we.repetitions!;
+      }
+    }
+
+    return actualTotal;
+  }
   Widget buildExerciseDetails(String type,WorkoutExercises we,WorkoutExerciseFeedback? feedback,
       )
   {
@@ -272,7 +284,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
           children: [
             Text('Sets completed: ${feedback?.setsCompleted ?? 0} / ${we.sets ?? 0}'),
             Text('Reps completed: ${we.repsCompleted ?? 0}'),
-             if(totalWeightLifted != 0)Text('Total weight lifted: $totalWeightLifted kg' ),
+             if(totalWeightLifted != 0)Text('Total weight lifted: ${calculateActualWeightLifted(we)} kg' ),
           ],
         );
 
@@ -289,17 +301,6 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
           final routePoints = we.routePoints!
               .map((p) => parseLatLng(p))
               .toList();
-            //bug regarding markers
-            // final Set<Marker> markers = <Marker> {
-            //   Marker(markerId:  MarkerId('start'),
-            //       position: routePoints.first,
-            //       infoWindow:  InfoWindow(title: 'Start')
-            //       ),
-            //   Marker(markerId:  MarkerId('end'),
-            //       position: routePoints.last,
-            //       infoWindow:  InfoWindow(title: 'End'),
-            //       ),
-            // };
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.center,

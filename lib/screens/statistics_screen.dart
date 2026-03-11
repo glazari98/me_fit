@@ -101,8 +101,11 @@ class StatisticsScreenState extends State<StatisticsScreen> {
      switch (type) {
       case 'STRENGTH'://for strength exercises find weight lifted
         if (exercise.actualSetWeights != null) {
-          totalWeightLifted += exercise.actualSetWeights!
-              .fold(0.0, (sum, weight) => sum + weight);
+          for (int i = 0; i < exercise.actualSetWeights!.length; i++) {
+            if(exercise.actualSetWeights![i] > 0) {
+              totalWeightLifted += exercise.actualSetWeights![i] * exercise.repetitions!;
+            }
+          }
         }
         break;
 

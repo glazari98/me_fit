@@ -210,49 +210,70 @@ class AchievementsScreenState extends State<AchievementsScreen> {
   }
 
   void showBadgeDetails(int milestone, bool unlocked) {
+    //match badge index to badgeUnlocked dates list to find date
+    int badgeIndex = user.unlockedBadges?.indexOf(milestone) ?? -1;
+    String? unlockDate;
+
+    if (badgeIndex != -1 && user.badgeUnlockedDates != null && badgeIndex < user.badgeUnlockedDates!.length) {
+      final date = user.badgeUnlockedDates![badgeIndex].toDate();
+      unlockDate = '${date.day}/${date.month}/${date.year}';
+    }
+
     showDialog(
       context: context,
-      builder: (context) =>
-          AlertDialog(shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        title: Row(
+          children: [
+            Icon(unlocked ? Icons.emoji_events : Icons.lock,
+              color: unlocked ? Colors.amber.shade700 : Colors.grey,
             ),
-            title: Row(
-              children: [
-                Icon( unlocked ? Icons.emoji_events : Icons.lock,
-                  color: unlocked ? Colors.amber.shade700 : Colors.grey,
-                ),
-                SizedBox(width: 8),
-                Text(unlocked ? 'Badge Unlocked!' : 'Badge Locked',
-                  style: TextStyle(fontWeight: FontWeight.bold,
-                    color: unlocked ? Colors.amber.shade700 : Colors.grey[700],
-                  ))],
+            SizedBox(width: 8),
+            Text(unlocked ? 'Badge Unlocked!' : 'Badge Locked',
+                style: TextStyle(fontWeight: FontWeight.bold,
+                  color: unlocked ? Colors.amber.shade700 : Colors.grey[700],
+                )),
+          ]),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              unlocked ? 'assets/images/$milestone.png'
+                  : 'assets/images/${milestone}locked.png',
+              height: 100,width: 100
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset(
-                  unlocked ? 'assets/images/$milestone.png'
-                      : 'assets/images/${milestone}locked.png',
-                  height: 100, width: 100),
-                SizedBox(height: 16),
-                Text('Completed $milestone workouts',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  )),
-                SizedBox(height: 8),
-                Text(unlocked ? 'Congratulations! You\'ve earned this badge!'
-                      : 'Complete $milestone workouts to unlock this badge.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey[600],fontSize: 14),
-                ),
-              ]),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('OK'),
-              ),
-            ]),
+            SizedBox(height: 16),
+            if(unlocked)
+              Text(
+              'Completed $milestone workout${milestone > 1 ? 's' : ''}',
+              style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,
+              )),
+            Text(
+              unlocked
+                  ? 'Congratulations! You\'ve earned this badge!'
+                  : 'Complete $milestone workout${milestone > 1 ? 's' : ''} to unlock this badge.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            ),
+            if (unlockDate != null) ...[
+              SizedBox(height: 8),
+              Text(
+                'Unlocked on $unlockDate',
+                style: TextStyle(fontSize: 14,color: Colors.grey[600],fontWeight: FontWeight.w500,
+                )),
+            ],
+             SizedBox(height: 8),
+
+          ]),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK'),
+          ),
+        ],
+      ),
     );
   }
 }

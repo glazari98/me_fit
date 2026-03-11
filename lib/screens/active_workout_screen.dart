@@ -318,6 +318,10 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final newBadges = AchievementService.calculateUnlockedBadges(user!.totalCompletedWorkouts);
     final hasNewBadge = newBadges.length > oldBadges.length; //compare
     final badgeMilestone = hasNewBadge ? newBadges.last : 0;
+    if(hasNewBadge){
+      user.badgeUnlockedDates?.add(Timestamp.now());
+      await FS.update.one(user);
+    }
 
     await Navigator.push(
       context,
@@ -634,7 +638,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   // Progress Circle
   //TODO - Move this to a separate widget file --> WorkoutProgressCircle?
-  Widget _buildTimerCircle({required double percent, required int seconds, Color color = Colors.green}) {
+  Widget _buildTimerCircle({required double percent, required int seconds, Color color = Colors.blue}) {
     return Center(
       child: CircularPercentIndicator(
         radius: 110,
@@ -671,7 +675,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           SizedBox(width: 8),Text('Cancel Workout')
         ],
         ),
-        content: Text('Are you sure you want to cancel this workout?/nAll progress will be lost.'),
+        content: Text('Are you sure you want to cancel this workout? All progress will be lost.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context,false),
@@ -744,7 +748,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             if(workoutTimerStarted)
               IconButton(
                 onPressed: showCancelDialog,
-                icon: const Icon(Icons.cancel_outlined),
+                icon: Icon(Icons.cancel_outlined),
                 tooltip: 'Cancel Workout',
               ),
             if(workoutTimerStarted)
@@ -757,19 +761,19 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 }},
               icon: Icon(isPaused ? Icons.play_arrow :Icons.pause))
           ]),
-        body: Padding( padding: const EdgeInsets.all(16),
+        body: Padding( padding: EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              LinearProgressIndicator(value: progress),
-              const SizedBox(height: 16),
+              LinearProgressIndicator(minHeight: 10,value: progress,backgroundColor: Colors.red,color: Colors.green),
+              SizedBox(height: 16),
               Row( mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Workout time: ', style: TextStyle(fontSize: 13, letterSpacing: 2)),
+                  Text('Workout time: ', style: TextStyle(fontSize: 20, letterSpacing: 2)),
                   Text(formatDuration(elapsedSeconds),
-                      style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold)),
+                      style:  TextStyle(fontSize: 34, fontWeight: FontWeight.bold)),
                 ]),
-              const SizedBox(height: 5),
+              SizedBox(height: 5),
               Expanded(
                 child: buildExerciseControls(),
               ),
@@ -780,7 +784,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   Widget buildExerciseControls() {
     if (isTransitioning) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator());
     }
 
     final type = getExerciseType(we);
@@ -818,7 +822,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             buildExerciseInfoCard(children: [
               _buildHeaderTag(),
               const SizedBox(height: 12),
-              Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+              Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const Divider(height: 32),
               _buildInfoRow('Sets', '${we.sets}'),
               _buildInfoRow('Reps', '${we.repetitions}'),
@@ -922,7 +926,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                             )),
                         ))],
                 ))],
-            SizedBox(height: 24),
+            SizedBox(height: 10),
             _buildViewDetailsButton(ex),
             SizedBox(height: 12),
             _buildActionButton(
@@ -973,7 +977,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                     ),
                     child: Text(
                       'Target Weight: ${we.targetSetWeights![currentSet - 1]} kg',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.blue.shade800),
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.blue.shade800),
                     ),
                   ),
                 ),
@@ -1198,7 +1202,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(color: Theme.of(context).primaryColor, borderRadius: BorderRadius.circular(20)),
       child: Text('EXERCISE ${currentIndex + 1} / ${workoutExercises.length}',
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
     );
   }
 
@@ -1209,8 +1213,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 17)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
         ],
       ),
     );

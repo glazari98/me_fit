@@ -152,6 +152,7 @@ extension UserModel on User {
 	 Map<String, dynamic> toMap() {
 		 return {
        'newScheduleMessageShown': newScheduleMessageShown,
+       'badgeUnlockedDates': badgeUnlockedDates,
 			 'unlockedBadges': unlockedBadges,
 			 'totalCompletedWorkouts': totalCompletedWorkouts,
 			 'bestStreak': bestStreak,
@@ -191,6 +192,7 @@ extension UserModel on User {
 			bestStreak: map['bestStreak'] as int,
 			totalCompletedWorkouts: map['totalCompletedWorkouts'] as int,
 			unlockedBadges: map['unlockedBadges'] != null ? map['unlockedBadges'].cast<int>() : [],
+      badgeUnlockedDates: map['badgeUnlockedDates'] != null ? map['badgeUnlockedDates'].cast<Timestamp>() : [],
 			aerobicType: map['aerobicType'] as String?,
 			aerobicDistanceGoal: map['aerobicDistanceGoal'] as double?,
 			currentAerobicDistance: map['currentAerobicDistance'] as double?,

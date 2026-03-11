@@ -23,6 +23,7 @@ class User {
   int bestStreak;
   int totalCompletedWorkouts;
   List<int>? unlockedBadges;
+  List<Timestamp>? badgeUnlockedDates;
   bool newScheduleMessageShown;
 
  User({
@@ -41,6 +42,7 @@ class User {
     required this.bestStreak,
     required this.totalCompletedWorkouts,
     this.unlockedBadges,
+    this.badgeUnlockedDates,
     this.aerobicType,
     this.aerobicDistanceGoal,
     this.currentAerobicDistance,

@@ -818,9 +818,9 @@ class SignupScreenState extends State<SignupScreen> {
         barrierDismissible: false,
         builder: (context) {
           return AlertDialog(
-            title: Text('Research Notice'),
+            title: Text('Warning!'),
             content: Text(
-                'This application is part of a thesis research project.\n\n'
+                'This application is part of an ongoing project.\n\n'
                     'By continuing, you acknowledge that you are responsible '
                     'for using this app safely and appropriately.\n\n'
                     'Do you agree to proceed?'),
