@@ -94,6 +94,7 @@ Once the app is running on the emulator
    
    
 ## Project Structure
+```text
 me_fit/
 ├── lib/
 │   ├── models/           # Data models
@@ -108,6 +109,7 @@ me_fit/
 ├── android/              # Android-specific files
 ├── ios/                  # iOS-specific files
 └── pubspec.yaml          # Dependencies
+```
 
 
 ## Note
