@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:me_fit/services/acheivement_service.dart';
 import 'package:me_fit/services/authentication_service.dart';
@@ -65,6 +66,11 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   LatLng? currentPosition;
   StreamSubscription<Position>? positionStream;
   GoogleMapController? mapController;
+
+  final AudioPlayer audioPlayer = AudioPlayer();
+  bool wasSoundPlaying = false;
+  bool beepStarted = false;
+
 
   @override
   void initState(){
@@ -157,20 +163,30 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     setState(() {});
   }
 
-  void pauseWorkout() {
+  Future<void> pauseWorkout() async {
     if(isPaused) return;
     workoutTimer?.cancel();
     phaseTimer?.cancel();
+
+    if (beepStarted) {
+      await audioPlayer.pause();
+      wasSoundPlaying = true;
+    }
+
     positionStream?.pause();
     setState(() => isPaused = true);
     ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Workout paused.'),duration: Duration(seconds: 2)));
   }
 
-  void resumeWorkout() {
+  void resumeWorkout() async {
     if(!isPaused) return;
-
     if(workoutTimerStarted){
+      if (wasSoundPlaying) {
+        await audioPlayer.resume();
+        wasSoundPlaying = false;
+      }
+
       workoutTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         setState(() => elapsedSeconds++);
       });
@@ -178,6 +194,9 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       if((phase == ExercisePhase.activeSet || phase == ExercisePhase.rest) && remainingSeconds > 0) {
         phaseTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
           setState(() => remainingSeconds--);
+          if (remainingSeconds == 5 && !beepStarted) {
+            playBeepSound();
+          }
           if(remainingSeconds <= 0){
             t.cancel();
             if(phase == ExercisePhase.rest){
@@ -366,15 +385,20 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   //cardio-plyo logic
   void startTimedSet() {
+    beepStarted = false;
     startWorkoutTimer();
     phaseTimer?.cancel();
     setState(() {
       phase = ExercisePhase.activeSet;
       remainingSeconds = we.durationOfTimedSet ?? 0;
     });
+    wasSoundPlaying = false;
 
     phaseTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
       setState(() => remainingSeconds--);
+      if (remainingSeconds == 5 && !beepStarted) {
+        playBeepSound();
+      }
       if(remainingSeconds <= 0) {
         t.cancel();
         we.setsCompleted = (we.setsCompleted ?? 0) + 1;
@@ -382,7 +406,6 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         if(currentSet >= (we.sets ?? 1)){
           startRest(we.restBetweenSets ?? 0, postExercise: true);
         }else{
-          setState(() => currentSet++);
           startRest(we.restBetweenSets ?? 0);
         }
       }
@@ -504,19 +527,38 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final bounds = LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng));
     mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
   }
+  //sound that plays if a timer reaches at 5 seconds
+  Future<void> playBeepSound() async {
+    beepStarted = true;
+    await audioPlayer.setVolume(1.0);
+    await audioPlayer.setReleaseMode(ReleaseMode.stop);
+    await audioPlayer.play(AssetSource('sounds/Timer 1.mp3'));
 
+  }
+  //function to stop beep sound if a workout is paused or canceled
+  Future<void> stopBeepSound() async {
+    await audioPlayer.stop();
+  }
+  Future<void> pauseBeepSound() async {
+    await audioPlayer.pause();
+  }
   //stretching logic
   void startStretching() async {
+    beepStarted = false;
     startWorkoutTimer();
     setState((){
       phase = ExercisePhase.activeSet;
       remainingSeconds = we.durationOfTimedSet!;
     });
+    wasSoundPlaying = false;
 
     phaseTimer?.cancel();
     phaseTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
       if (!mounted) return;
       setState(() => remainingSeconds--);
+      if (remainingSeconds == 5 && !beepStarted) {
+        playBeepSound();
+      }
       if (remainingSeconds <= 0) {
         t.cancel();
         we.stretchingCompleted = true;
@@ -529,21 +571,28 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   //rest
   void startRest(int seconds, {bool postExercise = false}){
+    beepStarted = false;
     phase = ExercisePhase.rest;
     remainingSeconds = seconds;
     isLastSetRest = postExercise;
-
+    wasSoundPlaying = false;
     phaseTimer?.cancel();
     phaseTimer = Timer.periodic(const Duration(seconds: 1), (t){
       setState(() => remainingSeconds--);
+      if (remainingSeconds == 5 && !beepStarted) {
+        playBeepSound();
+      }
       if(remainingSeconds <= 0){
         t.cancel();
+        beepStarted = false;
         finishRest();
       }
     });
   }
 
-  void finishRest() {
+  void finishRest()
+  {
+    beepStarted = false;
     phaseTimer?.cancel();
     if(isLastSetRest){
       isLastSetRest = false;
@@ -696,6 +745,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     workoutTimer?.cancel();
     phaseTimer?.cancel();
     positionStream?.cancel();
+    stopBeepSound();
 
     final sw = widget.scheduledWorkout;
     sw.isInProgress = false;
@@ -807,7 +857,10 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               icon: Icons.skip_next,
               color: Colors.orange.shade700,
               isFullWidth: true,
-              onPressed: finishRest,
+              onPressed: () async  {
+                await stopBeepSound();
+                finishRest();
+                },
               iconAlignment: IconAlignment.end,
             ),
           ],
@@ -1043,7 +1096,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             const SizedBox(height: 40),
             _buildActionButton(
                 label: 'SKIP SET', icon: Icons.skip_next, color: Colors.orange.shade700, isFullWidth: true,
-                onPressed: () {
+                onPressed: () async {
+                  await stopBeepSound();
                   phaseTimer?.cancel();
                   (currentSet >= (we.sets ?? 1)) ? startRest(we.restBetweenSets ?? 0, postExercise: true) : startRest(we.restBetweenSets ?? 0);
                 }
@@ -1179,6 +1233,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 isFullWidth: true,
                 iconAlignment: IconAlignment.end,
                 onPressed: () async {
+                  await stopBeepSound();
                   phaseTimer?.cancel();
                   we.stretchingCompleted = false;
                   await FS.update.one(we);
@@ -1248,6 +1303,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     weightControllers.clear();
     workoutTimer?.cancel();
     phaseTimer?.cancel();
+    audioPlayer.dispose();
     positionStream?.cancel();
     super.dispose();
   }

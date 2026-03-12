@@ -49,6 +49,7 @@ dependencies:
   image_picker: ^1.0.4
   google_generative_ai: ^0.4.6
   fl_chart: ^0.66.0
+  audioplayers: ^5.2.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -101,6 +102,7 @@ flutter:
   - assets/images/1000.png
   - assets/images/1000locked.png
   - assets/images/logo.png
+  - assets/sounds/Timer 1.mp3
 
 
 
