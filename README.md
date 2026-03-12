@@ -16,9 +16,9 @@ Core meFit features include:
 - Personalised workout plan, generated every week acoording to training type and training goal of user
 - User is able to create their own 'custom' workouts and replace system generated scheduled workouts.
 - User can complete a workout and receive feedback and statistics.
-- Badges and streaks upon succesfull completion of workouts
-- User can change workout preferences and goals, and new workout plan will be generated upon those preferences
-- AI Coach Workouts suggestions are generated every week, according to user training type, training goal and performance. The user can replace a weekly workout with an AI suggested workout.
+- Badges and streaks upon succesfull completion of workouts.
+- User can change workout preferences and goals, and new workout plan will be generated upon those preferences.
+- AI Coach Workouts suggestions are generated every week, according to user training type, training goal and performance.The user can replace a weekly workout with an AI suggested workout.
 
 ## 🛠 Development Tools
 
