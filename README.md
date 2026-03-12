@@ -47,10 +47,10 @@ Core meFit features include:
   git clone https://github.com/glazari98/me_fit.git 
    ```
 2. **Open Android Studio**
-    Open Android Studio and open the directory from the location you saved the github repository.
+    - Open Android Studio and open the directory from the location you saved the github repository.
       
 3. **Install Flutter dependencies**
-   In the terminal:
+   - In the terminal:
    ```bash
    cd meFit
    flutter pub get
