@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:me_fit/services/acheivement_service.dart';
@@ -18,7 +19,7 @@ import 'package:me_fit/screens/workout_feedback_screen.dart';
 import 'package:me_fit/screens/exercise_details_screen.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-
+import 'package:me_fit/models/motivationQuote.dart';
 import '../models/user.dart';
 
 class ActiveWorkoutScreen extends StatefulWidget{
@@ -70,6 +71,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   final AudioPlayer audioPlayer = AudioPlayer();
   bool wasSoundPlaying = false;
   bool beepStarted = false;
+
+  RestTipQuote? currentRestQuote;
 
 
   @override
@@ -572,6 +575,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   //rest
   void startRest(int seconds, {bool postExercise = false}){
     beepStarted = false;
+    //pick random quote when starting rest
+    currentRestQuote = restTipsQuotes[Random().nextInt(restTipsQuotes.length)];
     phase = ExercisePhase.rest;
     remainingSeconds = seconds;
     isLastSetRest = postExercise;
@@ -836,36 +841,59 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     if (isTransitioning) {
       return Center(child: CircularProgressIndicator());
     }
-
     final type = getExerciseType(we);
-
     if (phase == ExercisePhase.rest) {
-      return Center(
+      final displayQuote = currentRestQuote ??  restTipsQuotes[Random().nextInt(restTipsQuotes.length)];
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text('Take a break...',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, letterSpacing: 1.2)),
-            const SizedBox(height: 30),
-            _buildTimerCircle(
-              percent: remainingSeconds / (we.restBetweenSets ?? 1),
-              seconds: remainingSeconds, color: Colors.blue
+            SizedBox(height: 20),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.blue.shade200)
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayQuote.description,
+                    style: TextStyle(fontSize: 16,fontWeight: FontWeight.w500,fontStyle: FontStyle.italic),
+                  ),
+                  if (displayQuote.author != null) ...[
+                    SizedBox(height: 8),
+                    Text(
+                      '- ${displayQuote.author}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )],
+                ]),
             ),
-            const SizedBox(height: 40),
-            _buildActionButton(
-              label: 'SKIP REST',
-              icon: Icons.skip_next,
-              color: Colors.orange.shade700,
-              isFullWidth: true,
-              onPressed: () async  {
+            SizedBox(height: 20),
+            Text('Take a break...',
+                style: TextStyle(fontWeight: FontWeight.w900, color: Colors.blue,fontSize: 28, letterSpacing: 1.2)),
+            SizedBox(height: 30),
+            Center(child: _buildTimerCircle(
+                  percent: remainingSeconds / (we.restBetweenSets ?? 1),
+                  seconds: remainingSeconds,color: Colors.blue),
+            ),
+            SizedBox(height: 40),
+            _buildActionButton(label: 'SKIP REST',icon: Icons.skip_next,
+              color: Colors.orange.shade700,isFullWidth: true,
+              onPressed: () async {
                 await stopBeepSound();
                 finishRest();
-                },
+              },
               iconAlignment: IconAlignment.end,
-            ),
-          ],
-        ),
-      );
+            )],
+        ));
     }
 
     switch (type) {

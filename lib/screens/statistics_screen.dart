@@ -168,7 +168,7 @@ class StatisticsScreenState extends State<StatisticsScreen> {
                 children: [
                   buildStatCard('Workouts','$totalWorkoutsThisMonth',Icons.fitness_center,Colors.blue),
                   buildStatCard('Total Time',formatDuration(totalDurationThisMonth),Icons.timer,Colors.teal),
-                  buildStatCard('Weight','${totalWeightLifted.toStringAsFixed(0)}kg',Icons.fitness_center,Colors.orange),
+                  buildStatCard('Weight lifted','${totalWeightLifted.toStringAsFixed(0)}kg',Icons.fitness_center,Colors.orange),
                   buildStatCard('Distance','${totalDistanceCovered.toStringAsFixed(1)}km',Icons.map,Colors.green),
                   buildStatCard('Cardio',formatDuration(totalCardioDuration),Icons.directions_run,Colors.purple),
                 ],
