@@ -3,14 +3,14 @@
 meFit is a cross-platform smart workout assistant mobile application that combines ML and gamification to increase user motivation to participate in physical activity. One of the primary features of the app will be to offer a personalised workout plan every week according to the user’s preferences and needs and track their performance during a workout. The use of ML will mainly focus on offering workout suggestions according to user behaviour and preferences, while gamification elements such as badges and streaks will aim to keep the user interested and encourage physical activity.
 
 
-## 📋 Table of Contents
+# 📋 Table of Contents
 - [About The Project](#about-the-project)
 - [Development Tools](#development-tools)
 - [Getting Started](#getting-started)
 - [Usage](#usage)
 - [Contact](#contact)
 
-## 🎯 About The Project
+# 🎯 About The Project
 
 Core meFit features include:
 - Personalised workout plan, generated every week acoording to training type and training goal of user
@@ -20,7 +20,7 @@ Core meFit features include:
 - User can change workout preferences and goals, and new workout plan will be generated upon those preferences.
 - AI Coach Workouts suggestions are generated every week, according to user training type, training goal and performance.The user can replace a weekly workout with an AI suggested workout.
 
-## 🛠 Development Tools
+# 🛠 Development Tools
 
 - **Frontend Framework**: Flutter (cross-platform mobile development)
 - **Database**: Firebase Firestore (NoSQL cloud database)
@@ -31,16 +31,16 @@ Core meFit features include:
 - **Data Modeling**: Firestorm package (Firestore ORM for Flutter)
 - **Authentication**: Firebase Authentication
 
-## 🚀 Getting Started
+# 🚀 Getting Started
 
-### Prerequisites
+## Prerequisites
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) (version 3.x or higher)
 - [Dart SDK](https://dart.dev/get-dart) (included with Flutter)
 - [Git](https://git-scm.com/) (version control)
 - [Android Studio](https://developer.android.com/studio)  
 - [Node.js](https://nodejs.org/) (for Firebase Cloud Functions, optional)
 
-### Installation
+## Installation
 
 1. **Clone the repository**
   ```bash
@@ -74,14 +74,14 @@ firebase init functions
    flutter run
    ```
    
-## 📱 Usage
+# Usage
 Once the app is running on the emulator
-###First time setup
+##First time setup
 1. Create an account
 2. Complete your profile (email,password,username, age, weight, height)
 3. Select your training type and goals
 4. Set your weekly workout availability
-### App usage after login or sign up
+## App usage after login or sign up
 1. Once signed up or logged in you will be navigated to 'Home' where you will see your weekly schedule. Dates that include scheduled workouts have a green dot, by clickign on the date, you can see specific details regardign the status of the workout. If you fiurther click on that you can see the workout exercises or workout feedback if the workout is completed. At the top you can see a section 'AI COACH SUGGESTION'. In the area, if a user completes more than oen workout from the week they signed up, then the next week and every other week on Monday, they will get an AI suggested workout. If a workout is displayed there, the user can press 'View Details' where they can view the reason for that workout suggestion, the exercises it includes, and if the user wants they can replace a weekly workout with that. Moreoevr, every Monday the user will get a new weekly schedule with system generated workouts.
 2. From the side menu, if you select 'Custom workouts' you will be navigated to a screen wher eyou can search, create and filter workouts created by you. By clicking the create button is takes you to a screen where you can setup your own workout according to what type of exercises you want.
 3. From the side menu, if you choose Weekly Workout Program, you will see a list of the workouts for the week, where you can edit a workout, add/remove exercises, change the date and reaplce it with a custom workout created by you. If you change your mind by replacing a system workout to a custom one and you want to rollback, you can choose the swap button and an option called 'Restore Original Workout' will restore the workout originally assigned.
@@ -93,7 +93,7 @@ Once the app is running on the emulator
 
    
    
-## Project Structure
+# Project Structure
 ```text
 me_fit/
 ├── lib/
@@ -114,20 +114,20 @@ me_fit/
 └── pubspec.yaml          # Dependencies
 ```
 
-## Roadmap
-# Limitations
+# Roadmap
+## Limitations
 - App is providing only one AI suggestion every week.
 - Time to generate new weekly workout schedule and ai suggestions may take 30 secs or more according to how many users that actios had to be done. However, that is not generally an issue since those operations are happening at mindnight every Monday, it does not affect the user in some way.
-# Future improvements and features
+## Future improvements and features
 - More AI workout suggestions, generated also throughout the week.
 - Gifs or videos to show user how to complete an exercise instead of a text-based instruction.
 - Camera functionality to analyse user when completing a workout and examine if they do the exercise right.
 - Social features, such as viewing completed workouts of other users, giving likes or writing comments to completed workouts of other users and competitive social features like who completed the most workouts this month.
 - 
-## Note
+# Note
 Please if something is not clear or you spot a bug, please contact me and I will reply as soon as I can.
 
-## Contact
+# Contact
 - Email: glazari@uclan.ac.uk or giorgos.lazari98@gmail.com
 - Project link: https://github.com/glazari98/me_fit
 
