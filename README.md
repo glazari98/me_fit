@@ -97,13 +97,16 @@ Once the app is running on the emulator
 ```text
 me_fit/
 ├── lib/
+│   ├── components/       # Reusable widgets
+│   ├── data/             # Script for inserting data into database from api
+│   ├── generated/        # Firestorm model serialisation.
 │   ├── models/           # Data models
 │   ├── screens/          # UI screens
-│   ├── components/       # Reusable widgets
 │   ├── services/         # Business logic
+│   ├── theme/            # Project theme configuration
 │   └── main.dart         # Entry point
 ├── assets/
-│   ├── images/           # App images and badge icons
+│   ├── images/           # Badge images and logo icon
 │   └── sounds/           # Sound effects
 ├── functions/            # Firebase Cloud Functions
 ├── android/              # Android-specific files
