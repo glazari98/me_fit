@@ -116,7 +116,7 @@ me_fit/
 Please if something is not clear or you spot a bug, please contact me and I will reply as soon as I can.
 
 ## Contact
-Email: glazari@uclan.ac.uk or giorgos.lazari98@gmail.com
-Project link: https://github.com/glazari98/me_fit
+- Email: glazari@uclan.ac.uk or giorgos.lazari98@gmail.com
+- Project link: https://github.com/glazari98/me_fit
 
 
