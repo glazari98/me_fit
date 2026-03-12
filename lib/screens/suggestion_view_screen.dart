@@ -42,9 +42,10 @@ class _SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
 
     final result = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
         .whereEqualTo('userId', currentUser.uid)
-        .whereEqualTo('isCompleted', false)  // ADD THIS LINE - only show non-completed workouts
+        .whereEqualTo('isCompleted', false)
         .whereGreaterThanOrEqualTo('scheduledDate', Timestamp.fromDate(thisMonday))
         .whereLessThan('scheduledDate', Timestamp.fromDate(nextMonday))
+        .whereEqualTo('isInProgress',false)
         .fetch();
 
     if (mounted) {
@@ -211,7 +212,7 @@ class _SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
                         Icon(Icons.info_outline, color: Colors.orange),
                         SizedBox(width: 12),
                         Expanded(
-                          child: Text('No workouts available to replace this week. All workouts are completed!',
+                          child: Text('No workouts available to replace this week. All workouts are completed or in progress!',
                             style: TextStyle(fontSize: 14)),
                         )],
                     )),

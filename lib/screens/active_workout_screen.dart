@@ -638,7 +638,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   // Progress Circle
   //TODO - Move this to a separate widget file --> WorkoutProgressCircle?
-  Widget _buildTimerCircle({required double percent, required int seconds, Color color = Colors.blue}) {
+  Widget _buildTimerCircle({required double percent, required int seconds, required Color color}) {
     return Center(
       child: CircularPercentIndicator(
         radius: 110,
@@ -799,7 +799,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             const SizedBox(height: 30),
             _buildTimerCircle(
               percent: remainingSeconds / (we.restBetweenSets ?? 1),
-              seconds: remainingSeconds,
+              seconds: remainingSeconds, color: Colors.blue
             ),
             const SizedBox(height: 40),
             _buildActionButton(
@@ -1038,7 +1038,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             const SizedBox(height: 30),
             _buildTimerCircle(
               percent: we.durationOfTimedSet != null && we.durationOfTimedSet! > 0 ? (remainingSeconds / we.durationOfTimedSet!) : 0.0,
-              seconds: remainingSeconds,
+              seconds: remainingSeconds, color: Colors.green
             ),
             const SizedBox(height: 40),
             _buildActionButton(
@@ -1169,7 +1169,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               const SizedBox(height: 30),
               _buildTimerCircle(
                 percent: remainingSeconds / (we.durationOfTimedSet ?? 1),
-                seconds: remainingSeconds,
+                seconds: remainingSeconds, color: Colors.blue
               ),
               const SizedBox(height: 40),
               _buildActionButton(

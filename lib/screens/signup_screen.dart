@@ -164,6 +164,7 @@ class SignupScreenState extends State<SignupScreen> {
             id: Firestorm.randomID(),
             userId: userId,
             workoutId: starterWorkouts[i].id,
+            isInProgress: false,
             originalWorkoutId: starterWorkouts[i].id,
             scheduledDate: Timestamp.fromDate(scheduleDateToMidnight),
             isCompleted: false);
