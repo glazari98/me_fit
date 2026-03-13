@@ -125,7 +125,7 @@ me_fit/
 - Gifs or videos to show user how to complete an exercise instead of a text-based instruction.
 - Camera functionality to analyse user when completing a workout and examine if they do the exercise right.
 - Social features, such as viewing completed workouts of other users, giving likes or writing comments to completed workouts of other users and competitive social features like who completed the most workouts this month.
-- 
+
 # Note
 Please if something is not clear or you spot a bug, please contact me and I will reply as soon as I can.
 
