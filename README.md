@@ -116,9 +116,11 @@ me_fit/
 
 # Roadmap
 ## Limitations
+- Does not take into consideration fitness level of user and BMI
 - App is providing only one AI suggestion every week.
 - Time to generate new weekly workout schedule and ai suggestions may take 30 secs or more according to how many users that actios had to be done. However, that is not generally an issue since those operations are happening at mindnight every Monday, it does not affect the user in some way.
 ## Future improvements and features
+- Workouts generated will take into account fitness level, gender, weight, height etc.
 - More AI workout suggestions, generated also throughout the week.
 - Gifs or videos to show user how to complete an exercise instead of a text-based instruction.
 - Camera functionality to analyse user when completing a workout and examine if they do the exercise right.
