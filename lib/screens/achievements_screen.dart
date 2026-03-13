@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/services/acheivement_service.dart';
 import 'package:me_fit/services/authentication_service.dart';
-
 import '../components/drawer_menu.dart';
 import '../models/user.dart';
-
+///widget displaying streaks and badge information
 class AchievementsScreen extends StatefulWidget {
 
   const AchievementsScreen({super.key});
@@ -26,6 +25,7 @@ class AchievementsScreenState extends State<AchievementsScreen> {
     loadData();
 
   }
+  //get logged in user, retrieve scheduled workouts
   Future<void> loadData() async {
     final currentUser = AuthenticationService().getCurrentUser();
     if (currentUser == null) {
@@ -140,7 +140,7 @@ class AchievementsScreenState extends State<AchievementsScreen> {
       ),
     );
   }
-
+  //card for displaying current streak and best streak
   Widget buildStatCard(String title, String value, IconData icon,Color color) {
     return Container(
       decoration: BoxDecoration(
@@ -177,7 +177,7 @@ class AchievementsScreenState extends State<AchievementsScreen> {
         )),
     );
   }
-
+  //widget for displaying the badges
   Widget buildBadgeItem(String imageName, int milestone, bool unlocked) {
     return GestureDetector(
       onTap: () => showBadgeDetails(milestone, unlocked),
@@ -208,7 +208,7 @@ class AchievementsScreenState extends State<AchievementsScreen> {
       ),
     );
   }
-
+  //function for displaying different information if a badge is locked or unlocked
   void showBadgeDetails(int milestone, bool unlocked) {
     //match badge index to badgeUnlocked dates list to find date
     int badgeIndex = user.unlockedBadges?.indexOf(milestone) ?? -1;

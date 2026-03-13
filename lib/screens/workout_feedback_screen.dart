@@ -4,13 +4,14 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/models/workoutExerciseFeedback.dart';
 import 'package:me_fit/models/workoutExercises.dart';
-import 'package:me_fit/screens/my_workouts.dart';
+import 'package:me_fit/screens/custom_workouts.dart';
 import 'package:me_fit/services/acheivement_service.dart';
 
 
 import '../models/exercise.dart';
 import '../models/workout.dart';
-
+import '../utilityFunctions/utility_functions.dart';
+//widget
 class WorkoutFeedbackScreen extends StatefulWidget {
   final Workout workout;
   final List<WorkoutExercises> exercises;
@@ -42,7 +43,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
     super.initState();
     loadData();
   }
-
+//retrieve feedback
   Future<void> loadData() async {
     await loadScheduledWorkout();
     await loadFeedback();
@@ -55,9 +56,8 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
     }
     setState((){});
   }
-
+//dialog to show when a badge is unlocked once a workout is completed and we move to this screen
   void showBadgeUnlockedDialog() {
-
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -89,7 +89,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
           )],
       ));
   }
-
+//retrieve all exercises to display their names
   Future<void> loadExercises() async{
     final result = await FS.list.allOfClass<Exercise>(Exercise);
 
@@ -97,6 +97,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
       for(var e in result) e.id : e
     };
   }
+  //get scheduled workout to fetch exercises
   Future<void> loadScheduledWorkout() async{
     final result = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
         .whereEqualTo('workoutId', widget.workout.id)
@@ -115,12 +116,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
     };
   }
 
-  String formatDuration(int seconds) {
-    final hours = seconds ~/ 3600;
-    final minutes = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '${hours.toString().padLeft(2,'0')}:${minutes.toString().padLeft(2,'0')}:${secs.toString().padLeft(2,'0')}';
-  }
+
 
   String getExerciseType(WorkoutExercises we) {
     if(we.distance != null) return 'AEROBIC';
@@ -128,7 +124,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
     if(we.durationOfTimedSet != null && we.sets == null) return 'STRETCHING';
     return 'STRENGTH';
   }
-
+//function to fit whole route of aerobic exercise in image
   void fitRouteOnMap(List<LatLng> points){
     if(points.isEmpty || mapController == null) return;
     if(points.length < 2) return;
@@ -150,7 +146,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
         southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng));
     mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 20));
   }
-
+//calculate pace of user in aerobic exercise according to time for distance covered and distance covered
   String calculatePace(double? distanceKm, int? timeSeconds){
     if(distanceKm == null || timeSeconds == null || distanceKm == 0){
       return '--';
@@ -189,22 +185,22 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Container( padding: const EdgeInsets.all(8),
+                    Container( padding: EdgeInsets.all(8),
                       decoration: BoxDecoration(color: Colors.green,borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.emoji_events_rounded,color: Colors.white,
+                      child: Icon(Icons.emoji_events_rounded,color: Colors.white,
                         size: 20,
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    SizedBox(width: 14),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(widget.workout.name,
-                            style: const TextStyle(fontSize: 16,fontWeight: FontWeight.bold,
+                            style: TextStyle(fontSize: 16,fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text('Duration: ${formatDuration(scheduledWorkout!.totalDuration ?? 0)}',
+                          SizedBox(height: 4),
+                          Text('Duration: ${formatDuration2(scheduledWorkout!.totalDuration ?? 0)}',
                             style: TextStyle(fontSize: 13,color: Colors.grey.shade700,
                             ),
                           ),
@@ -214,7 +210,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Expanded(child: ListView.builder(
                 itemCount: widget.exercises.length,
                   itemBuilder:(context,index){
@@ -230,31 +226,32 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
       );
 
   }
+  //widget to display exercise name and includes other widget for exercise details
   Widget buildExercisesCard(WorkoutExercises we, WorkoutExerciseFeedback? feedback, String type){
     final exerciseName = exerciseMap[we.exerciseId]?.name ?? 'Exercise';
     final symbol = getExerciseStatusSymbol(we, feedback, type);
-    return Container (width: double.infinity,padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.symmetric(vertical: 12),
+    return Container (width: double.infinity,padding: EdgeInsets.all(12),
+      margin: EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08),blurRadius: 15,offset: const Offset(0,8)),],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08),blurRadius: 15,offset: Offset(0,8)),],
         border: Border.all(color: Colors.grey,width: 1.2),
       ),
       child: Column(
         children: [
         Text(
           '$exerciseName $symbol',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
-        const Divider(height: 10),
+        Divider(height: 10),
         buildExerciseDetails(type, we, feedback),
       ],
       ),
     );
   }
 
-
+//function to measure total weight lifted form reps done in sets that included weights
   double calculateActualWeightLifted(WorkoutExercises we) {
     if (we.actualSetWeights == null || we.actualSetWeights!.isEmpty) return 0;
 
@@ -268,8 +265,8 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
 
     return actualTotal;
   }
-  Widget buildExerciseDetails(String type,WorkoutExercises we,WorkoutExerciseFeedback? feedback,
-      )
+  //widget that displays details like sets completed, reps completed, duration ,distance covered depending on what type of exercise it is
+  Widget buildExerciseDetails(String type,WorkoutExercises we,WorkoutExerciseFeedback? feedback)
   {
     switch (type){
       case 'STRENGTH':
@@ -307,7 +304,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
             children: [
               Text('Target distance: ${we.distance ?? 0} km'),
               Text('Distance covered: ${(feedback?.distanceCovered ?? 0).toStringAsFixed(2)} km'),
-              Text('Moving time: ${formatDuration(
+              Text('Moving time: ${formatDuration2(
                   feedback?.timeForDistanceCovered ?? 0)}'),
               Text(
                 'Pace: ${calculatePace(feedback?.distanceCovered,feedback?.timeForDistanceCovered,
@@ -346,7 +343,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
             children: [
               Text('Target distance: ${we.distance ?? 0} km'),
               Text('Distance covered: ${feedback?.distanceCovered ?? 0} km'),
-              Text('Time ${formatDuration(feedback?.timeForDistanceCovered ?? 0)}'),
+              Text('Time ${formatDuration2(feedback?.timeForDistanceCovered ?? 0)}'),
             Text(
             'Pace: ${calculatePace(feedback?.distanceCovered,feedback?.timeForDistanceCovered,
             )}',),
@@ -372,6 +369,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
       double.parse(parts[1]),
     );
   }
+  //according to statistics display appropriate icon for type of exercise
   String getExerciseStatusSymbol(WorkoutExercises we, WorkoutExerciseFeedback? feedback, String type){
     switch(type){
       case 'STRENGTH':

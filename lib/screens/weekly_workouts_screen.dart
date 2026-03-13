@@ -9,25 +9,10 @@ import 'package:me_fit/screens/edit_workout_screen.dart';
 import 'package:me_fit/screens/view_workout_screen.dart';
 import 'package:me_fit/screens/workout_feedback_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
-
 import '../models/workoutExercises.dart';
+import '../utilityFunctions/utility_functions.dart';
 
-Color workoutCardColor(ScheduledWorkout sw){
-  if(sw.isCompleted) return Colors.green.shade200;
-  if(isFutureWorkout(sw)) return Colors.red.shade200;
-  return Colors.yellow.shade300;
-}
-DateTime startOfWeek(DateTime date){
-  return DateTime(date.year,date.month,date.day).subtract(Duration(days: date.weekday -1 ));
-}
-DateTime endOfWeek(DateTime date){
-  return startOfWeek(date).add(const Duration(days: 6));
-}
-bool isFutureWorkout(ScheduledWorkout sw){
-  return sw.scheduledDate.toDate().isAfter(DateTime.now());
-}
-DateTime normaliseDate(DateTime date) => DateTime(date.year,date.month,date.day);
-
+//widget to display weekly workouts, where user can edit the workout exercises, change the date, replace a weekly system workout with a custom one
 class WeeklyWorkoutsScreen extends StatefulWidget{
   final VoidCallback? onWorkoutUpdated;
   const WeeklyWorkoutsScreen({super.key, this.onWorkoutUpdated});
@@ -47,7 +32,7 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
     super.initState();
     weeklyWorkouts = fetchWeeklyWorkouts();
   }
-
+//retrieve workouts scheduled for current week
   Future<Map<DateTime, List<ScheduledWorkout>>> fetchWeeklyWorkouts() async {
     final user = authenticationService.getCurrentUser();
     if(user == null) return {};
@@ -345,7 +330,7 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
     );
   }
 
-  //where there are no workouts for this week
+  //when there are no workouts for this week
   Widget buildEmptyState() {
     return Center(child: Column(
         mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -354,7 +339,7 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
               style: TextStyle(color: Colors.grey[600], fontSize: 16)),
         ]));
   }
-
+//display date of workout
   Widget buildDaySection(DateTime date, List<ScheduledWorkout> workouts) {
     final bool isToday = normaliseDate(DateTime.now()) == date;
     return Column(crossAxisAlignment: CrossAxisAlignment.start,
@@ -372,7 +357,7 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
         ...workouts.map((scheduledWorkout) => buildWorkoutCard(scheduledWorkout)),
       ]);
   }
-
+//display tile having workout name, status, and icons to edit the workout
   Widget buildWorkoutCard(ScheduledWorkout sw) {
     return FutureBuilder<Workout?>(
       future: FS.get.one<Workout>(sw.workoutId),
@@ -478,13 +463,14 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
       },
     );
   }
-
+//function to retrieve color according to status of workout
   Color getStatusColor(bool completed, bool locked, bool inProgress){
     if (completed) return Colors.green;
     if (locked) return Colors.redAccent;
     if (inProgress) return Colors.orange;
     return Colors.blue;
   }
+//function to retrieve icon according  to status of workout
   IconData getStatusIcon(bool completed, bool locked, bool inProgress){
     if (completed) return Icons.check_circle;
     if (locked) return Icons.lock_outline;

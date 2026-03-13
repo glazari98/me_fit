@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/authentication_service.dart';
-
+import '../utilityFunctions/utility_functions.dart';
+//Widget where the user can log in into the application
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -17,7 +18,7 @@ class LoginScreenState extends State<LoginScreen>{
   bool obscurePassword = true;
 
   final AuthenticationService authService = AuthenticationService();
-
+//function  checking email and password fields and logging the user in
   Future<void> login() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
@@ -41,7 +42,7 @@ class LoginScreenState extends State<LoginScreen>{
         SnackBar(content: Text('You have successfully logged in'),duration: Duration(seconds: 2)),
       );
       Navigator.pushReplacementNamed(context, '/home');
-    } on FirebaseAuthException catch(e) {
+    } on FirebaseAuthException catch(e) { //error messages
       String message = 'Login Failed';
       if(e.code == 'user-not-found'){
         message = 'No user found for that email.';
@@ -102,8 +103,12 @@ class LoginScreenState extends State<LoginScreen>{
               validator: (value) {
                 final email = value?.trim() ?? '';
                 if (email.isEmpty) return 'Email is required';
-                //TODO - Use isValidEmail here form a utility class.
-                // if (!isValidEmail(email)) return 'Enter a valid email';
+                if (!isValidEmail(email)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content:Text('Please enter a valid email'),duration: Duration(seconds: 2))
+                  );
+                }
                 return null;
               },
             ),

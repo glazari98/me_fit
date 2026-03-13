@@ -10,7 +10,8 @@ import 'package:me_fit/screens/select_exercise_screen.dart';
 import '../models/bodyPart.dart';
 import '../models/exerciseType.dart';
 import '../models/workout.dart';
-
+import '../utilityFunctions/utility_functions.dart';
+//widget for editing workout exercises
 class EditWorkoutScreen extends StatefulWidget {
   final Workout workout;
 
@@ -41,7 +42,9 @@ class WorkoutExerciseInstance {
     this.duration,
     this.distance
   });
-
+  //This is used when loading existing exercises from Firestore to populate the editable
+  //workout exercise instances in the UI. It maps all the database fields to the instance
+  //properties that can be edited by the user.
   factory WorkoutExerciseInstance.fromWorkoutExercises(WorkoutExercises we,
       Exercise ex, String typeName) {
     return WorkoutExerciseInstance(
@@ -73,7 +76,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
     super.initState();
     loadExercises();
   }
-
+//fetch exercises of that workout
   Future<void> loadExercises() async {
     final weResult = await FS.list.filter<WorkoutExercises>(WorkoutExercises)
         .whereEqualTo('workoutId', widget.workout.id)
@@ -99,7 +102,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
       isLoading = false;
     });
   }
-
+//show dialog for editing an exercises
   Future<WorkoutExerciseInstance?> showExerciseAlterDialog(
       WorkoutExerciseInstance instance) async {
     final type = instance.exerciseTypeName;
@@ -175,7 +178,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
     );
   }
 
-//validation
+//validations for each type of exercises
   bool validateInputs(String type, TextEditingController sets,
       TextEditingController reps,
       TextEditingController rest, TextEditingController duration,
@@ -214,7 +217,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
       return false;
     }
   }
-
+//display number field fro setting sets/reps/rest/distance
   Widget numberField(TextEditingController controller, String label,
       {bool isDecimal = false}) {
     return Padding(
@@ -231,24 +234,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
         )
     );
   }
-
-  String buildSummary(WorkoutExerciseInstance i) {
-    final type = i.exerciseTypeName;
-    if (type == 'STRENGTH') {
-      return '${i.sets ?? 0}x${i.reps ?? 0} • Rest ${i.rest ?? 0}s';
-    }
-    if (type == 'CARDIO' || type == 'PLYOMETRICS') {
-      return '${i.sets ?? 0}x${i.duration ?? 0}s • Rest ${i.rest ?? 0}s';
-    }
-    if (type == 'AEROBIC') {
-      return '${i.distance ?? 0} km';
-    }
-    if (type == 'STRETCHING') {
-      return '${i.duration ?? 0} s';
-    }
-    return '';
-  }
-
+  //function for adding exercises
   Future<void> addExerciseFlow() async {
     if (exercises.length >= 50) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -367,7 +353,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
               ))],
         )));
   }
-
+//widget showing when workout has not exercises
   Widget buildEmptyState() {
     return Center(
       child: Column(
@@ -401,7 +387,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
               ) ))]),
     );
   }
-
+//widget containing exercise info and buttons for editing and removing an exercises
   Widget buildExerciseCard(WorkoutExerciseInstance exercise,int index) {
     return Container(
       key: ValueKey(exercise.workoutExercise.id),
@@ -476,7 +462,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
           ))),
     );
   }
-
+//button for removing/editing an exercise
   Widget buildActionButton({required IconData icon,required Color color,required String tooltip,
     required VoidCallback onPressed}) {
     return Container(
@@ -490,7 +476,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
         padding: EdgeInsets.zero),
     );
   }
-
+//function for assigning details to an exercise according to what type it is
   List<Widget> buildExerciseTags(WorkoutExerciseInstance exercise) {
     List<Widget> tags = [];
     final type = exercise.exerciseTypeName;
@@ -524,7 +510,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
       }}
     return tags;
   }
-
+//widget for details with icon
   Widget buildTag({required IconData icon,required String text}){
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -540,7 +526,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
           )]),
     );
   }
-
+//function for assigning a color according to exercise type
   Color getTypeColor (String type) {
     switch (type) {
       case 'STRENGTH':
@@ -557,20 +543,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
         return Colors.grey;
     }
   }
-
-  String formatDuration(int seconds) {
-    final minutes = seconds ~/ 60;
-    final remainingSeconds = seconds % 60;
-
-    if (minutes == 0) {
-      return '${seconds}s';
-    }
-    if (remainingSeconds == 0) {
-      return '${minutes}min';
-    }
-    return '${minutes}min ${remainingSeconds}s';
-  }
-
+  //function for displaying dialog with workout info if info icon is pressed
   void showWorkoutInfo() {
     showDialog(
       context: context,
@@ -613,7 +586,7 @@ class EditWorkoutScreenState extends State<EditWorkoutScreen> {
   String formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
-
+//dialog showing when user presses remove exercise icon
   void showDeleteDialog(WorkoutExerciseInstance exercise) async {
     final confirm = await showDialog<bool>(
       context: context,

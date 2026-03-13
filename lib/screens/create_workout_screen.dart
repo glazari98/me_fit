@@ -8,10 +8,10 @@ import 'package:me_fit/models/exerciseType.dart';
 import 'package:me_fit/models/workoutExercises.dart';
 import 'package:me_fit/screens/select_exercise_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
-
 import '../models/workout.dart';
+import '../utilityFunctions/utility_functions.dart';
 
-
+//widget for creating a workout
 class CreateWorkoutScreen extends StatefulWidget{
   const CreateWorkoutScreen({super.key});
 
@@ -53,7 +53,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     final user = authService.getCurrentUser();
 
     if (user == null) return;
-
+    //check if user has another workout with the same name
     final existingWorkouts = await FS.list.filter<Workout>(Workout)
         .whereEqualTo('createdBy',user.uid)
         .whereEqualTo('isMyWorkout',true)
@@ -76,7 +76,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
             createdOn: Timestamp.now()
         )
     );
-
+    //create workout exercises
     for (int i = 0; i < selectedExercises.length; i++) {
       final draftExercise = selectedExercises[i];
 
@@ -99,7 +99,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     Navigator.pop(context, true);
   }
 
-  //add exercise
+  //function for adding an exercise to the workout list
   Future<void> addExerciseFlow() async {
     if (selectedExercises.length >= 50) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -131,7 +131,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     }
   }
 
-  //validation
+  //validate inputs for each type of exercise
   bool validateInputs(String type, TextEditingController sets,
       TextEditingController reps,
       TextEditingController rest, TextEditingController duration,
@@ -170,7 +170,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
       return false;
     }
   }
-
+  //if user wants to edit an exercise details
   Future<WorkoutExerciseInstance?> showExerciseAlterDialog(
       WorkoutExerciseInstance instance) async {
     final type = instance.exerciseTypeName;
@@ -186,7 +186,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     return showDialog<WorkoutExerciseInstance>(
         context: context,
         builder: (_) {
-          return AlertDialog( //TODO - This dialog seems to be reused throughout your app. I suggest you create a separate widget for it, it will make the code cleaner and more maintainable
+          return AlertDialog(
             title: Text('Alter ${instance.exercise.name}'),
             content: SingleChildScrollView(
                 child: Column(
@@ -242,29 +242,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
         }
     );
   }
-
-  void applyValuesToInstance(WorkoutExerciseInstance instance, String type,
-      TextEditingController sets, TextEditingController reps,
-      TextEditingController rest, TextEditingController duration,
-      TextEditingController distance,) {
-    if (type == 'STRENGTH') {
-      instance.sets = int.tryParse(sets.text);
-      instance.rest = int.tryParse(reps.text);
-      instance.rest = int.tryParse(rest.text);
-    }
-    if (type == 'CARDIO' || type == 'PLYOMETRICS') {
-      instance.sets = int.tryParse(sets.text);
-      instance.duration = int.tryParse(duration.text);
-      instance.rest = int.tryParse(rest.text);
-    }
-    if (type == 'AEROBIC') {
-      instance.distance = double.tryParse(distance.text);
-    }
-    if (type == 'STRETCHING') {
-      instance.duration = int.tryParse(duration.text);
-    }
-  }
-
+  //widget for displaying fields including number in dialog to set information of an exercise
   Widget numberField(TextEditingController controller, String label,
       {bool isDecimal = false}) {
     return Padding(
@@ -280,24 +258,6 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
           ),
         )
     );
-  }
-
-  String buildSummary(WorkoutExerciseInstance i) {
-    final type = i.exerciseTypeName;
-
-    if (type == 'STRENGTH') {
-      return '${i.sets ?? 0}x${i.reps ?? 0} • Rest ${i.rest ?? 0}s';
-    }
-    if (type == 'CARDIO' || type == 'PLYOMETRICS') {
-      return '${i.sets ?? 0}x${i.duration ?? 0}s • Rest ${i.rest ?? 0}s';
-    }
-    if (type == 'AEROBIC') {
-      return '${i.distance ?? 0} km';
-    }
-    if (type == 'STRETCHING') {
-      return '${i.duration ?? 0} s';
-    }
-    return '';
   }
 
   @override
@@ -415,7 +375,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
                 ))],
           ))));
   }
-
+//showing when user has not added any exercises yet
   Widget buildEmptyState() {
     return Center(
       child: Column(mainAxisAlignment: MainAxisAlignment.center,
@@ -435,7 +395,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
           SizedBox(height: 24),
         ]));
   }
-
+  //showing details of an inputted exercises,including edit and delete button
   Widget buildExerciseCard(WorkoutExerciseInstance exercise,int index) {
     return Container(
       key: ValueKey(exercise.exercise.id),
@@ -517,7 +477,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
       )
     );
   }
-
+//action button for editing/removing an exercise
   Widget buildActionButton({required IconData icon,required Color color,required String tooltip,required VoidCallback onPressed}) {
     return Container(
       decoration: BoxDecoration(
@@ -531,7 +491,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
         padding: EdgeInsets.zero,
       ));
   }
-
+//function for assigning the correct exercise tag type according to what attributes an exercise has filled
   List<Widget> buildExerciseTags(WorkoutExerciseInstance exercise) {
     List<Widget> tags = [];
     final type = exercise.exerciseTypeName;
@@ -569,7 +529,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     }
     return tags;
   }
-
+  //show duration/distance/sets/reps/rest of an exercise
   Widget buildTag({required IconData icon,required String text}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -584,7 +544,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
         ]),
     );
   }
-
+  //confirmation dialog for deleting an exercise form a workout
   void showDeleteDialog(WorkoutExerciseInstance exercise) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -619,7 +579,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     }
   }
 
-
+//function for assigning a color according to type of exercise
   Color getTypeColor(String typeName) {
     switch (typeName){
       case 'STRENGTH':
@@ -636,7 +596,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
         return Colors.grey;
     }
   }
-
+//function for assigning an icon for each type of exercises
   IconData getTypeIcon(String typeName) {
     switch (typeName) {
       case 'STRENGTH':
@@ -654,16 +614,4 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
     }
   }
 
-  String formatDuration(int seconds) {
-    final minutes = seconds ~/ 60;
-    final remainingSeconds = seconds % 60;
-
-    if (minutes == 0) {
-      return '${seconds}s';
-    }
-    if (remainingSeconds == 0) {
-      return '${minutes}min';
-    }
-    return '${minutes}min ${remainingSeconds}s';
-  }
 }

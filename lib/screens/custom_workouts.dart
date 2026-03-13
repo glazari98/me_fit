@@ -2,21 +2,19 @@ import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/components/drawer_menu.dart';
 import 'package:me_fit/screens/edit_workout_screen.dart';
-import 'package:me_fit/screens/login_screen.dart';
 import 'package:me_fit/screens/view_workout_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
-
 import '../models/workout.dart';
 import '../models/workoutExercises.dart';
 import 'create_workout_screen.dart';
-
-class MyWorkoutsScreen extends StatefulWidget {
-  const MyWorkoutsScreen({super.key});
+//widget for displaying list of custom workouts created by user
+class CustomWorkouts extends StatefulWidget {
+  const CustomWorkouts({super.key});
 
   @override
-  State<MyWorkoutsScreen> createState() => MyWorkoutsScreenState();
+  State<CustomWorkouts> createState() => CustomWorkoutsState();
 }
-class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
+class CustomWorkoutsState extends State<CustomWorkouts> {
   final AuthenticationService authenticationService = AuthenticationService();
   late Future<List<Workout>> workoutsUpdated;
 
@@ -30,7 +28,7 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
     super.initState();
     fetchWorkouts();
   }
-
+//function for sorting workouts according to ones created latest/earliest
   void sortList() {
     allWorkouts.sort((a, b) {
       final aDate = a.createdOn?.toDate() ?? DateTime(0);
@@ -40,13 +38,11 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
       return isLatestFirst ? bDate.compareTo(aDate) : aDate.compareTo(bDate);
     });
   }
-
+//if a workout is a custom one, 'isMyWorkout' attribute is true
   Future<void> fetchWorkouts() async {
     final user = authenticationService.getCurrentUser();
 
-    final result = await FS
-        .list //TODO - This line causes an error: Unhandled Exception: type 'Timestamp' is not a subtype of type 'DateTime?' in type cast
-        .filter<Workout>(Workout)
+    final result = await FS.list.filter<Workout>(Workout)
         .whereEqualTo('createdBy', user?.uid)
         .whereEqualTo('isMyWorkout', true)
         .fetch();
@@ -57,14 +53,14 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
     });
     sortList();
   }
-
+//function used in searching by workout name
   List<Workout> get filteredList {
     return allWorkouts.where((workout) {
       return workout.name.toLowerCase()
           .contains(searchQuery.toLowerCase());
     }).toList();
   }
-
+//function called when user decided to delete custom workout
   void deleteWorkout(Workout workout) async {
     final confirm = await showDialog<bool>(
         context: context,
@@ -104,11 +100,7 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
     await fetchWorkouts();
   }
 
-  String formatDate(DateTime date) {
-    return "${date.day}/${date.month}/${date.year} "
-        "${date.hour.toString().padLeft(2, '0')}:"
-        "${date.minute.toString().padLeft(2, '0')}";
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -228,7 +220,7 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
             ))],
       ));
   }
-
+//widget for showing inside information regarding the workout and icons for editing or deleting
   Widget buildWorkoutCard(Workout workout) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -294,7 +286,7 @@ class MyWorkoutsScreenState extends State<MyWorkoutsScreen> {
         )),
     );
   }
-
+//widget for creating buttons for editing or deleting a workout
   Widget buildActionButton({required IconData icon,required Color color,required String tooltip,required VoidCallback onPressed}) {
     return Container(
       decoration: BoxDecoration(

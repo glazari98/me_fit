@@ -5,7 +5,7 @@ import 'package:me_fit/models/exercise.dart';
 import '../models/bodyPart.dart';
 import '../models/exerciseType.dart';
 import 'exercise_details_screen.dart';
-
+//widget where user selects an exercise to add to a workout
 class SelectExerciseScreen extends StatefulWidget {
   const SelectExerciseScreen({super.key});
 
@@ -40,7 +40,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
   @override
   void initState() {
     super.initState();
-    fetchFitlers().then((_) => loadAllExercises());
+    fetchFilters().then((_) => loadAllExercises());
   }
 
   @override
@@ -48,8 +48,8 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
     searchController.dispose();
     super.dispose();
   }
-
-  Future<void> fetchFitlers() async {
+//retrieve body parts, exercise types
+  Future<void> fetchFilters() async {
     final bodyPartsResult = await FS.list.allOfClass<BodyPart>(BodyPart);
 
     final exerciseTypesResult = await FS.list.allOfClass<ExerciseType>(
@@ -67,7 +67,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
       isLoadingFilters = false;
     });
   }
-
+//get all exercises from database
   Future<void> loadAllExercises() async {
     setState(() => isLoadingExercises = true);
 
@@ -79,7 +79,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
       isLoadingExercises = false;
     });
   }
-
+//function for searching according name of exercises and keywords
   void applyFiltersAndSearch() {
     List<Exercise> temp = allExercises;
 
@@ -115,7 +115,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
 
     visibleExercises = filteredExercises.take(currentVisibleCount).toList();
   }
-
+//function for loading more results
   Future<void> loadMore() async {
     final remaining = filteredExercises.length - currentVisibleCount;
     if (remaining <= 0) return;
@@ -228,7 +228,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
         )),
     );
   }
-
+//widget for showing when there are not exercises to show
   Widget buildEmptyState() {
     return Center(
       child: Column(
@@ -249,7 +249,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
         ]),
     );
   }
-
+//widget where exercises details and add button are included
   Widget buildExerciseCard({required Exercise exercise,String? exerciseTypeName,required String bodyPartNames, required int index}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -354,7 +354,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
         )),
     );
   }
-
+//widget for show load more button
   Widget buildLoadMoreButton() {
     return Container(
       margin:  EdgeInsets.symmetric(vertical: 16),
@@ -378,7 +378,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
           ])),
     );
   }
-
+//get icon according to exercise type
   IconData getExerciseIcon(String? typeName) {
     switch (typeName) {
       case 'STRENGTH':
@@ -396,7 +396,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
     }
   }
 
-
+//get color for exercise type
   Color getTypeColor(String typeName) {
     switch (typeName) {
       case 'STRENGTH':
@@ -413,7 +413,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
         return Colors.grey;
     }
   }
-
+//widget for search field
   Widget searchField() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -445,7 +445,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
       ),
     );
   }
-
+//widget for showing body part and exercise type filters
   Widget filters() {
     if (isLoadingFilters) {
       return const Padding(
@@ -453,7 +453,6 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
         child: Center(child: CircularProgressIndicator()),
       );
     }
-
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Row(
@@ -536,18 +535,18 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                                   bodyParts.firstWhere((b) => b.id == id).name,
                             )
                             .join(', '),
-                  style: const TextStyle(fontSize: 16),
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: DropdownButtonFormField<String>(
               isDense: false,
-              hint: const Text('Exercise Type'),
+              hint: Text('Exercise Type'),
               value: selectedExerciseTypeId,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 12,
@@ -562,12 +561,12 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                           applyFiltersAndSearch();
                         });
                       },
-                      child: const Icon(Icons.clear),
+                      child: Icon(Icons.clear),
                     )
-                  : const Icon(Icons.arrow_drop_down),
+                  : Icon(Icons.arrow_drop_down),
 
               items: [
-                const DropdownMenuItem<String>(value: null, child: Text('All')),
+                DropdownMenuItem<String>(value: null, child: Text('All')),
                 ...exerciseTypes.map(
                   (t) => DropdownMenuItem(value: t.id, child: Text(t.name)),
                 ),
@@ -579,9 +578,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                 });
               },
             ),
-          ),
-        ],
-      ),
+          )]),
     );
   }
 }
