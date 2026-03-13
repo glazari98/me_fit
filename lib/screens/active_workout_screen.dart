@@ -823,7 +823,119 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         )),
     );
   }
-//widget for displaying different UI according to the rype of exercise and phase
+  //dialog showing when a user wants to input weight for strength exercises
+  Future<void> showWeightInputDialog() async {
+    //create controllers for each set
+    List<TextEditingController> dialogControllers = List.generate(
+      we.sets!,
+          (index) => TextEditingController(),
+    );
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.fitness_center, color: Colors.blue.shade700),
+            SizedBox(width: 8),
+            Text('Enter Weights',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          ]),
+        content: Container(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(we.sets!, (index) {
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 30, height: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          shape: BoxShape.circle),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade800,
+                            )),
+                        )),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: dialogControllers[index],
+                          keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            hintText: 'Weight (kg)',
+                            suffixText: 'kg',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,vertical: 8,
+                            )),
+                        )),
+                    ]),
+                );
+              }),
+            )),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Save'),
+          )]),
+    );
+    if (result == true) {
+      //validate entered weights
+      List<double> targetWeights = [];
+      bool hasError = false;
+
+      for (int i = 0; i < dialogControllers.length; i++) {
+        final weight = double.tryParse(dialogControllers[i].text) ?? 0;
+        if (weight < 0 || weight > 400) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Weight for set ${i + 1} must be between 0.5 kg and 400 kg'),
+              duration: Duration(seconds: 2)),
+          );
+          hasError = true;
+          break;
+        }
+        targetWeights.add(weight);
+      }
+      if (!hasError && targetWeights.any((w) => w > 0)) {
+        setState(() {
+          we.targetSetWeights = targetWeights;
+        });
+        await FS.update.one(we); //update workout exercise with target weights the user has set
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Weights saved successfully!'),
+            duration: Duration(seconds: 2))
+        );
+      }
+      //dispose
+      for (var controller in dialogControllers) {
+        controller.dispose();
+      }
+    }
+  }
+//widget for displaying different UI according to the type of exercise and phase
   Widget buildExerciseControls() {
     if (isTransitioning) {
       return Center(child: CircularProgressIndicator());
@@ -908,96 +1020,9 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   label: 'ADD WEIGHTS (OPTIONAL)',
                   icon: Icons.fitness_center,
                   color: Colors.blue,
-                  onPressed: () {
-                    setState(() {
-                      showWeightInput = true;
-                      //create controllers for each set
-                      weightControllers = List.generate(
-                        we.sets!,
-                            (index) => TextEditingController(),
-                      );
-                    });
-                  },
+                  onPressed: showWeightInputDialog,
                   isFullWidth: true,
                 )),
-            if (showWeightInput) ...[
-              SizedBox(height: 5),
-              Container(
-                padding: EdgeInsets.all(10),
-                decoration: BoxDecoration( color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row( mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(children: [
-                            Icon(Icons.fitness_center, size: 20, color: Colors.blue.shade700),
-                            SizedBox(width: 8),
-                            Text('Weight per set (kg)',
-                              style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w600, color: Colors.blue)),
-                          ]),
-                        IconButton(
-                          icon: Icon(Icons.close, size: 20),
-                          onPressed: () {
-                            setState(() {
-                              showWeightInput = false;
-                              weightControllers.clear();
-                            });
-                          }
-                        )]),
-                    SizedBox(height: 12),
-                    SizedBox(
-                      height: 168,
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: List.generate(we.sets!, (index) {
-                            return Padding(
-                              padding:  EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                children: [
-                                  Container(width: 30, height: 30,
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.shade100,
-                                      shape: BoxShape.circle),
-                                    child: Center(
-                                      child: Text('${index + 1}',
-                                        style: TextStyle(fontWeight: FontWeight.bold,
-                                          color: Colors.blue.shade800),
-                                      ))),
-                                  SizedBox(width: 12),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: weightControllers[index],
-                                      keyboardType: TextInputType.numberWithOptions(decimal: true),
-                                      decoration: InputDecoration(
-                                        hintText: 'Enter weight (kg)',
-                                        suffixText: 'kg',border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                      ),
-                                    ))],
-                              ));
-                          }),
-                        )),
-                    ),
-                    //show there are more sets if any
-                    if (we.sets! > 3)
-                      Padding(
-                        padding: EdgeInsets.only(top: 4),
-                        child: Center(
-                          child: Text('Scroll to see more sets',
-
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade600,
-                              fontStyle: FontStyle.italic,
-                            )),
-                        ))],
-                ))],
             SizedBox(height: 10),
             buildViewDetailsButton(ex),
             SizedBox(height: 12),
