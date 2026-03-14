@@ -30,6 +30,12 @@ class LoginScreenState extends State<LoginScreen>{
       );
       return;
     }
+    if (!isValidEmail(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:Text('Please enter a valid email'),duration: Duration(seconds: 2))
+      );
+    }
 
     try {
       setState(() => isLoading = true);
@@ -103,12 +109,7 @@ class LoginScreenState extends State<LoginScreen>{
               validator: (value) {
                 final email = value?.trim() ?? '';
                 if (email.isEmpty) return 'Email is required';
-                if (!isValidEmail(email)) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:Text('Please enter a valid email'),duration: Duration(seconds: 2))
-                  );
-                }
+
                 return null;
               },
             ),
