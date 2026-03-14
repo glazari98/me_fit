@@ -6,13 +6,14 @@ import 'package:me_fit/models/user.dart';
 import 'package:me_fit/screens/achievements_screen.dart';
 import 'package:me_fit/screens/completed_workouts_screen.dart';
 import 'package:me_fit/screens/home_screen.dart';
-import 'package:me_fit/screens/my_workouts.dart';
+import 'package:me_fit/screens/custom_workouts.dart';
 import 'package:me_fit/screens/profile_screen.dart';
 import 'package:me_fit/screens/statistics_screen.dart';
 import 'package:me_fit/screens/start_workout_screen.dart';
 import 'package:me_fit/screens/weekly_workouts_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 
+///Widget for side menu
 class AppDrawer extends StatelessWidget {
   final BuildContext scaffoldContext;
   final VoidCallback? onWorkoutUpdated;
@@ -51,7 +52,7 @@ class AppDrawer extends StatelessWidget {
             onTap: () { Navigator.pop(context);
               if (currentRoute != '/my-workouts') {
                 Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (_) => const MyWorkoutsScreen()),
+                  MaterialPageRoute(builder: (_) => const CustomWorkouts()),
                 );
               }}),
           //weekly Program
@@ -124,6 +125,12 @@ class AppDrawer extends StatelessWidget {
       ),
     );
   }
+  //load user data
+  Future<User?> loadCurrentUser(AuthenticationService authService) async {
+    final currentUser = authService.getCurrentUser();
+    if (currentUser == null) return null;
+    return await FS.get.one<User>(currentUser.uid);
+  }
 
   void logOut(BuildContext context) async{
     final AuthenticationService authService = AuthenticationService();
@@ -162,7 +169,7 @@ class AppDrawer extends StatelessWidget {
         Navigator.pushNamedAndRemoveUntil(context, '/login',(route)=>false);
       }
     }
-
+  //widget for header of side menu
   Widget buildDrawerHeader(BuildContext context) {
     final authService = AuthenticationService();
     return FutureBuilder<User?>(
@@ -180,12 +187,8 @@ class AppDrawer extends StatelessWidget {
       });
   }
 
-  Future<User?> loadCurrentUser(AuthenticationService authService) async {
-    final currentUser = authService.getCurrentUser();
-    if (currentUser == null) return null;
-    return await FS.get.one<User>(currentUser.uid);
-  }
 
+  //widget that displays information for user in header
   Widget buildUserHeader(User user) {
     final hasImage = user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty;
     return Column(crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +221,7 @@ class AppDrawer extends StatelessWidget {
         )],
     );
   }
-
+  //widget to create each tile in side menu
   Widget buildDrawerItem(BuildContext context,{required IconData icon,required String title,
         required String route,required VoidCallback onTap}) {
     final isCurrentScreen = currentRoute == route;

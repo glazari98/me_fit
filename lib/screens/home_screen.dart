@@ -5,10 +5,7 @@ import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/components/drawer_menu.dart';
 import 'package:me_fit/models/WorkoutEvent.dart';
-import 'package:me_fit/models/scheduled_workout.dart';
-import 'package:me_fit/screens/achievements_screen.dart';
-import 'package:me_fit/screens/my_workouts.dart';
-import 'package:me_fit/screens/profile_screen.dart';
+import 'package:me_fit/screens/custom_workouts.dart';
 import 'package:me_fit/screens/start_workout_screen.dart';
 import 'package:me_fit/screens/suggestion_view_screen.dart';
 import 'package:me_fit/screens/view_workout_screen.dart';
@@ -16,18 +13,13 @@ import 'package:me_fit/screens/workout_feedback_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../models/WorkoutSuggestions.dart';
+import '../models/scheduled_workout.dart';
 import '../models/user.dart';
 import '../models/workout.dart';
 import '../models/workoutExercises.dart';
+import '../utilityFunctions/utility_functions.dart';
 
-//TODO - Utility functions, should be moved to other classes/files.
-DateTime normaliseDate(DateTime date) => DateTime(date.year,date.month,date.day);
-bool isFutureWorkout(ScheduledWorkout sw){
-  return normaliseDate(sw.scheduledDate.toDate()).isAfter(normaliseDate(DateTime.now()));
-}
-
-
-
+//home screen showing workout calendar and ai workout suggestions
 class HomeScreen extends StatefulWidget{
   const HomeScreen({super.key});
 
@@ -60,13 +52,14 @@ class HomeScreenState extends State<HomeScreen>{
   bool showSuggestions = true;
 
   @override
+//for showing welcome message once user sings up
   void didChangeDependencies(){
     super.didChangeDependencies();
 
     final arguments = ModalRoute.of(context)?.settings.arguments as Map?;
     if(arguments != null && arguments['justSignedUp'] == true) {
       setState(() {
-        isSunday = arguments['isSunday'] ?? false;;
+        isSunday = arguments['isSunday'] ?? false;//check if it's sunday
         workoutsScheduled = arguments['workoutsScheduled'] ?? 0;
         remainingDays = arguments['remainingDays'];
       });
@@ -74,10 +67,9 @@ class HomeScreenState extends State<HomeScreen>{
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showWelcomeDialog();
       });
-
-
     }
   }
+  //welcome message accordign to what day it is
   void showWelcomeDialog() {
     String message;
     IconData icon;
@@ -129,6 +121,7 @@ class HomeScreenState extends State<HomeScreen>{
           ]);
       });
   }
+  //function for checking if in the current week the system has new workouts
   Future<void> checkForNewScheduleMessage() async {
     final currentUser = authService.getCurrentUser();
     if (currentUser == null) return;
@@ -154,7 +147,7 @@ class HomeScreenState extends State<HomeScreen>{
       });
     }
   }
-
+//message for informing user they have anew workout plan
   void showNewScheduleDialog() {
     showDialog(
       context: context,
@@ -205,6 +198,7 @@ class HomeScreenState extends State<HomeScreen>{
     loadSuggestions();
     showSuggestions = false;
   }
+  //calendar functions
   LinkedHashMap<DateTime, List<WorkoutEvent>> buildWorkoutEventMap(List<ScheduledWorkout> workouts){
     final map = LinkedHashMap<DateTime,List<WorkoutEvent>>(
         equals: isSameDay,
@@ -244,6 +238,7 @@ class HomeScreenState extends State<HomeScreen>{
       });
     }
   }
+  //fetch weekly schedule of logged in user
   Future<void> loadSchedule() async{
     final currentUser = authService.getCurrentUser();
     if(currentUser == null) return;
@@ -282,21 +277,13 @@ class HomeScreenState extends State<HomeScreen>{
       selectedEvents.value = getEventsForDay(normalised);
     });
   }
-
-  void onItemTapped(int index){
-    if(index == 0){
-      Navigator.push(context,MaterialPageRoute(builder: (context) => MyWorkoutsScreen()));
-    }
-    else if (index == 1){
-      Navigator.push(context,MaterialPageRoute(builder: (context) => StartWorkoutScreen()));
-    }
-  }
+//fetch current user
   Future<User?> loadCurrentUser() async {
     final currentUser = authService.getCurrentUser();
     if(currentUser == null) return null;
     return await FS.get.one<User>(currentUser.uid);
   }
-
+//view details of tapped workout
   Future<void> viewWorkout(WorkoutEvent event) async {
     final sw = event.scheduledWorkout;
     final workout = await FS.get.one<Workout>(sw.workoutId);
@@ -332,7 +319,15 @@ class HomeScreenState extends State<HomeScreen>{
       loadSchedule();
     }
   }
+  //function to check for past incomplete workouts so the calendar can display them as incomplete
+  bool isFromPastWeek(DateTime workoutDate) {
+    final now = DateTime.now();
+    final currentWeekMonday = now.subtract(Duration(days: now.weekday - 1));
+    final currentWeekStart = normaliseDate(currentWeekMonday);
 
+    return workoutDate.isBefore(currentWeekStart);
+  }
+//fetch ai suggestion for current week
   Future<void> loadSuggestions() async {
     final currentUser = authService.getCurrentUser();
     if (currentUser == null) return;
@@ -369,7 +364,7 @@ class HomeScreenState extends State<HomeScreen>{
     }
     
   }
-
+//widget for displaying the ai suggestion
   Widget buildSuggestionsSection() {
     return Container(
       margin: EdgeInsets.all(16),
@@ -466,7 +461,7 @@ class HomeScreenState extends State<HomeScreen>{
         )),
     );
   }
-
+//widget for displaying individual susggestion
   Widget buildSuggestionCard(WorkoutSuggestions suggestion) {
     return FutureBuilder<Workout?>(
       future: FS.get.one<Workout>(suggestion.suggestedWorkoutId),
@@ -540,7 +535,7 @@ class HomeScreenState extends State<HomeScreen>{
       },
     );
   }
-
+//function called when user taps to see details of an ai suggesiton
   Future<void> viewSuggestion(WorkoutSuggestions suggestion,Workout workout) async {
     final result = await Navigator.push(context,MaterialPageRoute(
         builder: (_) => SuggestionPreviewScreen(suggestion: suggestion,suggestedWorkout: workout,
@@ -709,24 +704,25 @@ class HomeScreenState extends State<HomeScreen>{
                       final sw = event.scheduledWorkout;
                       final scheduledDate = normaliseDate(sw.scheduledDate.toDate());
                       final today = normaliseDate(DateTime.now());
+                      final bool isPastWeek = isFromPastWeek(scheduledDate);
 
                       String statusText;
                       IconData statusIcon;
                       Color statusColor;
 
-                      if (sw.isCompleted){
+                      if (sw.isCompleted) {
                         statusText = 'Completed';
                         statusIcon = Icons.check_circle;
                         statusColor = Colors.green;
-                      }else if(sw.isInProgress == true) {
+                      } else if (sw.isInProgress == true) {
                         statusText = 'In Progress';
                         statusIcon = Icons.fitness_center;
                         statusColor = Colors.orange;
-                      }else if(scheduledDate.isAfter(today)){
-                        statusText = 'Locked';
+                      } else if (scheduledDate.isAfter(today) || isPastWeek) { //workouts of passed week which are incomplete appear as 'missed'
+                        statusText = isPastWeek ? 'Missed' : 'Locked'; //workouts of current week which are in the future appear as 'locked'.
                         statusIcon = Icons.lock;
                         statusColor = Colors.grey;
-                      }else{
+                      } else {
                         statusText = 'Ready to go';
                         statusIcon = Icons.play_circle_filled;
                         statusColor = Colors.blue;

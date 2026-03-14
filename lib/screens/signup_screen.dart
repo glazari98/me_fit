@@ -9,7 +9,8 @@ import 'package:me_fit/models/workout.dart';
 import 'package:me_fit/models/workoutExercises.dart';
 import '../models/user.dart';
 import '../services/authentication_service.dart';
-
+import '../utilityFunctions/utility_functions.dart';
+//widget showing sign up form steps
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -44,7 +45,7 @@ class SignupScreenState extends State<SignupScreen> {
   bool obscurePassword = true;
 
   final AuthenticationService authService = AuthenticationService();
-
+//function for validating user account information/ training preferences and creating an account
   Future<void> signup() async {
     try {
       setState(() => isLoading = true);
@@ -67,7 +68,7 @@ class SignupScreenState extends State<SignupScreen> {
         return;
       }
 
-      User user = User(
+      User user = User(//user creation
         id: id,
         emailAddress: emailController.text.trim(),
         username: nameController.text.trim(),
@@ -97,7 +98,7 @@ class SignupScreenState extends State<SignupScreen> {
         await assignStarterWorkouts(user.id);
       }
 
-      if (!mounted) return;
+      if (!mounted) return; //pass arguments to home screen to display welcome message
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false,
         arguments: {
           'justSignedUp': true, 'isSunday': isSunday,
@@ -112,6 +113,7 @@ class SignupScreenState extends State<SignupScreen> {
       setState(() => isLoading = false);
     }
   }
+  //function for distributing workouts across remaining days of the week according to what day the user signs up
   Future<void> scheduleWorkoutsForCurrentWeek({required String userId, required List<Workout> starterWorkouts,required int preferredWorkoutsPerWeek}) async {
     final now = DateTime.now();
     final currentDayOfWeek = now.weekday;
@@ -164,6 +166,7 @@ class SignupScreenState extends State<SignupScreen> {
             id: Firestorm.randomID(),
             userId: userId,
             workoutId: starterWorkouts[i].id,
+            isInProgress: false,
             originalWorkoutId: starterWorkouts[i].id,
             scheduledDate: Timestamp.fromDate(scheduleDateToMidnight),
             isCompleted: false);
@@ -171,6 +174,7 @@ class SignupScreenState extends State<SignupScreen> {
       }
     }
   }
+  //widget for creating the content the workout will have according to availability fo user and training goal/training type
   Future<void> assignStarterWorkouts(String userId) async {
     final allExercises = await FS.list.allOfClass<Exercise>(Exercise);
     if (allExercises.isEmpty) return;
@@ -340,11 +344,11 @@ class SignupScreenState extends State<SignupScreen> {
 
           final exercisesForType = allExercises.where((e) {
             final equipmentMatch = hasAccessToGym! ||
-                e.equipmentId == '20260129-1024-8a43-b037-3d29faa316f7';
+                e.equipmentId == '20260129-1024-8a43-b037-3d29faa316f7'; //id of body weight
 
             if (isLastExercise) {
               return e.exerciseTypeId ==
-                  '20260307-1515-8d30-b580-4af3ea41bbc2' && //stretching
+                  '20260307-1515-8d30-b580-4af3ea41bbc2' && //id of stretching
                   equipmentMatch;
             }
             final bodyPartId = bodyPartNameToId[workoutPlanBodyParts[i][j]];
@@ -353,7 +357,7 @@ class SignupScreenState extends State<SignupScreen> {
 
             return bodyPartMatch && equipmentMatch &&
                 e.exerciseTypeId ==
-                    '20260307-1515-8c28-a740-f8764502a705'; //strength
+                    '20260307-1515-8c28-a740-f8764502a705'; //id of strength exercise type
           }).toList();
 
 
@@ -579,17 +583,17 @@ class SignupScreenState extends State<SignupScreen> {
 
           String exerciseTypeId;
           if (type == 'CARDIO') {
-            exerciseTypeId = '20260307-1515-8b30-9154-48cd11b8abce';
+            exerciseTypeId = '20260307-1515-8b30-9154-48cd11b8abce'; //id of cardio exercise type
           } else if (type == 'PLYOMETRICS') {
-            exerciseTypeId = '20260307-1515-8630-b366-53e94b68f829';
+            exerciseTypeId = '20260307-1515-8630-b366-53e94b68f829'; //id of plyometrics exercise type
           } else {
-            exerciseTypeId = '20260307-1515-8d30-b580-4af3ea41bbc2';
+            exerciseTypeId = '20260307-1515-8d30-b580-4af3ea41bbc2'; //id of stretching exercise type
           }
-
+          //if user has access to gym assign exercises with equipment and bodyweight, if user does not, then only body weight exercises
           final exerciseForType = allExercises.where((e) {
             final typeMatch = e.exerciseTypeId == exerciseTypeId;
             final equipmentMatch = hasAccessToGym! ||
-                e.equipmentId == '20260129-1024-8a43-b037-3d29faa316f7';
+                e.equipmentId == '20260129-1024-8a43-b037-3d29faa316f7'; //id of body weight equipment
             return typeMatch && equipmentMatch;
           }).toList();
 
@@ -647,7 +651,7 @@ class SignupScreenState extends State<SignupScreen> {
           starterWorkouts: starterWorkouts,
           preferredWorkoutsPerWeek: preferredWorkoutsPerWeek!);
     }if (trainingType == 'Aerobic') {
-      const aerobicExerciseTypeId = '20260307-1515-8931-9171-8f83ef2b3e0c';
+      const aerobicExerciseTypeId = '20260307-1515-8931-9171-8f83ef2b3e0c'; //id of aerobic exercise type
 
 
       List<double> distanceSplits;
@@ -700,13 +704,8 @@ class SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  bool isValidEmail(String email) {
-    //TODO Move to a util class, can be reused elsewhere (e.g., login screen)
-    final emailRegex =
-    RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    return emailRegex.hasMatch(email);
-  }
 
+//method for showing error messages
   void showError(String message) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
@@ -720,6 +719,7 @@ class SignupScreenState extends State<SignupScreen> {
 
     return result.items.isNotEmpty;
   }
+  //check if all fields are filled and in correct format
   Future<void> nextStep() async {
     switch (currentStep) {
       case 0:
@@ -806,21 +806,21 @@ class SignupScreenState extends State<SignupScreen> {
         break;
     }
   }
-
+//function called when we go back a step in the form
   void previousStep() {
     if (currentStep > 0) {
       setState(() => currentStep--);
     }
   }
-
+//when pressing finish show warning dialog to inform user this is not a professional app
   Future<void> showThesisAgreementDialog() async {
     final agreed = await showDialog(context: context,
         barrierDismissible: false,
         builder: (context) {
           return AlertDialog(
-            title: Text('Research Notice'),
+            title: Text('Warning!'),
             content: Text(
-                'This application is part of a thesis research project.\n\n'
+                'This application is part of an ongoing project.\n\n'
                     'By continuing, you acknowledge that you are responsible '
                     'for using this app safely and appropriately.\n\n'
                     'Do you agree to proceed?'),
@@ -836,6 +836,7 @@ class SignupScreenState extends State<SignupScreen> {
       signup();
     }
   }
+  //decoration for form fields
   InputDecoration fieldDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
@@ -854,6 +855,7 @@ class SignupScreenState extends State<SignupScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
+  //widget for displaying trainin type buttons
   Widget buildTrainingTypeButton({required String value,required IconData icon,required String label,
     required String selected,required Color color}) {
     final isSelected = selected == value;
@@ -895,6 +897,7 @@ class SignupScreenState extends State<SignupScreen> {
         )),
     );
   }
+  //widget to display training goal and training type sections
   Widget sectionTitle(String text) {
     return Padding(
       padding: EdgeInsets.only(bottom: 8, left: 4),

@@ -8,7 +8,8 @@ import 'package:me_fit/screens/select_exercise_screen.dart';
 import '../models/bodyPart.dart';
 import '../models/exerciseType.dart';
 import '../models/workout.dart';
-
+import '../utilityFunctions/utility_functions.dart';
+//widget to view workout exercises
 class ViewWorkoutScreen extends StatefulWidget {
   final Workout workout;
 
@@ -28,7 +29,7 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
     workoutExercisesFuture = fetchWorkoutExercises();
     exerciseTypeMap = fetchExerciseTypeMap();
   }
-
+//retrieve exercises the workout has
   Future<List<WorkoutExercises>> fetchWorkoutExercises() async {
     final result = await FS.list.filter<WorkoutExercises>(WorkoutExercises)
                                 .whereEqualTo('workoutId', widget.workout.id)
@@ -37,10 +38,12 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
     items.sort((a,b) => a.order.compareTo(b.order));
     return items;
   }
+  //function to retrieve exercise type name from foreign key id
   Future<Map<String, String>> fetchExerciseTypeMap()async{
     final typeResult = await FS.list.allOfClass<ExerciseType>(ExerciseType);
     return {for (var type in typeResult) type.id: type.name};
   }
+  //function to retrieve exercise name from foreign key id
   Future<Map<String,Exercise>> fetchExercisesMap(
       List<WorkoutExercises> workoutExercises) async {
     final exerciseIds = workoutExercises.map((e) => e.exerciseId).toList();
@@ -51,7 +54,6 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
 
     return {for (var e in result.items) e.id: e};
   }
-
   String showDuration(int totalSeconds){
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
@@ -66,13 +68,6 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
     return '$minutes min $seconds s';
   }
 
-  Future<void> replaceExercise(WorkoutExercises we, Exercise newExercise) async{
-    we.exerciseId = newExercise.id;
-    await FS.update.one(we);
-    setState(() {
-      workoutExercisesFuture = fetchWorkoutExercises();
-    });
-  }
     @override
     Widget build(BuildContext context) {
       return Scaffold(
@@ -157,7 +152,7 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
         ),
       );
     }
-
+//show no exercise message with icon if no exercises exist in workout
     Widget buildEmptyState() {
     return Center(
       child: Column(
@@ -181,24 +176,7 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
     );
   }
 
-
-  Widget buildStatItem({required IconData icon,required String value,required String label}) {
-    return Column(
-      children: [
-        Icon(icon,color: Colors.white.withOpacity(0.9),size: 20),
-        const SizedBox(height: 8),
-        Text(value,style: TextStyle(
-            color: Colors.white,fontSize: 18,
-            fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 2),
-        Text(label, style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
-            fontSize: 11,fontWeight: FontWeight.w500,
-        ) )],
-    );
-  }
-
+//widget display workout exercise name, order number, if user taps it leads to exercise details screen where user views details about individual exercise
   Widget buildExerciseCard(
       WorkoutExercises we,
       Exercise exercise,
@@ -243,10 +221,8 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Exercise Number Badge
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 36, height: 36,
                   decoration: BoxDecoration(
                     color: Theme.of(context).primaryColor.withOpacity(0.1),
                     shape: BoxShape.circle,
@@ -254,36 +230,24 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
                   child: Center(
                     child: Text(
                       '${index + 1}',
-                      style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
+                      style: TextStyle(color: Theme.of(context).primaryColor,
+                        fontWeight: FontWeight.bold,fontSize: 14),
+                    )),
                 ),
-                const SizedBox(width: 16),
-
-                // Exercise Details
+                SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Exercise Name
                       Text(
                         exercise.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                        style: TextStyle( fontWeight: FontWeight.bold,
+                          fontSize: 16),
                       ),
-                      const SizedBox(height: 4),
-
-                      // Exercise Type Chip
+                      SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4,
                         ),
                         decoration: BoxDecoration(
                           color: getTypeColor(exerciseTypeName).withOpacity(0.1),
@@ -292,44 +256,31 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
                         child: Text(
                           exerciseTypeName,
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 10, fontWeight: FontWeight.w600,
                             color: getTypeColor(exerciseTypeName),
-                          ),
-                        ),
+                          )),
                       ),
-                      const SizedBox(height: 8),
-
-                      // Exercise Tags
+                      SizedBox(height: 8),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
+                        spacing: 8,runSpacing: 4,
                         children: buildExerciseTags(we),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Chevron Icon
+                      )],
+                  )),
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.grey[100],
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    Icons.chevron_right,
-                    color: Colors.grey[600],
-                    size: 20,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+                  child: Icon(Icons.chevron_right,
+                    color: Colors.grey[600], size: 20,
+                  ))
+              ]),
+          )),
       ),
     );
   }
+  //display sets,reps,rest,distance for an exercise
   List<Widget> buildExerciseTags(WorkoutExercises we) {
     List<Widget> tags = [];
     if (we.sets != null) {
@@ -364,7 +315,7 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
     }
     return tags;
   }
-
+//widget to display icon and sets for sets,reps,rest etc.
   Widget buildTag({required IconData icon,required String text}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -381,6 +332,7 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
             ))],),
     );
   }
+  //retrieve color according to exercise type name
   Color getTypeColor (String type) {
     switch (type) {
       case 'STRENGTH':
@@ -397,15 +349,5 @@ class ViewWorkoutScreenState extends State<ViewWorkoutScreen>{
         return Colors.grey;
     }
   }
-  String formatDuration(int seconds) {
-    final minutes = seconds ~/ 60;
-    final remainingSeconds = seconds % 60;
-    if(minutes == 0){
-      return '${seconds}s';
-    }
-    if(remainingSeconds == 0){
-      return '${minutes}min';
-    }
-    return '${minutes}min ${remainingSeconds}s';
-  }
+
 }

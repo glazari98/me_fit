@@ -6,7 +6,7 @@ import 'package:me_fit/models/workout.dart';
 import 'package:me_fit/models/WorkoutSuggestions.dart';
 import 'package:me_fit/screens/view_workout_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
-
+//widget for viewing ai suggestions where user can replace that suggestion with a weekly workout program
 class SuggestionPreviewScreen extends StatefulWidget {
   final WorkoutSuggestions suggestion;
   final Workout suggestedWorkout;
@@ -17,10 +17,10 @@ class SuggestionPreviewScreen extends StatefulWidget {
     required this.onDeclined});
 
   @override
-  State<SuggestionPreviewScreen> createState() => _SuggestionPreviewScreenState();
+  State<SuggestionPreviewScreen> createState() => SuggestionPreviewScreenState();
 }
 
-class _SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
+class SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
   List<ScheduledWorkout> weeklyWorkouts = [];
   ScheduledWorkout? selectedWorkout;
   bool isLoading = false;
@@ -30,7 +30,7 @@ class _SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
     super.initState();
     loadWeeklyWorkouts();
   }
-
+//fetch weekly workouts which have not been completed yet
   Future<void> loadWeeklyWorkouts() async {
     final currentUser = AuthenticationService().getCurrentUser();
     if (currentUser == null) return;
@@ -42,9 +42,10 @@ class _SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
 
     final result = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
         .whereEqualTo('userId', currentUser.uid)
-        .whereEqualTo('isCompleted', false)  // ADD THIS LINE - only show non-completed workouts
+        .whereEqualTo('isCompleted', false)
         .whereGreaterThanOrEqualTo('scheduledDate', Timestamp.fromDate(thisMonday))
         .whereLessThan('scheduledDate', Timestamp.fromDate(nextMonday))
+        .whereEqualTo('isInProgress',false)
         .fetch();
 
     if (mounted) {
@@ -53,7 +54,7 @@ class _SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
       });
     }
   }
-
+//function for replacing an ai suggestion with a non-completed weekly workout
   Future<void> acceptSuggestion() async {
     if (selectedWorkout == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -83,7 +84,7 @@ class _SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
     }
   }
 
-
+//function to decline the ai suggestion and change its status to declined
   Future<void> declineSuggestion() async {
     setState(() => isLoading = true);
     widget.suggestion.status = 'declined';
@@ -100,7 +101,7 @@ class _SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
       setState(() => isLoading = false);
     }
   }
-
+//display color for confidence score of ai suggestion
   Color getConfidenceColor(double score) {
     if (score >= 0.8) return Colors.green;
     if (score >= 0.6) return Colors.orange;
@@ -211,7 +212,7 @@ class _SuggestionPreviewScreenState extends State<SuggestionPreviewScreen> {
                         Icon(Icons.info_outline, color: Colors.orange),
                         SizedBox(width: 12),
                         Expanded(
-                          child: Text('No workouts available to replace this week. All workouts are completed!',
+                          child: Text('No workouts available to replace this week. All workouts are completed or in progress!',
                             style: TextStyle(fontSize: 14)),
                         )],
                     )),

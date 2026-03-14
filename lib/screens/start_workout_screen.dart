@@ -4,17 +4,9 @@ import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/services/authentication_service.dart';
 import '../components/drawer_menu.dart';
 import '../components/workout_card.dart';
-import '../models/workout.dart';
-import 'active_workout_screen.dart';
-DateTime startOfWeek(DateTime date){
-  return DateTime(date.year,date.month,date.day).subtract(Duration(days: date.weekday -1 ));
-}
-DateTime endOfWeek(DateTime date){
-  return startOfWeek(date).add(const Duration(days: 6));
-}
+import '../utilityFunctions/utility_functions.dart';
 
-DateTime normaliseDate(DateTime date) => DateTime(date.year,date.month,date.day);
-
+//widget for displaying list of workouts and user can start a workout
 class StartWorkoutScreen extends StatefulWidget {
   StartWorkoutScreen({super.key});
 
@@ -31,7 +23,7 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
     super.initState();
     weeklyWorkouts = fetchWeeklyWorkouts();
   }
-
+//fetch weekly workouts
   Future<Map<DateTime,List<ScheduledWorkout>>> fetchWeeklyWorkouts() async {
     final user = authenticationService.getCurrentUser();
     if (user == null) return {};
@@ -58,35 +50,13 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
       grouped.entries.toList()..sort((a,b) => a.key.compareTo(b.key))
       );
     }
-
-  bool isFutureWorkout(ScheduledWorkout sw){
-    return sw.scheduledDate.toDate().isAfter(DateTime.now());
-  }
-  Color workoutCardColor(ScheduledWorkout sw){
-    if(sw.isCompleted) return Colors.green.shade200;
-    if(isFutureWorkout(sw)) return Colors.red.shade200;
-    return Colors.yellow.shade300;
-  }
-
-  bool isButtonEnabled(ScheduledWorkout sw){
-    if(sw.isCompleted) return false;
-    if(isFutureWorkout(sw)) return false;
-    return true;
-  }
-
-  String buttonLabel(ScheduledWorkout sw){
-    if(sw.isCompleted) return 'Completed';
-    if(isFutureWorkout(sw)) return 'Locked';
-    if(sw.isInProgress == true) return 'Continue';
-    return 'Start';
-  }
-
+    //show day according to date in the week
   String weekdayLabel(DateTime date) {
     const days = ['Monday', 'Tuesday', 'Wednesday',
       'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return days[date.weekday - 1];
   }
-
+//function for refreshing the screen when go back to the screen or entering
   Future<void> refreshData() async {
     weeklyWorkouts = fetchWeeklyWorkouts();
     if (mounted) {
@@ -108,19 +78,18 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
           future: weeklyWorkouts,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator.adaptive());
+              return Center(child: CircularProgressIndicator.adaptive());
             }
             final groupedWorkouts = snapshot.data ?? {};
             if (groupedWorkouts.isEmpty) {
-              return _buildEmptyState();
+              return buildEmptyState();
             }
-
             return ListView.builder(
               padding:  EdgeInsets.all(16),
               itemCount: groupedWorkouts.length,
               itemBuilder: (context, index) {
                 final entry = groupedWorkouts.entries.elementAt(index);
-                return _buildDaySection(entry.key, entry.value);
+                return buildDaySection(entry.key, entry.value);
               },
             );
           },
@@ -129,8 +98,8 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
     );
   }
 
-  /// Simple empty state with icon and message
-  Widget _buildEmptyState() {
+  ///simple empty state with icon and message
+  Widget buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -138,45 +107,36 @@ class StartWorkoutScreenState extends State<StartWorkoutScreen>{
           Icon(Icons.calendar_today_outlined, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text('No workouts scheduled for this week', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-        ],
-      ),
+        ]),
     );
   }
 
-  /// Builds a section for a specific day, showing the date and its workouts
-  Widget _buildDaySection(DateTime date, List<ScheduledWorkout> workouts) {
+  ///builds a section for a specific day, showing the date and its workouts
+  Widget buildDaySection(DateTime date, List<ScheduledWorkout> workouts) {
     final bool isToday = normaliseDate(DateTime.now()) == date;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, top: 16, bottom: 8),
+          padding: EdgeInsets.only(left: 4, top: 16, bottom: 8),
           child: Row(
             children: [
               Text(
                 isToday ? 'TODAY' : weekdayLabel(date).toUpperCase(),
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                  color: isToday ? Theme.of(context).primaryColor : Colors.grey[600],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '${date.day}/${date.month}',
+                  fontSize: 13,fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2, color: isToday ? Theme.of(context).primaryColor : Colors.grey[600],
+                )),
+              SizedBox(width: 8),
+              Text('${date.day}/${date.month}',
                 style: TextStyle(color: Colors.grey[400], fontSize: 13),
-              ),
-            ],
-          ),
+              )]),
         ),
         ...workouts.map((scheduledWorkout) => WorkoutCard(
           key: ValueKey(scheduledWorkout.id),
           scheduledWorkout: scheduledWorkout,
           onRefresh: refreshData,
         )),
-      ],
-    );
+      ]);
   }
 }

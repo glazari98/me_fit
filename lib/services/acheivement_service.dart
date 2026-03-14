@@ -4,8 +4,11 @@ import 'package:me_fit/models/scheduled_workout.dart';
 import '../models/user.dart';
 
 class AchievementService{
+
   static const List<int> badgeMilestones = [ 1,5,10,20,50,100,200,500,1000,2000];
+
   String getBadgeImage(int milestone) => 'assets/images/$milestone.png';
+  //after completing a workout, increase streak, check for unlocked badge
   void updateAfterWorkout(User user) {
     user.totalCompletedWorkouts += 1;
     user.currentStreak += 1;
@@ -19,6 +22,7 @@ class AchievementService{
       }
     }
   }
+  //check streak after a week has passed, if there incomplete workouts in past week, kae streak to zero
   Future<void> checkWeeklyCompletion(User user, List<ScheduledWorkout> workouts) async {
     final now = DateTime.now();
 
@@ -54,6 +58,9 @@ class AchievementService{
     return workouts.where((w) => w.isCompleted).length;
   }
 
+  //Iterates backwards from the most recent workout
+  //Counts consecutive completed workouts until an incomplete or future workout is found
+  //Skips future workouts in the calculation
   static int calculateCurrentStreak(List<ScheduledWorkout> workouts){
     workouts.sort((a,b) => a.scheduledDate.compareTo(b.scheduledDate));
 
@@ -72,6 +79,11 @@ class AchievementService{
     }
     return streak;
   }
+  //Calculates the user's all-time best streak.
+  //Iterates through all workouts in chronological order
+  //Tracks the current consecutive completed workouts
+  //Updates the best streak whenever current exceeds it
+  //Resets current counter when an incomplete workout is encountered
   static int calculateBestStreak(List<ScheduledWorkout> workouts){
 
     int best =0;

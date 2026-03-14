@@ -8,7 +8,7 @@ import 'package:me_fit/services/authentication_service.dart';
 
 import '../components/drawer_menu.dart';
 import '../models/workout.dart';
-
+//widget for showing completed workouts
 class CompletedWorkoutsScreen extends StatefulWidget {
   const CompletedWorkoutsScreen({super.key});
 
@@ -29,7 +29,7 @@ class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
      super.initState();
      loadData();
    }
-
+    //fetch completed workouts so far
    Future<void> loadData() async {
      final scheduledResult = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
                                           .whereEqualTo('isCompleted', true)
@@ -46,7 +46,7 @@ class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
      });
      sortList();
    }
-
+    //function for sorting the list latest/earliest
    void sortList() {
      allCompleted.sort((a,b){
        final aDate = a.completedDate?.toDate() ?? DateTime(0);
@@ -64,13 +64,13 @@ class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
 
      return filtered.take(visibleCount).toList();
    }
-
+    //function for showing the dat ethe workout was completed
    String formatDate(DateTime date){
      return "${date.day}/${date.month}/${date.year} "
          "${date.hour.toString().padLeft(2,'0')}:"
          "${date.minute.toString().padLeft(2,'0')}";
    }
-
+//function for taking the user to feedback of a completed workout
    Future<void> navigateToFeedbackScreen(ScheduledWorkout sw) async{
      final workout = workoutMap[sw.workoutId];
       if(workout == null) return;
@@ -85,7 +85,8 @@ class CompleteWorkoutsScreenState extends State<CompletedWorkoutsScreen>{
      Navigator.push(context,MaterialPageRoute(builder: (_) => WorkoutFeedbackScreen(workout: workout, exercises: exercises)));
                                             
    }
-   @override
+
+ @override
   Widget build(BuildContext context){
      if(isLoading){
        return const Scaffold(

@@ -5,7 +5,7 @@ import 'package:me_fit/models/equipment.dart';
 import 'package:me_fit/models/exerciseType.dart';
 
 import '../models/exercise.dart';
-
+//widget for displaying information for an individual exercises
 class ExerciseDetailsScreen extends StatefulWidget {
   final Exercise exercise;
   final List<BodyPart> bodyParts;
@@ -31,7 +31,7 @@ class ExerciseDetailsScreenState extends State<ExerciseDetailsScreen>{
     super.initState();
     fetchEquipments();
   }
-
+  //get equipments from database
   Future<void> fetchEquipments() async{
     try{
       if(widget.exercise.equipmentId.isNotEmpty){
@@ -121,7 +121,7 @@ class ExerciseDetailsScreenState extends State<ExerciseDetailsScreen>{
       ),
     );
   }
-
+//widget for creating row for information related to body parts, equipment, exercise type of an exercise
   Widget buildInfoRow(IconData icon, String label, String value){
     return Row(crossAxisAlignment: CrossAxisAlignment.start,
     children: [

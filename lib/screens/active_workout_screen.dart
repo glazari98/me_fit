@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:me_fit/services/acheivement_service.dart';
 import 'package:me_fit/services/authentication_service.dart';
@@ -17,8 +19,9 @@ import 'package:me_fit/screens/workout_feedback_screen.dart';
 import 'package:me_fit/screens/exercise_details_screen.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-
+import 'package:me_fit/models/motivationQuote.dart';
 import '../models/user.dart';
+import '../utilityFunctions/utility_functions.dart';
 
 class ActiveWorkoutScreen extends StatefulWidget{
   final Workout workout;
@@ -41,6 +44,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   List<WorkoutExercises> workoutExercises = [];
   Map<String, Exercise> exerciseMap = {};
 
+  //variables for navigating through workout exercises and registering completed stats
   int currentIndex = 0;
   int elapsedSeconds = 0;
   Timer? workoutTimer;
@@ -56,8 +60,6 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   List<TextEditingController> weightControllers = [];
   bool showWeightInput = false;
 
-
-
   List<BodyPart> bodyParts = [];
   List<ExerciseType> exerciseTypes = [];
   List<LatLng> route = [];
@@ -65,6 +67,13 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   LatLng? currentPosition;
   StreamSubscription<Position>? positionStream;
   GoogleMapController? mapController;
+  //sound variables
+  final AudioPlayer audioPlayer = AudioPlayer();
+  bool wasSoundPlaying = false;
+  bool beepStarted = false;
+
+  RestTipQuote? currentRestQuote;
+
 
   @override
   void initState(){
@@ -74,7 +83,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       restoreProgress();
     });
   }
-
+  //load body parts and exercise types
   Future<void> loadData() async {
     final bodyPartsResult = await FS.list.allOfClass<BodyPart>(BodyPart);
     final exerciseTypesResult = await FS.list.allOfClass<ExerciseType>(ExerciseType);
@@ -84,7 +93,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       exerciseTypes = exerciseTypesResult;
     });
   }
-
+  //function for restoring progress after user has paused or left the workout
   void restoreProgress() async {
     final scheduledWorkout = widget.scheduledWorkout;
     if(scheduledWorkout.isInProgress != true) return;
@@ -102,7 +111,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     }
     setState(() {});
   }
-
+  //function for restoring the users route covered so far after resuming a workout
   Future<void> reinitialiseAerobic() async {
     final currentWorkoutExercises = we;
     if(currentWorkoutExercises.routePoints != null && currentWorkoutExercises.routePoints!.isNotEmpty) {
@@ -142,7 +151,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       if (mounted) setState(() => hasLocationPermission = false);
     }
   }
-
+  //function for loading workout data
   Future<void> loadWorkout() async {
     final workoutExercisesResult = await FS.list.filter<WorkoutExercises>(WorkoutExercises)
         .whereEqualTo('workoutId', widget.workout.id)
@@ -156,29 +165,42 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     };
     setState(() {});
   }
-
-  void pauseWorkout() {
+  //function for pausing the workout
+  Future<void> pauseWorkout() async {
     if(isPaused) return;
     workoutTimer?.cancel();
     phaseTimer?.cancel();
+
+    if (beepStarted) {
+      await audioPlayer.pause();
+      wasSoundPlaying = true;
+    }
+
     positionStream?.pause();
     setState(() => isPaused = true);
     ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Workout paused.'),duration: Duration(seconds: 2)));
   }
-
-  void resumeWorkout() {
+  //function called after resuming a workout
+  void resumeWorkout() async {
     if(!isPaused) return;
-
     if(workoutTimerStarted){
-      workoutTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (wasSoundPlaying) {//resume beep sound if it was below 5 seconds mark and it was playing
+        await audioPlayer.resume();
+        wasSoundPlaying = false;
+      }
+
+      workoutTimer = Timer.periodic(Duration(seconds: 1), (_) {
         setState(() => elapsedSeconds++);
       });
 
       if((phase == ExercisePhase.activeSet || phase == ExercisePhase.rest) && remainingSeconds > 0) {
-        phaseTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
+        phaseTimer = Timer.periodic( Duration(seconds: 1), (t) async {
           setState(() => remainingSeconds--);
-          if(remainingSeconds <= 0){
+          if (remainingSeconds == 5 && !beepStarted) {
+            playBeepSound();
+          }
+          if(remainingSeconds <= 0){ //if timer reaches at 0, go to rest phase
             t.cancel();
             if(phase == ExercisePhase.rest){
               finishRest();
@@ -201,7 +223,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         });
       }
       if (phase == ExercisePhase.activeSet && getExerciseType(we) == 'AEROBIC' && hasLocationPermission) {
-        startAerobicPositionStream(skipFirstPoint: true);
+        startAerobicPositionStream(skipFirstPoint: true); //begin tracking user's position again
       } else {
         positionStream?.resume();
       }
@@ -210,7 +232,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       setState(() => isPaused = false);
     }
   }
-
+  //begin workout time
   void startWorkoutTimer(){
     if(workoutTimerStarted) return;
     workoutTimerStarted = true;
@@ -222,14 +244,14 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   //helper functions
   WorkoutExercises get we => workoutExercises[currentIndex];
   Exercise get ex => exerciseMap[we.exerciseId]!;
-
+  //get exercise type according to what fields have values in workout exercise record
   String getExerciseType(WorkoutExercises we){
     if(we.distance != null) return 'AEROBIC';
     if(we.durationOfTimedSet != null && we.sets != null) return 'CARDIO_PLYO';
     if(we.durationOfTimedSet != null && we.sets == null) return 'STRETCHING';
     return 'STRENGTH';
   }
-
+  //function for moving to next exercise after skipping/completing all sets of previous exercise
   void moveToNextExercise(){
     phaseTimer?.cancel();
     positionStream?.cancel();
@@ -251,22 +273,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       finishWorkout();
     }
   }
-
-  void completeExercise() {
-    if(currentIndex < workoutExercises.length - 1){
-      setState(() => currentIndex++);
-    } else {
-      finishWorkout();
-    }
-  }
-
-  String formatDuration(int seconds) {
-    final hours = seconds ~/ 3600;
-    final minutes = (seconds % 3600) ~/ 60;
-    final secs = seconds % 60;
-    return '${hours.toString().padLeft(2,'0')}:${minutes.toString().padLeft(2,'0')}:${secs.toString().padLeft(2,'0')}';
-  }
-
+  //function called when there ar eno more exercises to complete and all information have to be passed to create feedback record and track badges and streaks
   Future<void> finishWorkout() async {
     workoutTimer?.cancel();
     phaseTimer?.cancel();
@@ -318,6 +325,10 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final newBadges = AchievementService.calculateUnlockedBadges(user!.totalCompletedWorkouts);
     final hasNewBadge = newBadges.length > oldBadges.length; //compare
     final badgeMilestone = hasNewBadge ? newBadges.last : 0;
+    if(hasNewBadge){
+      user.badgeUnlockedDates?.add(Timestamp.now());
+      await FS.update.one(user);
+    }
 
     await Navigator.push(
       context,
@@ -362,15 +373,20 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   //cardio-plyo logic
   void startTimedSet() {
+    beepStarted = false;
     startWorkoutTimer();
     phaseTimer?.cancel();
     setState(() {
       phase = ExercisePhase.activeSet;
       remainingSeconds = we.durationOfTimedSet ?? 0;
     });
+    wasSoundPlaying = false;
 
     phaseTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
       setState(() => remainingSeconds--);
+      if (remainingSeconds == 5 && !beepStarted) {
+        playBeepSound();
+      }
       if(remainingSeconds <= 0) {
         t.cancel();
         we.setsCompleted = (we.setsCompleted ?? 0) + 1;
@@ -378,7 +394,6 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         if(currentSet >= (we.sets ?? 1)){
           startRest(we.restBetweenSets ?? 0, postExercise: true);
         }else{
-          setState(() => currentSet++);
           startRest(we.restBetweenSets ?? 0);
         }
       }
@@ -414,7 +429,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       mapController?.animateCamera(CameraUpdate.newLatLng(newPoint));
     });
   }
-
+  //function called when user gives permission for location tracking in aerobic exercises
   Future<void> startAerobicTracking() async {
     startWorkoutTimer();
 
@@ -454,7 +469,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         CameraUpdate.newCameraPosition(CameraPosition(target: startPoint, zoom: 15)));
     startAerobicPositionStream(skipFirstPoint: false);
   }
-
+  //function called when user finishes aerobic tracking
   Future<void> finishAerobicTracking() async {
     positionStream?.cancel();
     positionStream = null;
@@ -474,7 +489,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     await FS.update.one(we);
     moveToNextExercise();
   }
-
+  //function called when user finishes an aerobic exercise without location tracking
+  //they manually input how much distance they covered
   void completeAerobic(double distanceCovered) async {
     we.distanceCovered = distanceCovered;
     we.timeForDistanceCovered = elapsedSeconds - aerobicStartSeconds;
@@ -482,7 +498,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     await FS.update.one(we);
     moveToNextExercise();
   }
-
+  //function that shows the whole route you covered in feedback route map
   void fitRouteOnMap(){
     if(route.isEmpty || mapController == null) return;
     double minLat = route.first.latitude;
@@ -500,19 +516,38 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     final bounds = LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng));
     mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
   }
+  //sound that plays if a timer reaches at 5 seconds
+  Future<void> playBeepSound() async {
+    beepStarted = true;
+    await audioPlayer.setVolume(1.0);
+    await audioPlayer.setReleaseMode(ReleaseMode.stop);
+    await audioPlayer.play(AssetSource('sounds/Timer 1.mp3'));
 
+  }
+  //function to stop beep sound if a workout is paused or canceled
+  Future<void> stopBeepSound() async {
+    await audioPlayer.stop();
+  }
+  Future<void> pauseBeepSound() async {
+    await audioPlayer.pause();
+  }
   //stretching logic
   void startStretching() async {
+    beepStarted = false;
     startWorkoutTimer();
     setState((){
       phase = ExercisePhase.activeSet;
       remainingSeconds = we.durationOfTimedSet!;
     });
+    wasSoundPlaying = false;
 
     phaseTimer?.cancel();
     phaseTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
       if (!mounted) return;
       setState(() => remainingSeconds--);
+      if (remainingSeconds == 5 && !beepStarted) {
+        playBeepSound();
+      }
       if (remainingSeconds <= 0) {
         t.cancel();
         we.stretchingCompleted = true;
@@ -525,21 +560,30 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   //rest
   void startRest(int seconds, {bool postExercise = false}){
+    beepStarted = false;
+    //pick random quote when starting rest
+    currentRestQuote = restTipsQuotes[Random().nextInt(restTipsQuotes.length)];
     phase = ExercisePhase.rest;
     remainingSeconds = seconds;
     isLastSetRest = postExercise;
-
+    wasSoundPlaying = false;
     phaseTimer?.cancel();
     phaseTimer = Timer.periodic(const Duration(seconds: 1), (t){
       setState(() => remainingSeconds--);
+      if (remainingSeconds == 5 && !beepStarted) {
+        playBeepSound();
+      }
       if(remainingSeconds <= 0){
         t.cancel();
+        beepStarted = false;
         finishRest();
       }
     });
   }
-
-  void finishRest() {
+  //when rest is skipped or finished
+  void finishRest()
+  {
+    beepStarted = false;
     phaseTimer?.cancel();
     if(isLastSetRest){
       isLastSetRest = false;
@@ -558,7 +602,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       });
 
   }
-
+  //function called when a workout is paused to save the current state of the workout
   Future<void> saveWorkoutProgress() async {
     final sw = widget.scheduledWorkout;
 
@@ -584,8 +628,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   }
 
-  //TODO - Move this to a separate widget file --> WorkoutActionButton?
-  Widget _buildActionButton({
+  //button for completing a set or skipping
+  Widget buildActionButton({
     required String label,
     required IconData icon,
     required Color color,
@@ -609,8 +653,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     return isFullWidth ? SizedBox(width: double.infinity, child: button) : button;
   }
 
-  //TODO - Move this to a separate widget file --> WorkoutActionButton?
-  Widget _buildSecondaryActionButton({
+  //widget for displaying view details button
+  Widget viewDetailsButton({
     required String label,
     required IconData icon,
     required Color color,
@@ -632,9 +676,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     return isFullWidth ? SizedBox(width: double.infinity, child: button) : button;
   }
 
-  // Progress Circle
-  //TODO - Move this to a separate widget file --> WorkoutProgressCircle?
-  Widget _buildTimerCircle({required double percent, required int seconds, Color color = Colors.green}) {
+  //progress circle for countdown
+  Widget buildTimerCircle({required double percent, required int seconds, required Color color}) {
     return Center(
       child: CircularPercentIndicator(
         radius: 110,
@@ -650,10 +693,9 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     );
   }
 
-  // Exercise Info Card
-  // TODO - Move this to a separate widget file --> ExerciseInfoCard?
-  Widget _buildViewDetailsButton(Exercise ex) {
-    return _buildSecondaryActionButton(
+  //exercise Info Card
+  Widget buildViewDetailsButton(Exercise ex) {
+    return viewDetailsButton(
       label: 'VIEW DETAILS',
       icon: Icons.info_outline,
       color: Colors.black87,
@@ -662,6 +704,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           builder: (_) => ExerciseDetailsScreen(exercise: ex, bodyParts: bodyParts, exerciseTypes: exerciseTypes))),
     );
   }
+  //dialog showing for cancelling a workout
   Future<void> showCancelDialog() async{
     final confirm = await showDialog<bool>(
       context: context,
@@ -671,7 +714,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           SizedBox(width: 8),Text('Cancel Workout')
         ],
         ),
-        content: Text('Are you sure you want to cancel this workout?/nAll progress will be lost.'),
+        content: Text('Are you sure you want to cancel this workout? All progress will be lost.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context,false),
@@ -688,10 +731,12 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       await cancelWorkout();
     }
   }
+  //restore all stats of workout to null upon a user confirming they want to cancel a workout
   Future<void> cancelWorkout() async {
     workoutTimer?.cancel();
     phaseTimer?.cancel();
     positionStream?.cancel();
+    stopBeepSound();
 
     final sw = widget.scheduledWorkout;
     sw.isInProgress = false;
@@ -726,6 +771,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Workout cancelled.'),duration: Duration(seconds: 2)));
     Navigator.pop(context,true);
   }
+
   @override
   Widget build(BuildContext context){
     if(workoutExercises.isEmpty || exerciseMap.isEmpty){
@@ -744,7 +790,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             if(workoutTimerStarted)
               IconButton(
                 onPressed: showCancelDialog,
-                icon: const Icon(Icons.cancel_outlined),
+                icon: Icon(Icons.cancel_outlined),
                 tooltip: 'Cancel Workout',
               ),
             if(workoutTimerStarted)
@@ -757,19 +803,19 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 }},
               icon: Icon(isPaused ? Icons.play_arrow :Icons.pause))
           ]),
-        body: Padding( padding: const EdgeInsets.all(16),
+        body: Padding( padding: EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              LinearProgressIndicator(value: progress),
-              const SizedBox(height: 16),
+              LinearProgressIndicator(minHeight: 10,value: progress,backgroundColor: Colors.red,color: Colors.green),
+              SizedBox(height: 16),
               Row( mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Workout time: ', style: TextStyle(fontSize: 13, letterSpacing: 2)),
-                  Text(formatDuration(elapsedSeconds),
-                      style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold)),
+                  Text('Workout time: ', style: TextStyle(fontSize: 20, letterSpacing: 2)),
+                  Text(formatDuration2(elapsedSeconds),
+                      style:  TextStyle(fontSize: 34, fontWeight: FontWeight.bold)),
                 ]),
-              const SizedBox(height: 5),
+              SizedBox(height: 5),
               Expanded(
                 child: buildExerciseControls(),
               ),
@@ -777,155 +823,210 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         )),
     );
   }
+  //dialog showing when a user wants to input weight for strength exercises
+  Future<void> showWeightInputDialog() async {
+    //create controllers for each set
+    List<TextEditingController> dialogControllers = List.generate(
+      we.sets!,
+          (index) => TextEditingController(),
+    );
 
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.fitness_center, color: Colors.blue.shade700),
+            SizedBox(width: 8),
+            Text('Enter Weights',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          ]),
+        content: Container(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(we.sets!, (index) {
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 30, height: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          shape: BoxShape.circle),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade800,
+                            )),
+                        )),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: dialogControllers[index],
+                          keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            hintText: 'Weight (kg)',
+                            suffixText: 'kg',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,vertical: 8,
+                            )),
+                        )),
+                    ]),
+                );
+              }),
+            )),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Save'),
+          )]),
+    );
+    if (result == true) {
+      //validate entered weights
+      List<double> targetWeights = [];
+      bool hasError = false;
+
+      for (int i = 0; i < dialogControllers.length; i++) {
+        final weight = double.tryParse(dialogControllers[i].text) ?? 0;
+        if (weight < 0 || weight > 400) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Weight for set ${i + 1} must be between 0.5 kg and 400 kg'),
+              duration: Duration(seconds: 2)),
+          );
+          hasError = true;
+          break;
+        }
+        targetWeights.add(weight);
+      }
+      if (!hasError && targetWeights.any((w) => w > 0)) {
+        setState(() {
+          we.targetSetWeights = targetWeights;
+        });
+        await FS.update.one(we); //update workout exercise with target weights the user has set
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Weights saved successfully!'),
+            duration: Duration(seconds: 2))
+        );
+      }
+      //dispose
+      for (var controller in dialogControllers) {
+        controller.dispose();
+      }
+    }
+  }
+//widget for displaying different UI according to the type of exercise and phase
   Widget buildExerciseControls() {
     if (isTransitioning) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator());
     }
-
     final type = getExerciseType(we);
-
+    //REST phase
     if (phase == ExercisePhase.rest) {
-      return Center(
+      final displayQuote = currentRestQuote ??  restTipsQuotes[Random().nextInt(restTipsQuotes.length)];
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text('Take a break...',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 28, letterSpacing: 1.2)),
-            const SizedBox(height: 30),
-            _buildTimerCircle(
+            SizedBox(height: 20),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.blue.shade200)
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayQuote.description,
+                    style: TextStyle(fontSize: 16,fontWeight: FontWeight.w500,fontStyle: FontStyle.italic),
+                  ),
+                  if (displayQuote.author != null) ...[
+                    SizedBox(height: 8),
+                    Text(
+                      '- ${displayQuote.author}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )],
+                ]),
+            ),
+            SizedBox(height: 20),
+            Text('Take a break...',
+                style: TextStyle(fontWeight: FontWeight.w900, color: Colors.blue,fontSize: 28, letterSpacing: 1.2)),
+            SizedBox(height: 30),
+            Center(child: buildTimerCircle(
               percent: remainingSeconds / (we.restBetweenSets ?? 1),
               seconds: remainingSeconds,
-            ),
-            const SizedBox(height: 40),
-            _buildActionButton(
+              color: Colors.blue,
+            )),
+            SizedBox(height: 40),
+            buildActionButton(
               label: 'SKIP REST',
               icon: Icons.skip_next,
               color: Colors.orange.shade700,
+              onPressed: () async {
+                await stopBeepSound();
+                finishRest();
+              },
               isFullWidth: true,
-              onPressed: finishRest,
-              iconAlignment: IconAlignment.end,
-            ),
-          ],
-        ),
-      );
+              iconAlignment:  IconAlignment.end,
+            )],
+        ));
     }
-
     switch (type) {
-      case 'STRENGTH':
+      case 'STRENGTH': //REST IDLE STATE
         if (phase == ExercisePhase.idle) {
           return Column(children: [
             buildExerciseInfoCard(children: [
-              _buildHeaderTag(),
+              buildHeaderTag(),
               const SizedBox(height: 12),
-              Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+              Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const Divider(height: 32),
-              _buildInfoRow('Sets', '${we.sets}'),
-              _buildInfoRow('Reps', '${we.repetitions}'),
-              _buildInfoRow('Rest', '${we.restBetweenSets}s'),
+              buildInfoRow('Sets', '${we.sets}'),
+              buildInfoRow('Reps', '${we.repetitions}'),
+              buildInfoRow('Rest', '${we.restBetweenSets}s'),
             ]),
             //show eights input
             if (!showWeightInput)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: _buildSecondaryActionButton(
+                child: viewDetailsButton(
                   label: 'ADD WEIGHTS (OPTIONAL)',
                   icon: Icons.fitness_center,
                   color: Colors.blue,
-                  onPressed: () {
-                    setState(() {
-                      showWeightInput = true;
-                      //create controllers for each set
-                      weightControllers = List.generate(
-                        we.sets!,
-                            (index) => TextEditingController(),
-                      );
-                    });
-                  },
+                  onPressed: showWeightInputDialog,
                   isFullWidth: true,
                 )),
-            if (showWeightInput) ...[
-              SizedBox(height: 5),
-              Container(
-                padding: EdgeInsets.all(10),
-                decoration: BoxDecoration( color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row( mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(children: [
-                            Icon(Icons.fitness_center, size: 20, color: Colors.blue.shade700),
-                            SizedBox(width: 8),
-                            Text('Weight per set (kg)',
-                              style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w600, color: Colors.blue)),
-                          ]),
-                        IconButton(
-                          icon: Icon(Icons.close, size: 20),
-                          onPressed: () {
-                            setState(() {
-                              showWeightInput = false;
-                              weightControllers.clear();
-                            });
-                          }
-                        )]),
-                    SizedBox(height: 12),
-                    SizedBox(
-                      height: 168,
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: List.generate(we.sets!, (index) {
-                            return Padding(
-                              padding:  EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                children: [
-                                  Container(width: 30, height: 30,
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.shade100,
-                                      shape: BoxShape.circle),
-                                    child: Center(
-                                      child: Text('${index + 1}',
-                                        style: TextStyle(fontWeight: FontWeight.bold,
-                                          color: Colors.blue.shade800),
-                                      ))),
-                                  SizedBox(width: 12),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: weightControllers[index],
-                                      keyboardType: TextInputType.numberWithOptions(decimal: true),
-                                      decoration: InputDecoration(
-                                        hintText: 'Enter weight (kg)',
-                                        suffixText: 'kg',border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                      ),
-                                    ))],
-                              ));
-                          }),
-                        )),
-                    ),
-                    //show there are more sets if any
-                    if (we.sets! > 3)
-                      Padding(
-                        padding: EdgeInsets.only(top: 4),
-                        child: Center(
-                          child: Text('Scroll to see more sets',
-
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade600,
-                              fontStyle: FontStyle.italic,
-                            )),
-                        ))],
-                ))],
-            SizedBox(height: 24),
-            _buildViewDetailsButton(ex),
+            SizedBox(height: 10),
+            buildViewDetailsButton(ex),
             SizedBox(height: 12),
-            _buildActionButton(
+            buildActionButton(
               label: 'START EXERCISE',
               icon: Icons.play_arrow,
               color: Colors.green,
@@ -952,10 +1053,10 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             ),
           ]);
         }
-        if (phase == ExercisePhase.activeSet) {
+        if (phase == ExercisePhase.activeSet) { //STRENGTH ACTIVE STATE
           return Column(children: [
             buildExerciseInfoCard(children: [
-              _buildHeaderTag(),
+              buildHeaderTag(),
               const SizedBox(height: 12),
               Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               const Divider(height: 24),
@@ -973,15 +1074,15 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                     ),
                     child: Text(
                       'Target Weight: ${we.targetSetWeights![currentSet - 1]} kg',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.blue.shade800),
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.blue.shade800),
                     ),
                   ),
                 ),
             ]),
 
-            const SizedBox(height: 40),
+            SizedBox(height: 40),
             Row(children: [
-              Expanded(child: _buildActionButton(
+              Expanded(child: buildActionButton(
                   label: 'SKIP', icon: Icons.skip_next, color: Colors.orange.shade700,
                   iconAlignment: IconAlignment.end,
                   onPressed: () async {
@@ -993,77 +1094,78 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                     (currentSet >= (we.sets ?? 1)) ? startRest(we.restBetweenSets ?? 0, postExercise: true) : startRest(we.restBetweenSets ?? 0);
                   }
               )),
-              const SizedBox(width: 12),
-              Expanded(child: _buildActionButton(
+              SizedBox(width: 12),
+              Expanded(child: buildActionButton(
                   label: 'DONE', icon: Icons.check, color: Colors.green,
                   onPressed: completeStrengthSet
               )),
             ]),
             const Spacer(),
-            _buildViewDetailsButton(ex),
+            buildViewDetailsButton(ex),
           ]);
         }
         break;
 
-      case 'TIMED':
+      case 'TIMED': //IDLE STATE FOR PLYOMETRIC AND CARDIO EXERCISES
       case 'CARDIO_PLYO':
         if (phase == ExercisePhase.idle) {
           return Column(children: [
             buildExerciseInfoCard(children: [
-              _buildHeaderTag(),
+              buildHeaderTag(),
               const SizedBox(height: 12),
               Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
               const Divider(height: 32),
-              _buildInfoRow('Sets', '${we.sets}'),
-              _buildInfoRow('Duration', '${we.durationOfTimedSet}s'),
+              buildInfoRow('Sets', '${we.sets}'),
+              buildInfoRow('Duration', '${we.durationOfTimedSet}s'),
             ]),
             const SizedBox(height: 24),
-            _buildViewDetailsButton(ex),
+            buildViewDetailsButton(ex),
             const SizedBox(height: 12),
-            _buildActionButton(label: 'START', icon: Icons.timer, color: Colors.green, onPressed: startTimedSet, isFullWidth: true),
+            buildActionButton(label: 'START', icon: Icons.timer, color: Colors.green, onPressed: startTimedSet, isFullWidth: true),
           ]);
         }
-        if (phase == ExercisePhase.activeSet) {
+        if (phase == ExercisePhase.activeSet) { // ACTIVE STATE FOR PLYOMETRIC AND CARDIO EXERCISES
           return Column(children: [
             buildExerciseInfoCard(children: [
-              _buildHeaderTag(),
+              buildHeaderTag(),
               const SizedBox(height: 12),
               Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               Text('Set $currentSet / ${we.sets}', style: TextStyle(color: Colors.grey[600])),
             ]),
             const SizedBox(height: 30),
-            _buildTimerCircle(
+            buildTimerCircle(
               percent: we.durationOfTimedSet != null && we.durationOfTimedSet! > 0 ? (remainingSeconds / we.durationOfTimedSet!) : 0.0,
-              seconds: remainingSeconds,
+              seconds: remainingSeconds, color: Colors.green
             ),
             const SizedBox(height: 40),
-            _buildActionButton(
+            buildActionButton(
                 label: 'SKIP SET', icon: Icons.skip_next, color: Colors.orange.shade700, isFullWidth: true,
-                onPressed: () {
+                onPressed: () async {
+                  await stopBeepSound();
                   phaseTimer?.cancel();
                   (currentSet >= (we.sets ?? 1)) ? startRest(we.restBetweenSets ?? 0, postExercise: true) : startRest(we.restBetweenSets ?? 0);
                 }
             ),
             const Spacer(),
-            _buildViewDetailsButton(ex),
+            buildViewDetailsButton(ex),
           ]);
         }
         break;
 
       case 'AEROBIC':
-        if (phase == ExercisePhase.idle) {
+        if (phase == ExercisePhase.idle) { //IDLE STATE FOR AEROBIC EXERCISES
           return Column(children: [
             buildExerciseInfoCard(children: [
-              _buildHeaderTag(),
+              buildHeaderTag(),
               const SizedBox(height: 12),
               Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
               const Divider(height: 32),
-              _buildInfoRow('Goal Distance', '${we.distance} km'),
+              buildInfoRow('Goal Distance', '${we.distance} km'),
             ]),
             const SizedBox(height: 24),
-            _buildViewDetailsButton(ex),
+            buildViewDetailsButton(ex),
             const SizedBox(height: 12),
-            _buildActionButton(
+            buildActionButton(
                 label: 'START TRACKING',
                 icon: Icons.location_on,
                 color: Colors.green,
@@ -1073,14 +1175,14 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           ]);
         }
 
-        if (phase == ExercisePhase.activeSet) {
+        if (phase == ExercisePhase.activeSet) { //ACTIVE STATE FOR AEROBIC EXERCISES
           return Column(children: [
             buildExerciseInfoCard(children: [
-              _buildHeaderTag(),
+              buildHeaderTag(),
               const SizedBox(height: 12),
               Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               const Divider(height: 20),
-              _buildInfoRow('Current Goal', '${we.distance} km'),
+              buildInfoRow('Current Goal', '${we.distance} km'),
             ]),
             Container(
               height: 250,
@@ -1116,7 +1218,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            _buildActionButton(
+            buildActionButton(
               label: 'FINISH EXERCISE',
               icon: Icons.check_circle,
               color: Colors.green,
@@ -1126,23 +1228,23 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           ]);
         }
         break;
-      case 'STRETCHING':
+      case 'STRETCHING': //IDLE STATE FOR STRETCHING EXERCISES
         if (phase == ExercisePhase.idle) {
           return Column(
             children: [
               buildExerciseInfoCard(children: [
-                _buildHeaderTag(),
+                buildHeaderTag(),
                 const SizedBox(height: 12),
                 Text(ex.name,
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
                 const Divider(height: 32),
-                _buildInfoRow('Target Duration', '${we.durationOfTimedSet}s'),
+                buildInfoRow('Target Duration', '${we.durationOfTimedSet}s'),
               ]),
               const SizedBox(height: 24),
-              _buildViewDetailsButton(ex),
+              buildViewDetailsButton(ex),
               const SizedBox(height: 12),
-              _buildActionButton(
+              buildActionButton(
                 label: 'START STRETCHING',
                 icon: Icons.accessibility_new,
                 color: Theme.of(context).primaryColor,
@@ -1152,29 +1254,30 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
             ],
           );
         }
-        if (phase == ExercisePhase.activeSet) {
+        if (phase == ExercisePhase.activeSet) { //ACTIVE STATE FOR STRETCHING EXERCISES
           return Column(
             children: [
               buildExerciseInfoCard(children: [
-                _buildHeaderTag(),
+                buildHeaderTag(),
                 const SizedBox(height: 12),
                 Text(ex.name,
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               ]),
               const SizedBox(height: 30),
-              _buildTimerCircle(
+              buildTimerCircle(
                 percent: remainingSeconds / (we.durationOfTimedSet ?? 1),
-                seconds: remainingSeconds,
+                seconds: remainingSeconds, color: Colors.blue
               ),
               const SizedBox(height: 40),
-              _buildActionButton(
+              buildActionButton(
                 label: 'SKIP STRETCH',
                 icon: Icons.skip_next,
                 color: Colors.orange.shade700,
                 isFullWidth: true,
                 iconAlignment: IconAlignment.end,
                 onPressed: () async {
+                  await stopBeepSound();
                   phaseTimer?.cancel();
                   we.stretchingCompleted = false;
                   await FS.update.one(we);
@@ -1182,40 +1285,39 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 },
               ),
               const Spacer(),
-              _buildViewDetailsButton(ex),
+              buildViewDetailsButton(ex),
             ],
           );
         }
         break;
     }
-
     return const SizedBox();
   }
 
-  /// Header Tag for Exercise Progress
-  Widget _buildHeaderTag() {
+  ///header Tag for Exercise Progress
+  Widget buildHeaderTag() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(color: Theme.of(context).primaryColor, borderRadius: BorderRadius.circular(20)),
       child: Text('EXERCISE ${currentIndex + 1} / ${workoutExercises.length}',
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
     );
   }
 
-  /// Info Row for Exercise Details
-  Widget _buildInfoRow(String label, String value) {
+  ///info Row for Exercise Details
+  Widget buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 17)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
         ],
       ),
     );
   }
-
+//dialog for user to enter the distance the covered if location tracking is nto enabled
   Future<void> showAerobicDistanceDialog() async {
     final controller = TextEditingController();
     final result = await showDialog<double>(
@@ -1244,11 +1346,12 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     weightControllers.clear();
     workoutTimer?.cancel();
     phaseTimer?.cancel();
+    audioPlayer.dispose();
     positionStream?.cancel();
     super.dispose();
   }
 }
-
+//widget for holding the information of an exercise in idle state
 Widget buildExerciseInfoCard({required List<Widget> children}) {
   return Container(width: double.infinity, padding: const EdgeInsets.all(20),
     margin: const EdgeInsets.symmetric(vertical: 12),

@@ -8,7 +8,7 @@ import 'package:me_fit/services/authentication_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/exercise.dart';
 import '../models/user.dart';
-
+//widget for showing monthly workout statistics to user
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
 
@@ -40,7 +40,7 @@ class StatisticsScreenState extends State<StatisticsScreen> {
     currentMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
     loadProgressData();
   }
-
+  //retrieve completed workouts of user and calculate statistics
   Future<void> loadProgressData() async {
     setState(() => isLoading = true);
 
@@ -101,8 +101,11 @@ class StatisticsScreenState extends State<StatisticsScreen> {
      switch (type) {
       case 'STRENGTH'://for strength exercises find weight lifted
         if (exercise.actualSetWeights != null) {
-          totalWeightLifted += exercise.actualSetWeights!
-              .fold(0.0, (sum, weight) => sum + weight);
+          for (int i = 0; i < exercise.actualSetWeights!.length; i++) {
+            if(exercise.actualSetWeights![i] > 0) {
+              totalWeightLifted += exercise.actualSetWeights![i] * exercise.repetitions!;
+            }
+          }
         }
         break;
 
@@ -120,14 +123,14 @@ class StatisticsScreenState extends State<StatisticsScreen> {
         break;
     }
   }
-
+//function to get exercise type according to completed fields in database
   String getExerciseType(WorkoutExercises we) {
     if (we.distance != null) return 'AEROBIC';
     if (we.durationOfTimedSet != null && we.sets != null) return 'CARDIO';
     if (we.durationOfTimedSet != null && we.sets == null) return 'STRETCHING';
     return 'STRENGTH';
   }
-
+//function to display to workout time of user
   String formatDuration(int seconds) {
     if (seconds < 60) {
       return '$seconds s';
@@ -165,7 +168,7 @@ class StatisticsScreenState extends State<StatisticsScreen> {
                 children: [
                   buildStatCard('Workouts','$totalWorkoutsThisMonth',Icons.fitness_center,Colors.blue),
                   buildStatCard('Total Time',formatDuration(totalDurationThisMonth),Icons.timer,Colors.teal),
-                  buildStatCard('Weight','${totalWeightLifted.toStringAsFixed(0)}kg',Icons.fitness_center,Colors.orange),
+                  buildStatCard('Weight lifted','${totalWeightLifted.toStringAsFixed(0)}kg',Icons.fitness_center,Colors.orange),
                   buildStatCard('Distance','${totalDistanceCovered.toStringAsFixed(1)}km',Icons.map,Colors.green),
                   buildStatCard('Cardio',formatDuration(totalCardioDuration),Icons.directions_run,Colors.purple),
                 ],
@@ -176,7 +179,7 @@ class StatisticsScreenState extends State<StatisticsScreen> {
           )),
       ));
   }
-
+//widget where user can navigate across months he has been using the app
   Widget buildMonthSelector() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -214,7 +217,8 @@ class StatisticsScreenState extends State<StatisticsScreen> {
       ),
     );
   }
-
+//widget which adapts for displaying information like number of workouts, total workout time, total weight lifted, total distance covered, total duration in of doing cardio
+  //each type has their own icon and color
   Widget buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
       decoration: BoxDecoration(
@@ -247,7 +251,7 @@ class StatisticsScreenState extends State<StatisticsScreen> {
         )),
     );
   }
-
+//widget for displaying a pie chart of common exercise types that use has completed this month
   Widget buildExerciseTypeChart() {
     if (exerciseTypeCount.isEmpty) {
       return Container(
@@ -334,7 +338,7 @@ class StatisticsScreenState extends State<StatisticsScreen> {
       )
     );
   }
-
+//function to get month name
   String monthName(int month) {
     const months = [
       'January', 'February', 'March', 'April', 'May', 'June',

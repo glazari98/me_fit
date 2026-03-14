@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:me_fit/services/authentication_service.dart';
 import '../components/drawer_menu.dart';
 import '../models/user.dart';
-
+//widget display user account information and training preferences
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -49,7 +49,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
     tabController.dispose();
     super.dispose();
   }
-
+//fetch user information
   Future<void> loadUser() async {
     final user = authenticationService.getCurrentUser();
     if (user == null) return;
@@ -109,7 +109,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
       preferencesChanged = changed;
     });
   }
-
+//save changed preferences
   Future<void> savePreferences() async {
     if (currentUserModel == null) return;
 
@@ -296,7 +296,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
       );
     }
 
-
+//personal details tab
     Widget buildPersonalDetailsTab() {
       return SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -358,7 +358,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
           ]),
       );
     }
-
+//workout preferences tab
     Widget buildWorkoutPreferencesTab() {
       return SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -832,28 +832,6 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
       );
     }
 
-    Widget buildPreferenceChip({required String label,required bool isSelected,required Color color,required IconData icon}) {
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-        decoration: BoxDecoration(
-          color: isSelected ? color : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon,color: isSelected ? Colors.white : color,
-              size: 20),
-            SizedBox(height: 4),
-            Text(
-              label,style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey.shade700,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                fontSize: 11),
-              textAlign: TextAlign.center,
-            )]),
-      );
-    }
 
 }
 
