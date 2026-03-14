@@ -319,6 +319,14 @@ class HomeScreenState extends State<HomeScreen>{
       loadSchedule();
     }
   }
+  //function to check for past incomplete workouts so the calendar can display them as incomplete
+  bool isFromPastWeek(DateTime workoutDate) {
+    final now = DateTime.now();
+    final currentWeekMonday = now.subtract(Duration(days: now.weekday - 1));
+    final currentWeekStart = normaliseDate(currentWeekMonday);
+
+    return workoutDate.isBefore(currentWeekStart);
+  }
 //fetch ai suggestion for current week
   Future<void> loadSuggestions() async {
     final currentUser = authService.getCurrentUser();
@@ -696,24 +704,25 @@ class HomeScreenState extends State<HomeScreen>{
                       final sw = event.scheduledWorkout;
                       final scheduledDate = normaliseDate(sw.scheduledDate.toDate());
                       final today = normaliseDate(DateTime.now());
+                      final bool isPastWeek = isFromPastWeek(scheduledDate);
 
                       String statusText;
                       IconData statusIcon;
                       Color statusColor;
 
-                      if (sw.isCompleted){
+                      if (sw.isCompleted) {
                         statusText = 'Completed';
                         statusIcon = Icons.check_circle;
                         statusColor = Colors.green;
-                      }else if(sw.isInProgress == true) {
+                      } else if (sw.isInProgress == true) {
                         statusText = 'In Progress';
                         statusIcon = Icons.fitness_center;
                         statusColor = Colors.orange;
-                      }else if(scheduledDate.isAfter(today)){
-                        statusText = 'Locked';
+                      } else if (scheduledDate.isAfter(today) || isPastWeek) { //workouts of passed week which are incomplete appear as 'missed'
+                        statusText = isPastWeek ? 'Missed' : 'Locked'; //workouts of current week which are in the future appear as 'locked'.
                         statusIcon = Icons.lock;
                         statusColor = Colors.grey;
-                      }else{
+                      } else {
                         statusText = 'Ready to go';
                         statusIcon = Icons.play_circle_filled;
                         statusColor = Colors.blue;
