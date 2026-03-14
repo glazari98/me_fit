@@ -115,14 +115,19 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
   Future<void> showReplaceWorkoutDialog(ScheduledWorkout scheduledWorkout) async {
     final user = authenticationService.getCurrentUser();
     if (user == null) return;
-
+    //get workout to retrieve its name
+    final currentWorkout = await FS.get.one<Workout>(scheduledWorkout.workoutId);
     //load custom workouts of user
     final result = await FS.list.filter<Workout>(Workout)
         .whereEqualTo('createdBy', user.uid)
         .whereEqualTo('isMyWorkout', true)
         .fetch();
 
-    final myWorkouts = result.items;
+    //filter out the workout with the same name as the current one
+    final myWorkouts = result.items.where((w) =>
+    currentWorkout == null || w.name != currentWorkout.name
+    ).toList();
+
     //check if current workouts has been replaced
     final hasOriginal = scheduledWorkout.originalWorkoutId != null &&
         scheduledWorkout.originalWorkoutId!.isNotEmpty;
@@ -215,9 +220,7 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
                               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Restored original system workout'),duration: Duration(seconds: 2)));                         this.setState(() {
                                 weeklyWorkouts = fetchWeeklyWorkouts();
                               });
-                              this.setState(() {
-                                weeklyWorkouts = fetchWeeklyWorkouts();
-                              });
+
                             }
                             if (widget.onWorkoutUpdated != null) {
                               widget.onWorkoutUpdated!();
@@ -242,6 +245,9 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
             );
           }),
     );
+    setState(() { //refresh workouts after restoring original workout
+      weeklyWorkouts = fetchWeeklyWorkouts();
+    });
     //replace with custom workout
     if (result2 != null) {
       //clone workout

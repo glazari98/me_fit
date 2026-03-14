@@ -27,6 +27,7 @@ class SignupScreenState extends State<SignupScreen> {
 
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
   final nameController = TextEditingController();
   final ageController = TextEditingController();
   final weightController = TextEditingController();
@@ -41,8 +42,9 @@ class SignupScreenState extends State<SignupScreen> {
   final aerobicDistanceGoalController = TextEditingController();
   double? currentAerobicDistance;
   final currentAerobicDistanceController = TextEditingController();
-
+  //boolean for password visibility
   bool obscurePassword = true;
+  bool obscureConfirmPassword = true;
 
   final AuthenticationService authService = AuthenticationService();
 //function for validating user account information/ training preferences and creating an account
@@ -708,7 +710,7 @@ class SignupScreenState extends State<SignupScreen> {
 //method for showing error messages
   void showError(String message) {
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+        .showSnackBar(SnackBar(content: Text(message),duration: Duration(seconds: 2)));
   }
   //check if username entered is taken by another user
   Future<bool> isUsernameTaken(String username) async {
@@ -725,13 +727,18 @@ class SignupScreenState extends State<SignupScreen> {
       case 0:
         final email = emailController.text.trim();
         final password = passwordController.text.trim();
+        final confirmPassword = confirmPasswordController.text.trim();
 
-        if (email.isEmpty || password.isEmpty) {
-          showError('Please fill up both email and password fields');
+        if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+          showError('Please fill up all fields');
           return;
         }
         if (password.length <= 6) {
           showError('Password must be more than 6 characters');
+          return;
+        }
+        if(password != confirmPassword){
+          showError('Passwords do not match');
           return;
         }
         if (!isValidEmail(email)) {
@@ -810,6 +817,18 @@ class SignupScreenState extends State<SignupScreen> {
   void previousStep() {
     if (currentStep > 0) {
       setState(() => currentStep--);
+    }
+  }
+  //pressing to go back from app bar
+  void handleAppBarBack() {
+    if (currentStep > 0) {
+      //if not on first step, go to previous step
+      setState(() {
+        currentStep--;
+      });
+    } else {
+      //if on first step go to previous screen
+      Navigator.pop(context);
     }
   }
 //when pressing finish show warning dialog to inform user this is not a professional app
@@ -919,16 +938,20 @@ class SignupScreenState extends State<SignupScreen> {
     Widget build(BuildContext context) {
       return Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+          onPressed: handleAppBarBack,
+          ),
           title: Text(
             'Sign Up',
-          )),
+          )
+        ),
         body: Stack(
           children: [
             Container(
               decoration: BoxDecoration(
                   gradient: LinearGradient(
                       colors: [Color(0xFFC8E6C9), Color(0xFFA5D6A7)],
-                      //TODO - Change this gradient to match the app's color scheme (Green!)
                       begin: Alignment.topCenter,
                       end: Alignment.topCenter)
               ),
@@ -996,7 +1019,7 @@ class SignupScreenState extends State<SignupScreen> {
                           );
                         },
                         steps: [
-                          Step(
+                          Step(//1st Step (Email/Password)
                             title: Text('Account'),
                             subtitle:
                             Text('Login credentials'),
@@ -1004,7 +1027,7 @@ class SignupScreenState extends State<SignupScreen> {
                               padding: EdgeInsets.only(top: 8),
                               child: Column(
                                 children: [
-                                  TextFormField(
+                                  TextFormField( //email field
                                     controller: emailController,
                                     decoration: fieldDecoration(
                                         'Email', Icons.email_outlined),
@@ -1024,7 +1047,7 @@ class SignupScreenState extends State<SignupScreen> {
                                     },
                                   ),
                                   SizedBox(height: 22),
-                                  TextFormField(
+                                  TextFormField(  //password field
                                     controller: passwordController,
                                     decoration: fieldDecoration(
                                         'Password', Icons.lock_outline)
@@ -1057,11 +1080,35 @@ class SignupScreenState extends State<SignupScreen> {
                                       return null;
                                     },
                                   ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Step(
+                                  SizedBox(height: 22),
+                                  TextFormField( //confirm password field
+                                    controller: confirmPasswordController,
+                                    decoration: fieldDecoration('Confirm Password', Icons.lock_outline)
+                                        .copyWith(
+                                      suffixIcon: IconButton(
+                                        icon: Icon(obscureConfirmPassword ? Icons.visibility_off
+                                              : Icons.visibility),
+                                        onPressed: () {
+                                          setState(() =>
+                                          obscureConfirmPassword = !obscureConfirmPassword);
+                                        },
+                                      )),
+                                    obscureText: obscureConfirmPassword,
+                                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                                    validator: (value) {
+                                      final confirm = value ?? '';
+                                      final password = passwordController.text.trim();
+                                      if (confirm.isEmpty) {
+                                        return 'Please confirm your password';
+                                      }
+                                      if (confirm != password) {
+                                        return 'Passwords do not match';
+                                      }
+                                      return null;
+                                    }),
+                                ]),
+                            )),
+                          Step( //2nd Step (Profile Info)
                             title: Text('Profile'),
                             subtitle:
                             Text('Personal details'),
@@ -1107,7 +1154,7 @@ class SignupScreenState extends State<SignupScreen> {
                               ),
                             ),
                           ),
-                          Step(
+                          Step(//3rd Step (Training Preferences)
                             title: Text('Training Setup'),
                             subtitle:
                              Text('Training Preferences'),

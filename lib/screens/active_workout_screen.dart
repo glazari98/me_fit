@@ -803,7 +803,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 }},
               icon: Icon(isPaused ? Icons.play_arrow :Icons.pause))
           ]),
-        body: Padding( padding: EdgeInsets.all(16),
+        body: SafeArea(child: Padding( padding: EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -820,7 +820,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 child: buildExerciseControls(),
               ),
             ]),
-        )),
+        )),),
     );
   }
   //dialog showing when a user wants to input weight for strength exercises
