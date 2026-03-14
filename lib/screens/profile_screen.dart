@@ -37,6 +37,8 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
   final startingAerobicDistanceController = TextEditingController();
   bool preferencesChanged = false;
 
+  bool personalDetailsChanged = false;
+
   @override
   void initState() {
     super.initState();
@@ -78,7 +80,19 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
       isLoading = false;
     });
   }
+  //check if any of the fields in personal details have changed
+  void checkPersonalDetailsChanged() {
+    if (currentUserModel == null) return;
 
+    final usernameChanged = usernameController.text.trim() != currentUserModel!.username;
+    final ageChanged = ageController.text.trim() != currentUserModel!.age.toString();
+    final weightChanged = weightController.text.trim() != currentUserModel!.weight.toString();
+    final heightChanged = heightController.text.trim() != currentUserModel!.height.toString();
+
+    setState(() {
+      personalDetailsChanged = usernameChanged || ageChanged || weightChanged || heightChanged;
+    });
+  }
  //check if preferences changed
   void checkPreferencesChanged() {
     if (currentUserModel == null) return;
@@ -203,19 +217,57 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
           content: Text('Preferences saved successfully!'))
       );
     }
-    //if a field is edited in personal details tab this is called automatically
-    Future<void> updateUser() async {
-      if (currentUserModel == null) return;
-      final result = await FS.list.filter<User>(User)
-          .whereNotEqualTo('id', currentUserModel!.id)
-          .whereEqualTo('username', usernameController.text.trim())
-          .fetch();
-      if(result.items.isNotEmpty){
+  //save personal details changes
+  Future<void> savePersonalDetails() async {
+    if (currentUserModel == null) return;
+
+    // Check username uniqueness
+    final result = await FS.list.filter<User>(User)
+        .whereNotEqualTo('id', currentUserModel!.id)
+        .whereEqualTo('username', usernameController.text.trim())
+        .fetch();
+
+    if(result.items.isNotEmpty){
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('The username is already taken by another user'),
+          duration: Duration(seconds: 2)));
+      return;
+    }
+
+    // Validate inputs
+    try {
+      final age = int.parse(ageController.text.trim());
+      final weight = double.parse(weightController.text.trim());
+      final height = int.parse(heightController.text.trim());
+
+      if (age < 18 || age > 100) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('The username is already taken by another user'),duration: Duration(seconds: 2)));
+            content: Text('Age must be between 18 and 100'),
+            duration: Duration(seconds: 2)));
         return;
       }
-      final updatedUser = User(
+
+      if (weight < 30 || weight > 300) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Weight must be between 30kg and 300kg'),
+            duration: Duration(seconds: 2)));
+        return;
+      }
+
+      if (height < 100 || height > 250) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Height must be between 100cm and 250cm'),
+            duration: Duration(seconds: 2)));
+        return;
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Please enter valid numbers'),
+          duration: Duration(seconds: 2)));
+      return;
+    }
+
+    final updatedUser = User(
         id: currentUserModel!.id,
         emailAddress: currentUserModel!.emailAddress,
         username: usernameController.text.trim(),
@@ -234,14 +286,20 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
         totalCompletedWorkouts: currentUserModel!.totalCompletedWorkouts,
         unlockedBadges: currentUserModel!.unlockedBadges,
         newScheduleMessageShown: currentUserModel!.newScheduleMessageShown
-      );
+    );
 
-      await FS.update.one<User>(updatedUser);
+    await FS.update.one<User>(updatedUser);
 
-      setState(() {
-        currentUserModel = updatedUser;
-      });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Changes saved successfully!'),
+        duration: Duration(seconds: 2)));
+
+    setState(() {
+      currentUserModel = updatedUser;
+      personalDetailsChanged = false;
+    });
   }
+
     //load an image from your phone's gallery
     Future<void> pickImage() async {
       final XFile? image = await picker.pickImage(source: ImageSource.gallery);
@@ -261,7 +319,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
             keyboardType: type,decoration: InputDecoration(
                 labelText: label,border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12))
-            ), onChanged: (_) => updateUser()
+            ), onChanged: (_) => checkPersonalDetailsChanged()
         ));
     }
 
@@ -295,7 +353,6 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
           ]),
       );
     }
-
 //personal details tab
     Widget buildPersonalDetailsTab() {
       return SingleChildScrollView(
@@ -326,18 +383,14 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
               ),
             ),
             SizedBox(height: 30),
-            Container(
-              padding: EdgeInsets.all(20),
+            Container(padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                color: Colors.white,borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15,
-                    offset: Offset(0, 5))],
-              ),
+                    offset: Offset(0, 5))]),
               child: Column(
-                children: [
-                  TextField(enabled: false,
+                children: [TextField(enabled: false,
                     decoration: InputDecoration(
                         labelText: 'Email',
                         prefixIcon: Icon(Icons.email_outlined),
@@ -354,7 +407,28 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                   buildTextField(label: 'Weight (kg)',controller: weightController,type: TextInputType.number),
                   SizedBox(height: 16),
                   buildTextField(label: 'Height (cm)',controller: heightController,type: TextInputType.number),
-                ])),
+                  if (personalDetailsChanged) ...[
+                    SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: savePersonalDetails,
+                        icon: Icon(Icons.save),
+                        label:  Text('SAVE CHANGES',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 4,
+                        )),
+                    )],
+                ]),
+            )
           ]),
       );
     }
