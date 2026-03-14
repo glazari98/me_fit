@@ -15,5 +15,26 @@
         "npm --prefix \"$RESOURCE_DIR\" run lint"
       ]
     }
-  ]
+  ],
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "mefit-268a7",
+          "appId": "1:1067095163727:android:9f0eaae5dd6c83800c3b3a",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "mefit-268a7",
+          "configurations": {
+            "android": "1:1067095163727:android:9f0eaae5dd6c83800c3b3a",
+            "ios": "1:1067095163727:ios:d5dada373cb8c88c0c3b3a",
+            "web": "1:1067095163727:web:7452daac26582a360c3b3a"
+          }
+        }
+      }
+    }
+  }
 }

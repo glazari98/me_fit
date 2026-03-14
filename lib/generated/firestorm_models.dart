@@ -14,10 +14,10 @@ import 'package:me_fit/models/bodyPart.dart';
 import 'package:me_fit/models/equipment.dart';
 import 'package:me_fit/models/exercise.dart';
 import 'package:me_fit/models/exerciseType.dart';
-import 'package:me_fit/models/user.dart';
 import 'package:me_fit/models/workoutExerciseFeedback.dart';
 import 'package:me_fit/models/workoutExercises.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
+import 'package:me_fit/models/user.dart';
 import 'package:me_fit/models/workout.dart';
 import 'package:me_fit/models/WorkoutSuggestions.dart';
 import 'package:me_fit/screens/active_workout_screen.dart';
@@ -141,69 +141,6 @@ extension ExerciseTypeModel on ExerciseType {
 
 }
 
-// - - - - - - - FirestormObject User - - - - - - -
-
-extension UserModel on User {
-
-	static const String className = "User";
-	static const bool fsSupport = true;
-	static const bool rdbSupport = true;
-
-	 Map<String, dynamic> toMap() {
-		 return {
-       'newScheduleMessageShown': newScheduleMessageShown,
-       'badgeUnlockedDates': badgeUnlockedDates,
-			 'unlockedBadges': unlockedBadges,
-			 'totalCompletedWorkouts': totalCompletedWorkouts,
-			 'bestStreak': bestStreak,
-			 'currentStreak': currentStreak,
-			 'profileImageUrl': profileImageUrl,
-			 'preferredWorkoutsPerWeek': preferredWorkoutsPerWeek,
-			 'aerobicDistanceGoal': aerobicDistanceGoal,
-			 'currentAerobicDistance': currentAerobicDistance,
-			 'aerobicType': aerobicType,
-			 'hasAccessToGym': hasAccessToGym,
-			 'trainingGoal': trainingGoal,
-			 'trainingType': trainingType,
-			 'height': height,
-			 'weight': weight,
-       'signUpDate':signUpDate,
-			 'age': age,
-			 'username': username,
-			 'emailAddress': emailAddress,
-			 'id': id,
-		 };
-	 }
-
-	static User fromMap(Map<String, dynamic> map) {
-		User object = User(
-			id: map['id'] as String,
-			emailAddress: map['emailAddress'] as String,
-			username: map['username'] as String,
-			age: map['age'] as int,
-      signUpDate: map['signUpDate'] as Timestamp?,
-			weight: map['weight'] as double,
-			height: map['height'] as int,
-			trainingType: map['trainingType'] as String,
-			trainingGoal: map['trainingGoal'] as String?,
-			hasAccessToGym: map['hasAccessToGym'] as bool,
-			preferredWorkoutsPerWeek: map['preferredWorkoutsPerWeek'] as int,
-			currentStreak: map['currentStreak'] as int,
-			bestStreak: map['bestStreak'] as int,
-			totalCompletedWorkouts: map['totalCompletedWorkouts'] as int,
-			unlockedBadges: map['unlockedBadges'] != null ? map['unlockedBadges'].cast<int>() : [],
-      badgeUnlockedDates: map['badgeUnlockedDates'] != null ? map['badgeUnlockedDates'].cast<Timestamp>() : [],
-			aerobicType: map['aerobicType'] as String?,
-			aerobicDistanceGoal: map['aerobicDistanceGoal'] as double?,
-			currentAerobicDistance: map['currentAerobicDistance'] as double?,
-			profileImageUrl: map['profileImageUrl'] as String?,
-      newScheduleMessageShown: map['newScheduleMessageShown'] as bool
-		 );
-		 return object;
-	}
-
-}
-
 // - - - - - - - FirestormObject WorkoutExerciseFeedback - - - - - - -
 
 extension WorkoutExerciseFeedbackModel on WorkoutExerciseFeedback {
@@ -264,8 +201,8 @@ extension WorkoutExercisesModel on WorkoutExercises {
 			 'setsCompleted': setsCompleted,
 			 'distance': distance,
 			 'durationOfTimedSet': durationOfTimedSet,
-			 'targetSetWeights': targetSetWeights,
 			 'actualSetWeights': actualSetWeights,
+			 'targetSetWeights': targetSetWeights,
 			 'restBetweenSets': restBetweenSets,
 			 'sets': sets,
 			 'repetitions': repetitions,
@@ -284,8 +221,8 @@ extension WorkoutExercisesModel on WorkoutExercises {
 			order: map['order'] as int,
 			repetitions: map['repetitions'] as int?,
 			sets: map['sets'] as int?,
-      actualSetWeights: map['actualSetWeights'] != null ? map['actualSetWeights'].cast<double>() : [],
-      targetSetWeights: map['targetSetWeights'] != null ? map['targetSetWeights'].cast<double>() : [],
+			targetSetWeights: map['targetSetWeights'] != null ? map['targetSetWeights'].cast<double>() : [],
+			actualSetWeights: map['actualSetWeights'] != null ? map['actualSetWeights'].cast<double>() : [],
 			restBetweenSets: map['restBetweenSets'] as int?,
 			durationOfTimedSet: map['durationOfTimedSet'] as int?,
 			distance: map['distance'] as double?,
@@ -347,6 +284,69 @@ extension ScheduledWorkoutModel on ScheduledWorkout {
 			aerobicStartSeconds: map['aerobicStartSeconds'] as int?,
 			currentPhase: map['currentPhase'] as String?,
 			isInProgress: map['isInProgress'] as bool?,
+		 );
+		 return object;
+	}
+
+}
+
+// - - - - - - - FirestormObject User - - - - - - -
+
+extension UserModel on User {
+
+	static const String className = "User";
+	static const bool fsSupport = true;
+	static const bool rdbSupport = false;
+
+	 Map<String, dynamic> toMap() {
+		 return {
+			 'newScheduleMessageShown': newScheduleMessageShown,
+			 'badgeUnlockedDates': badgeUnlockedDates,
+			 'unlockedBadges': unlockedBadges,
+			 'totalCompletedWorkouts': totalCompletedWorkouts,
+			 'bestStreak': bestStreak,
+			 'currentStreak': currentStreak,
+			 'profileImageUrl': profileImageUrl,
+			 'preferredWorkoutsPerWeek': preferredWorkoutsPerWeek,
+			 'aerobicDistanceGoal': aerobicDistanceGoal,
+			 'currentAerobicDistance': currentAerobicDistance,
+			 'aerobicType': aerobicType,
+			 'hasAccessToGym': hasAccessToGym,
+			 'trainingGoal': trainingGoal,
+			 'trainingType': trainingType,
+			 'signUpDate': signUpDate,
+			 'height': height,
+			 'weight': weight,
+			 'age': age,
+			 'username': username,
+			 'emailAddress': emailAddress,
+			 'id': id,
+		 };
+	 }
+
+	static User fromMap(Map<String, dynamic> map) {
+		User object = User(
+			id: map['id'] as String,
+			emailAddress: map['emailAddress'] as String,
+			username: map['username'] as String,
+			age: map['age'] as int,
+			weight: map['weight'] as double,
+			height: map['height'] as int,
+			signUpDate: map['signUpDate'] as Timestamp?,
+			trainingType: map['trainingType'] as String,
+			trainingGoal: map['trainingGoal'] as String?,
+			hasAccessToGym: map['hasAccessToGym'] as bool,
+			preferredWorkoutsPerWeek: map['preferredWorkoutsPerWeek'] as int,
+			currentStreak: map['currentStreak'] as int,
+			bestStreak: map['bestStreak'] as int,
+			totalCompletedWorkouts: map['totalCompletedWorkouts'] as int,
+			unlockedBadges: map['unlockedBadges'] != null ? map['unlockedBadges'].cast<int>() : [],
+			badgeUnlockedDates: map['badgeUnlockedDates'] != null ? map['badgeUnlockedDates'].cast<Timestamp>() : [],
+			aerobicType: map['aerobicType'] as String?,
+			aerobicDistanceGoal: map['aerobicDistanceGoal'] as double?,
+			currentAerobicDistance: map['currentAerobicDistance'] as double?,
+			profileImageUrl: map['profileImageUrl'] as String?,
+			newScheduleMessageShown: map['newScheduleMessageShown'] as bool,
 		 );
 		 return object;
 	}
@@ -432,10 +432,10 @@ final Map<Type, Map<String, dynamic> Function(dynamic)> toMapRegistry = {
 	Equipment: (object) => (object as Equipment).toMap(),
 	Exercise: (object) => (object as Exercise).toMap(),
 	ExerciseType: (object) => (object as ExerciseType).toMap(),
-	User: (object) => (object as User).toMap(),
 	WorkoutExerciseFeedback: (object) => (object as WorkoutExerciseFeedback).toMap(),
 	WorkoutExercises: (object) => (object as WorkoutExercises).toMap(),
 	ScheduledWorkout: (object) => (object as ScheduledWorkout).toMap(),
+	User: (object) => (object as User).toMap(),
 	Workout: (object) => (object as Workout).toMap(),
 	WorkoutSuggestions: (object) => (object as WorkoutSuggestions).toMap(),
 };
@@ -445,10 +445,10 @@ final Map<Type, dynamic Function(Map<String, dynamic>)> fromMapRegistry = {
 	Equipment: (map) => EquipmentModel.fromMap(map),
 	Exercise: (map) => ExerciseModel.fromMap(map),
 	ExerciseType: (map) => ExerciseTypeModel.fromMap(map),
-	User: (map) => UserModel.fromMap(map),
 	WorkoutExerciseFeedback: (map) => WorkoutExerciseFeedbackModel.fromMap(map),
 	WorkoutExercises: (map) => WorkoutExercisesModel.fromMap(map),
 	ScheduledWorkout: (map) => ScheduledWorkoutModel.fromMap(map),
+	User: (map) => UserModel.fromMap(map),
 	Workout: (map) => WorkoutModel.fromMap(map),
 	WorkoutSuggestions: (map) => WorkoutSuggestionsModel.fromMap(map),
 };
@@ -474,10 +474,10 @@ final Map<Type, String> typeToNameMap = {
 	Equipment: "Equipment",
 	Exercise: "Exercise",
 	ExerciseType: "ExerciseType",
-	User: "User",
 	WorkoutExerciseFeedback: "WorkoutExerciseFeedback",
 	WorkoutExercises: "WorkoutExercises",
 	ScheduledWorkout: "ScheduledWorkout",
+	User: "User",
 	Workout: "Workout",
 	WorkoutSuggestions: "WorkoutSuggestions",
 };
@@ -525,9 +525,6 @@ registerClasses() {
 	RDB.registerSerializer<ExerciseType>((object) => object.toMap());
 	RDB.registerDeserializer<ExerciseType>((map) => ExerciseTypeModel.fromMap(map));
 	RDB.registerClassName(ExerciseType, "ExerciseType");
-	RDB.registerSerializer<User>((object) => object.toMap());
-	RDB.registerDeserializer<User>((map) => UserModel.fromMap(map));
-	RDB.registerClassName(User, "User");
 	RDB.registerSerializer<WorkoutExerciseFeedback>((object) => object.toMap());
 	RDB.registerDeserializer<WorkoutExerciseFeedback>((map) => WorkoutExerciseFeedbackModel.fromMap(map));
 	RDB.registerClassName(WorkoutExerciseFeedback, "WorkoutExerciseFeedback");
