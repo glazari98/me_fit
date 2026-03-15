@@ -64,6 +64,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   List<ExerciseType> exerciseTypes = [];
   List<LatLng> route = [];
   bool hasLocationPermission = false;
+  double liveDistance = 0.0;
   LatLng? currentPosition;
   StreamSubscription<Position>? positionStream;
   GoogleMapController? mapController;
@@ -119,6 +120,8 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         final parts = s.split(',');
         return LatLng(double.parse(parts[0]), double.parse(parts[1]));
       }).toList();
+      //fetch distance covered before pausing
+      liveDistance = currentWorkoutExercises.distanceCovered!;
     }else{
       route = [];
     }
@@ -223,6 +226,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         });
       }
       if (phase == ExercisePhase.activeSet && getExerciseType(we) == 'AEROBIC' && hasLocationPermission) {
+        we.distanceCovered = liveDistance;
         startAerobicPositionStream(skipFirstPoint: true); //begin tracking user's position again
       } else {
         positionStream?.resume();
@@ -406,26 +410,47 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     positionStream = null;
 
     bool isFirstPoint = skipFirstPoint;
-
+    LatLng? lastPoint;
+    //if we already covered some distance
+    if (route.isNotEmpty) {
+      lastPoint = route.last;
+    }
     positionStream = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 5,
       ),
-    ).listen((Position position) {
+    ).listen((Position position) async {
       if (!mounted) return;
       final newPoint = LatLng(position.latitude, position.longitude);
 
       if(isFirstPoint){
         isFirstPoint = false;
-        setState(() => currentPosition = newPoint);
+        lastPoint = newPoint;
+        setState((){
+          currentPosition = newPoint;
+        });
         mapController?.animateCamera(CameraUpdate.newLatLng(newPoint));
         return;
       }
-      setState(() {
-        route.add(newPoint);
-        currentPosition = newPoint;
-      });
+      //calculate distance from last point to new point
+      if (lastPoint != null) {
+        final distanceInMeters = await Geolocator.distanceBetween(
+          lastPoint!.latitude,
+          lastPoint!.longitude,
+          newPoint.latitude,
+          newPoint.longitude,
+        );
+        //update distance every 2 meters covered to avoid gps tracking overload
+        if (distanceInMeters > 2) {
+          setState(() {
+            route.add(newPoint);
+            currentPosition = newPoint;
+            liveDistance += distanceInMeters / 1000;
+          });
+        }
+      }
+      lastPoint = newPoint;
       mapController?.animateCamera(CameraUpdate.newLatLng(newPoint));
     });
   }
@@ -611,6 +636,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     sw.elapsedSeconds = elapsedSeconds;
     sw.remainingSeconds = remainingSeconds;
     sw.currentPhase = phase.name;
+
     if(elapsedSeconds == 0){
       sw.isInProgress = false;
     }else {
@@ -621,6 +647,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         getExerciseType(we) == 'AEROBIC') {
       sw.aerobicStartSeconds = aerobicStartSeconds;
       we.routePoints = route.map((e) => '${e.latitude},${e.longitude}').toList();
+      we.distanceCovered = liveDistance;
       await FS.update.one(we);
     }
 
@@ -1183,6 +1210,47 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               Text(ex.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               const Divider(height: 20),
               buildInfoRow('Current Goal', '${we.distance} km'),
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.shade300),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.directions_run, color: Colors.green.shade700),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Current Distance:',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      '${liveDistance.toStringAsFixed(2)} km',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Progress indicator
+              LinearProgressIndicator(
+                value: we.distance != null && we.distance! > 0
+                    ? (liveDistance / we.distance!).clamp(0.0, 1.0)
+                    : 0.0,
+                backgroundColor: Colors.grey.shade300,
+                color: Colors.green,
+                minHeight: 8,
+              ),
             ]),
             Container(
               height: 250,

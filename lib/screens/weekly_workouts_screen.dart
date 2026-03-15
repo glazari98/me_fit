@@ -80,22 +80,22 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
       final originalDate = normaliseDate(scheduledWorkout.scheduledDate.toDate());
 
       if (normalisedDate != originalDate) {
-        //check for scheduled workouts on that date
-        final existing = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
-            .whereEqualTo('userId', scheduledWorkout.userId)
-            .fetch();
-        final conflict = existing.items.any((sw) {
-          return sw.id != scheduledWorkout.id &&
-              normaliseDate(sw.scheduledDate.toDate()) == normalisedDate;
-        });
-
-        if (conflict) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('There is already a workout on that day')));
-          setState(() => isChangingDate = false);
-          return;
-        }
+        //check for scheduled workouts on that date (removed this functionality)
+        // final existing = await FS.list.filter<ScheduledWorkout>(ScheduledWorkout)
+        //     .whereEqualTo('userId', scheduledWorkout.userId)
+        //     .fetch();
+        // final conflict = existing.items.any((sw) {
+        //   return sw.id != scheduledWorkout.id &&
+        //       normaliseDate(sw.scheduledDate.toDate()) == normalisedDate;
+        // });
+        //
+        // if (conflict) {
+        //   if (!mounted) return;
+        //   ScaffoldMessenger.of(context).showSnackBar(
+        //       SnackBar(content: Text('There is already a workout on that day')));
+        //   setState(() => isChangingDate = false);
+        //   return;
+        // }
 
         //update date
         scheduledWorkout.scheduledDate = Timestamp.fromDate(normalisedDate);
@@ -108,6 +108,11 @@ class WeeklyWorkoutScreenState extends State<WeeklyWorkoutsScreen>{
             isChangingDate = false;
           });
         }
+      }else{
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Workout is already assigned on that day')));
+        setState(() => isChangingDate = false);
+        return;
       }
     }
   }

@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firestorm/firestorm.dart';
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/components/drawer_menu.dart';
 import 'package:me_fit/screens/edit_workout_screen.dart';
 import 'package:me_fit/screens/view_workout_screen.dart';
 import 'package:me_fit/services/authentication_service.dart';
+import '../models/scheduled_workout.dart';
 import '../models/workout.dart';
 import '../models/workoutExercises.dart';
 import 'create_workout_screen.dart';
@@ -59,6 +62,48 @@ class CustomWorkoutsState extends State<CustomWorkouts> {
       return workout.name.toLowerCase()
           .contains(searchQuery.toLowerCase());
     }).toList();
+  }
+  //schedule a custom workout for a specific date
+  Future<void> createScheduledWorkout(Workout workout) async {
+    final user = authenticationService.getCurrentUser();
+    if (user == null) return;
+
+    //date should start from today onwards
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+      helpText: 'Select date for workout',
+      confirmText: 'Schedule',
+      cancelText: 'Cancel',
+    );
+
+    if (selectedDate == null) return;
+
+    //set it to be available form midnight on that day
+    final scheduledDate = DateTime(
+        selectedDate.year,selectedDate.month,selectedDate.day,0, 0, 0, 0, 0);
+
+    //add workout to calendar
+    final scheduledWorkout = ScheduledWorkout(
+      id: Firestorm.randomID(),
+      userId: user.uid,
+      workoutId: workout.id,
+      originalWorkoutId: workout.id,
+      scheduledDate: Timestamp.fromDate(scheduledDate),
+      isCompleted: false,
+      isInProgress: false,
+    );
+
+    await FS.create.one(scheduledWorkout);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(
+            'Workout scheduled for ${scheduledDate.day}/${scheduledDate.month}/${scheduledDate.year}'),
+        duration: Duration(seconds: 2)),
+    );
   }
 //function called when user decided to delete custom workout
   void deleteWorkout(Workout workout) async {
@@ -240,30 +285,24 @@ class CustomWorkoutsState extends State<CustomWorkouts> {
           },
           borderRadius: BorderRadius.circular(20),
           child: Padding(padding: const EdgeInsets.all(16),
-            child: Row(children: [
+            child: Column (children: [
+              Row(children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Theme.of(context).primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16)),
                   child: Icon(
                     Icons.fitness_center, color: Theme.of(context).primaryColor,size: 28 )),
-                const SizedBox(width: 16),
+                 SizedBox(width: 16),
                 Expanded( child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [Text(
-                        workout.name,style: const TextStyle(
+                        workout.name,style:  TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16),
-                      ),const SizedBox(height: 4),
-                      if (workout.createdOn != null)
-                        Row(children: [
-                        Icon(Icons.calendar_today,size: 12,color: Colors.grey[500]),
-                            const SizedBox(width: 4),
-                            Text('Created ${workout.createdOn?.toDate().day}/${workout.createdOn?.toDate().month}'
-                                ' at ${workout.createdOn?.toDate().hour.toString().padLeft(2, '0')}:${workout.createdOn?.toDate().minute.toString().padLeft(2, '0')}',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                            )]),
+                      ), SizedBox(height: 4),
+
                     ])),
                 Row( mainAxisSize: MainAxisSize.min,
                   children: [
@@ -277,12 +316,31 @@ class CustomWorkoutsState extends State<CustomWorkouts> {
                           ),
                         );
                       }),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
+                    buildActionButton(
+                      icon: Icons.calendar_month,
+                      color: Colors.green,
+                      tooltip: 'Schedule Workout',
+                      onPressed: () => createScheduledWorkout(workout),
+                    ),
+                    SizedBox(width: 8),
                     buildActionButton(icon: Icons.delete,
                       color: Colors.red,tooltip: 'Delete Workout',
                       onPressed: () => deleteWorkout(workout),
                     )]),
-              ])),
+              ]),
+              if (workout.createdOn != null)
+                Padding(padding: EdgeInsets.symmetric(horizontal: 55.0),
+                child: Row(mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                  Icon(Icons.calendar_today,size: 12,color: Colors.grey[500]),
+                  SizedBox(width: 4),
+                  Flexible(child:Text('Created ${workout.createdOn?.toDate().day}/${workout.createdOn?.toDate().month}'
+                      ' at ${workout.createdOn?.toDate().hour.toString().padLeft(2, '0')}:${workout.createdOn?.toDate().minute.toString().padLeft(2, '0')}',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  )),])),
+              ])
+          ),
         )),
     );
   }
