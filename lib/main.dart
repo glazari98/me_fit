@@ -67,10 +67,18 @@ Widget _buildRunnableApp({
 
   return Center(
     child: ClipRect(
-      child: SizedBox(
-        width: webAppWidth,
-        height: webAppHeight,
-        child: app,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Colors.black,
+            width: 1.0,
+          )
+        ),
+        child: SizedBox(
+          width: webAppWidth,
+          height: webAppHeight,
+          child: app,
+        ),
       ),
     ),
   );
