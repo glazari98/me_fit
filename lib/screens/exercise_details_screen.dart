@@ -4,6 +4,7 @@ import 'package:me_fit/models/bodyPart.dart';
 import 'package:me_fit/models/equipment.dart';
 import 'package:me_fit/models/exerciseType.dart';
 
+import '../components/network_image.dart';
 import '../models/exercise.dart';
 //widget for displaying information for an individual exercises
 class ExerciseDetailsScreen extends StatefulWidget {
@@ -76,19 +77,11 @@ class ExerciseDetailsScreenState extends State<ExerciseDetailsScreen>{
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.network(widget.exercise.imageUrl,
-                  fit: BoxFit.cover,
-                  height: 260,
-                  width: double.infinity,
-                  loadingBuilder: (context,child,loadingProgress){
-                    if(loadingProgress == null) return child;
-                    return SizedBox(height: 260,child: const Center(child: CircularProgressIndicator()));
-                  },
-                  errorBuilder: (context,error,stackTrace)=> SizedBox(
-                    height: 260,
-                    child: const Center(child: Icon(Icons.broken_image,size: 40)),
-                  )),
-
+              child: NetworkImageHtml(
+                widget.exercise.imageUrl,
+                height: 260,
+                fit: BoxFit.cover,
+              ),
             ),
             const SizedBox(height: 20),
             Text(widget.exercise.name,
