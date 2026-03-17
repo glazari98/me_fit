@@ -830,21 +830,23 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                 }},
               icon: Icon(isPaused ? Icons.play_arrow :Icons.pause))
           ]),
-        body: SafeArea(child: Padding( padding: EdgeInsets.all(16),
+        body: SafeArea(child: Padding( padding: EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              LinearProgressIndicator(minHeight: 10,value: progress,backgroundColor: Colors.red,color: Colors.green),
+              LinearProgressIndicator(minHeight: 8,value: progress,backgroundColor: Colors.red,color: Colors.green),
               SizedBox(height: 16),
               Row( mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Workout time: ', style: TextStyle(fontSize: 20, letterSpacing: 2)),
+                  Text('Workout time: ', style: TextStyle(fontSize: 16, letterSpacing: 2)),
                   Text(formatDuration2(elapsedSeconds),
-                      style:  TextStyle(fontSize: 34, fontWeight: FontWeight.bold)),
+                      style:  TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
                 ]),
               SizedBox(height: 5),
-              Expanded(
-                child: buildExerciseControls(),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: buildExerciseControls(),
+                ),
               ),
             ]),
         )),),
@@ -1127,7 +1129,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   onPressed: completeStrengthSet
               )),
             ]),
-            const Spacer(),
+            SizedBox(height: 30),
             buildViewDetailsButton(ex),
           ]);
         }
@@ -1173,7 +1175,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   (currentSet >= (we.sets ?? 1)) ? startRest(we.restBetweenSets ?? 0, postExercise: true) : startRest(we.restBetweenSets ?? 0);
                 }
             ),
-            const Spacer(),
+            SizedBox(height: 30),
             buildViewDetailsButton(ex),
           ]);
         }
@@ -1285,7 +1287,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                     : const Center(child: Text("Location permission required for map")),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 30),
             buildActionButton(
               label: 'FINISH EXERCISE',
               icon: Icons.check_circle,
@@ -1352,7 +1354,7 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                   moveToNextExercise();
                 },
               ),
-              const Spacer(),
+              SizedBox(height: 10),
               buildViewDetailsButton(ex),
             ],
           );
@@ -1418,16 +1420,25 @@ class ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
     positionStream?.cancel();
     super.dispose();
   }
-}
-//widget for holding the information of an exercise in idle state
-Widget buildExerciseInfoCard({required List<Widget> children}) {
-  return Container(width: double.infinity, padding: const EdgeInsets.all(20),
-    margin: const EdgeInsets.symmetric(vertical: 12),
-    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 15, offset: const Offset(0, 8))],
-      border: Border.all(color: Colors.grey.shade500, width: 1.2),
-    ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: children),
-  );
+  //widget for holding the information of an exercise in idle state
+  Widget buildExerciseInfoCard({required List<Widget> children}) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16),
+      margin: EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,offset: Offset(0, 4),
+          )],
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: children),
+    );
+  }
 }

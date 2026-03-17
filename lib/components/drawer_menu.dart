@@ -33,95 +33,104 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    return Drawer( child: Column(
-        children:[ buildDrawerHeader(context),
-          //home
-          buildDrawerItem( context,
-            icon: Icons.home, title: 'Home',
-            route: '/home',onTap: () {
-              Navigator.pop(context);
-              if (currentRoute != '/home') {
-                Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
-                );
-              }}),
-          //my workouts
-          buildDrawerItem(
-            context,icon: Icons.list_alt,
-            title: 'Custom Workouts',route: '/my-workouts',
-            onTap: () { Navigator.pop(context);
-              if (currentRoute != '/my-workouts') {
-                Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (_) => const CustomWorkouts()),
-                );
-              }}),
-          //weekly Program
-          buildDrawerItem(
-            context, icon: Icons.calendar_view_week,
-            title: 'Weekly Workout Program',
-            route: '/weekly-workouts',
-            onTap: () async {  Navigator.pop(context);
-              if (currentRoute != '/weekly-workouts') {
-                await Navigator.pushReplacement( context,
-                  MaterialPageRoute( builder: (_) => WeeklyWorkoutsScreen(
-                      onWorkoutUpdated: onWorkoutUpdated ?? () {},
-                    )),
-                );
-              }} ),
-          //start workout
-          buildDrawerItem(
-            context,icon: Icons.play_arrow,
-            title: 'Start Workout', route: '/start-workout',
-            onTap: () { Navigator.pop(context);
-              if (currentRoute != '/start-workout') {
-                Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) =>  StartWorkoutScreen()),
-                ).then((_) {
-                  if (loadSchedule != null) {
-                    loadSchedule!();
-                  }
-                });
-              }}),
-          //completed workouts
-          buildDrawerItem(
-            context,icon: Icons.done,
-            title: 'Completed Workouts', route: '/completed-workouts',
-            onTap: () { Navigator.pop(context);
-              if (currentRoute != '/completed-workouts') {
-                Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (_) => const CompletedWorkoutsScreen()),
-                );}
-            }),
+    return Drawer(
+        child: Column(
+        children:[
+          buildDrawerHeader(context),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                //home
+                buildDrawerItem( context,
+                  icon: Icons.home, title: 'Home',
+                  route: '/home',onTap: () {
+                    Navigator.pop(context);
+                    if (currentRoute != '/home') {
+                      Navigator.pushReplacement(context,
+                        MaterialPageRoute(builder: (_) => const HomeScreen()),
+                      );
+                    }}),
+                //my workouts
+                buildDrawerItem(
+                  context,icon: Icons.list_alt,
+                  title: 'Custom Workouts',route: '/my-workouts',
+                  onTap: () { Navigator.pop(context);
+                    if (currentRoute != '/my-workouts') {
+                      Navigator.pushReplacement(context,
+                        MaterialPageRoute(builder: (_) => const CustomWorkouts()),
+                      );
+                    }}),
+                //weekly Program
+                buildDrawerItem(
+                  context, icon: Icons.calendar_view_week,
+                  title: 'Weekly Workout Program',
+                  route: '/weekly-workouts',
+                  onTap: () async {  Navigator.pop(context);
+                    if (currentRoute != '/weekly-workouts') {
+                      await Navigator.pushReplacement( context,
+                        MaterialPageRoute( builder: (_) => WeeklyWorkoutsScreen(
+                            onWorkoutUpdated: onWorkoutUpdated ?? () {},
+                          )),
+                      );
+                    }} ),
+                //start workout
+                buildDrawerItem(
+                  context,icon: Icons.play_arrow,
+                  title: 'Start Workout', route: '/start-workout',
+                  onTap: () { Navigator.pop(context);
+                    if (currentRoute != '/start-workout') {
+                      Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) =>  StartWorkoutScreen()),
+                      ).then((_) {
+                        if (loadSchedule != null) {
+                          loadSchedule!();
+                        }
+                      });
+                    }}),
+                //completed workouts
+                buildDrawerItem(
+                  context,icon: Icons.done,
+                  title: 'Completed Workouts', route: '/completed-workouts',
+                  onTap: () { Navigator.pop(context);
+                    if (currentRoute != '/completed-workouts') {
+                      Navigator.pushReplacement(context,
+                        MaterialPageRoute(builder: (_) => const CompletedWorkoutsScreen()),
+                      );}
+                  }),
 
-          //achievements
-          buildDrawerItem(
-            context,icon: Icons.badge,
-            title: 'Achievements', route: '/achievements',
-            onTap: () async { Navigator.pop(context);
+                //achievements
+                buildDrawerItem(
+                  context,icon: Icons.badge,
+                  title: 'Achievements', route: '/achievements',
+                  onTap: () async { Navigator.pop(context);
+                          Navigator.pushReplacement( context,
+                            MaterialPageRoute(builder: (_) => AchievementsScreen()));
+
+                  }),
+                //progress
+                buildDrawerItem(
+                    context,icon: Icons.analytics,
+                    title: 'Statistics', route: '/statistics',
+                    onTap: () async { Navigator.pop(context);
                     Navigator.pushReplacement( context,
-                      MaterialPageRoute(builder: (_) => AchievementsScreen()));
+                        MaterialPageRoute(builder: (_) => StatisticsScreen()));
 
-            }),
-          //progress
-          buildDrawerItem(
-              context,icon: Icons.analytics,
-              title: 'Statistics', route: '/statistics',
-              onTap: () async { Navigator.pop(context);
-              Navigator.pushReplacement( context,
-                  MaterialPageRoute(builder: (_) => StatisticsScreen()));
+                    }),
+                //profile
+                buildDrawerItem(
+                    context, icon: Icons.person,
+                    title: 'Profile', route: '/profile',
+                    onTap: () {Navigator.pop(context);
+                    if (currentRoute != '/profile') {
+                      Navigator.pushReplacement( context,
+                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                      );
+                    }
+                    }),
+                ],
+              )),
+          )],
 
-              }),
-          const Spacer(),
-          //profile
-          buildDrawerItem(
-              context, icon: Icons.person,
-              title: 'Profile', route: '/profile',
-              onTap: () {Navigator.pop(context);
-              if (currentRoute != '/profile') {
-                Navigator.pushReplacement( context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                );
-              }}),
-        ],
       ),
     );
   }

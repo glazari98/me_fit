@@ -387,37 +387,45 @@ class HomeScreenState extends State<HomeScreen>{
                 child: Row(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12)),
-                      child: Icon(
-                        Icons.auto_awesome,
-                        color: Theme.of(context).primaryColor,size: 20)),
-                    SizedBox(width: 12),
-                    Text('AI COACH SUGGESTION',
-                      style: TextStyle(fontSize: 14,fontWeight: FontWeight.w600,letterSpacing: 1.2),
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Icon(
+                            Icons.auto_awesome,
+                            color: Theme.of(context).primaryColor,
+                            size: 20)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text('AI COACH SUGGESTION',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 1.2),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    Spacer(),
                     if (pendingSuggestions.isNotEmpty)
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8,vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor,
-                          borderRadius: BorderRadius.circular(12)),
-                        child: Text('${pendingSuggestions.length} new',
-                          style:  TextStyle(color: Colors.white,fontSize: 11,fontWeight: FontWeight.w600),
-                        )),
+                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          margin: EdgeInsets.only(left: 4),
+                          decoration: BoxDecoration(
+                              color: Theme.of(context).primaryColor,
+                              borderRadius: BorderRadius.circular(12)),
+                          child: Text('${pendingSuggestions.length}',
+                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+                          )),
                     IconButton(
                       icon: Icon(
                         showSuggestions ? Icons.expand_less : Icons.expand_more,
-                        color: Colors.grey.shade600),
+                        color: Colors.grey.shade600,size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
                       onPressed: () {
                         setState(() {
                           showSuggestions = !showSuggestions;
                         });
                       },
-                    )]),
+                    )],
+                )
               ),
               if (showSuggestions)
                 if (isLoadingSuggestions)
@@ -434,7 +442,7 @@ class HomeScreenState extends State<HomeScreen>{
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(16)
                           ),
                           child: Icon(
                             Icons.auto_awesome,color: Colors.grey, size: 24),
@@ -461,7 +469,7 @@ class HomeScreenState extends State<HomeScreen>{
         )),
     );
   }
-//widget for displaying individual susggestion
+//widget for displaying individual suggestion
   Widget buildSuggestionCard(WorkoutSuggestions suggestion) {
     return FutureBuilder<Workout?>(
       future: FS.get.one<Workout>(suggestion.suggestedWorkoutId),
@@ -566,7 +574,8 @@ class HomeScreenState extends State<HomeScreen>{
       appBar: AppBar(title:  Text('Home'),
         centerTitle: true,
       ),
-      body: Column(
+      body: SingleChildScrollView(
+        child: Column(
               children: [
                 buildSuggestionsSection(),
                 SizedBox(height: 5),
@@ -575,15 +584,15 @@ class HomeScreenState extends State<HomeScreen>{
                   children: [
                     Icon(Icons.calendar_month,
                       color: Theme.of(context).colorScheme.primary,
-                      size: 24),
-                     SizedBox(width: 8),
-                    Text(
+                      size: 22),
+                     SizedBox(width: 6),
+                    Flexible(child:Text(
                       'Workout Calendar',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.primary,
                       ),
-                    ),
+                    )),
                   ],
                 ),
           TableCalendar<WorkoutEvent>(
@@ -596,7 +605,7 @@ class HomeScreenState extends State<HomeScreen>{
             onDaySelected: onDaySelected,
             onFormatChanged: (format) => setState(() => calendarFormat = format),
 
-            rowHeight: 52,
+            rowHeight: 48,
             daysOfWeekHeight: 32,
 
             headerStyle: HeaderStyle(
@@ -693,7 +702,8 @@ class HomeScreenState extends State<HomeScreen>{
             ),
           ),
             SizedBox(height: 8),
-            Expanded(
+            Container(
+              height: MediaQuery.of(context).size.height * 0.35, //take 35 percent of screen
               child: ValueListenableBuilder<List<WorkoutEvent>>(
                 valueListenable: selectedEvents,
                 builder: (context,value,_){
@@ -783,7 +793,7 @@ class HomeScreenState extends State<HomeScreen>{
               ),
             ),
               ],
-      ),
+      )),
       drawer: AppDrawer(scaffoldContext: context,onWorkoutUpdated: loadSchedule,userSchedule: userSchedule,loadSchedule: loadSchedule, currentRoute: '/home',)
   );
 }

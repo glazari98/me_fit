@@ -305,7 +305,7 @@ class StatisticsScreenState extends State<StatisticsScreen> {
                           value: entry.value.toDouble(),
                           title: '${entry.value}',
                           color: colors[entry.key] ?? Colors.grey,
-                          radius: 60,
+                          radius: 50,
                           titleStyle: TextStyle(color: Colors.white,fontWeight: FontWeight.bold,fontSize: 12),
                         );
                       }).toList(),

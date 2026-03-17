@@ -73,56 +73,48 @@ class LoginScreenState extends State<LoginScreen>{
   Widget build(BuildContext context){
     return Scaffold(
       appBar: AppBar(title: Text('Login'),centerTitle: true),
-      body: Padding(
-        padding:  EdgeInsets.all(16),
+      body: SafeArea(
+        child: Padding(
+        padding:  EdgeInsets.all(10),
         child: Column(
           children: [
             Container(
-              height: 200,
-              width: 200,
+              height: 180,width: 200,
               margin: EdgeInsets.symmetric(vertical: 20),
               child: ClipOval(
-                child: Image.asset(
-                  'assets/images/logo.png',
+                child: Image.asset('assets/images/logo.png',
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       color: Colors.grey[200],
-                      child: Icon(
-                        Icons.fitness_center,
-                        size: 60,
-                        color: Colors.grey,
-                      ),
+                      child: Icon(Icons.fitness_center,
+                        size: 60,color: Colors.grey),
                     );
                   },
-                ),
-              ),
+                ))
             ),
             TextFormField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Email',
-                prefixIcon: Icon(Icons.email_outlined),
+                prefixIcon: Icon(Icons.email_outlined)
               ),
               autovalidateMode: AutovalidateMode.onUserInteraction,
               validator: (value) {
                 final email = value?.trim() ?? '';
                 if (email.isEmpty) return 'Email is required';
-
                 return null;
               },
             ),
-
-            SizedBox(height: 10,),
-
+            SizedBox(height: 10),
             TextFormField(
               controller: passwordController,
               obscureText: obscurePassword,
               textInputAction: TextInputAction.done,
               decoration: InputDecoration(
                 labelText: 'Password',
-                prefixIcon: const Icon(Icons.lock_outline),
+                prefixIcon: Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(
                     obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -142,24 +134,24 @@ class LoginScreenState extends State<LoginScreen>{
               },
             ),
 
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
             ElevatedButton(
                 onPressed: () => isLoading ? null : login(),
                 child: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   height: 20,
                 width: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
                 )
-                    : const Text('Login'),
+                    : Text('Login'),
             ),
             TextButton(
                 onPressed: () => Navigator.pushNamed(context, '/signUp'),
-                child: const Text("Don't have an account yet? Sign Up"),
+                child: Text("Don't have an account yet? Sign Up"),
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 }

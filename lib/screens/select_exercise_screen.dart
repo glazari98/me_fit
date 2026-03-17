@@ -416,12 +416,12 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
 //widget for search field
   Widget searchField() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: TextField(
         controller: searchController,
         decoration: InputDecoration(
           hintText: 'Search exercises',
-          prefixIcon: const Icon(Icons.search),
+          prefixIcon: Icon(Icons.search),
           suffixIcon: searchQuery.isNotEmpty
               ? IconButton(
                   onPressed: () {
@@ -431,10 +431,10 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                       applyFiltersAndSearch();
                     });
                   },
-                  icon: const Icon(Icons.clear),
+                  icon: Icon(Icons.clear),
                 )
               : null,
-          border: const OutlineInputBorder(),
+          border: OutlineInputBorder(),
         ),
         onChanged: (value) {
           setState(() {
@@ -448,13 +448,13 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
 //widget for showing body part and exercise type filters
   Widget filters() {
     if (isLoadingFilters) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.all(16),
         child: Center(child: CircularProgressIndicator()),
       );
     }
     return Padding(
-      padding: const EdgeInsets.all(8),
+      padding: EdgeInsets.all(8),
       child: Row(
         children: [
           Expanded(
@@ -464,11 +464,10 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                   context: context,
                   builder: (_) {
                     List<String> tempSelected = List.from(selectedBodyPartIds);
-
                     return StatefulBuilder(
                       builder: (context, setDialogState) {
                         return AlertDialog(
-                          title: const Text('Select Body Parts'),
+                          title: Text('Select Body Parts'),
                           content: SizedBox(
                             width: double.maxFinite,
                             child: ListView(
@@ -489,36 +488,31 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                                   },
                                 );
                               }).toList(),
-                            ),
-                          ),
+                            )),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context, null),
-                              child: const Text('Cancel'),
+                              child: Text('Cancel'),
                             ),
                             ElevatedButton(
                               onPressed: () =>
                                   Navigator.pop(context, tempSelected),
-                              child: const Text('Apply'),
+                              child: Text('Apply'),
                             ),
                           ],
                         );
-                      },
-                    );
+                      });
                   },
                 );
-
                 if (selected != null) {
                   setState(() {
                     selectedBodyPartIds = selected;
                     applyFiltersAndSearch();
                   });
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 16,
+                }},
+              child: Container(height: 55,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 12,vertical: 16,
                 ),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey),
@@ -527,56 +521,94 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
                 child: Text(
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  selectedBodyPartIds!.isEmpty
-                      ? 'Select Body Parts'
-                      : selectedBodyPartIds
-                            .map(
-                              (id) =>
-                                  bodyParts.firstWhere((b) => b.id == id).name,
-                            )
-                            .join(', '),
+                  selectedBodyPartIds!.isEmpty ? 'Select Body Parts': selectedBodyPartIds
+                    .map((id) =>bodyParts.firstWhere((b) => b.id == id).name).join(', '),
                   style: TextStyle(fontSize: 16),
                 ),
-              ),
-            ),
+              )),
           ),
           SizedBox(width: 8),
           Expanded(
-            child: DropdownButtonFormField<String>(
-              isDense: false,
-              hint: Text('Exercise Type'),
-              value: selectedExerciseTypeId,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+            child: GestureDetector(
+              onTap: () async {
+                final selected = await showDialog<String>(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text('Select Exercise Type'),
+                      content: SizedBox(
+                        width: double.maxFinite,
+                        child: ListView(
+                          shrinkWrap: true,
+                          children: [
+                            ListTile(
+                              title: Text('All'), //all is selected by default
+                              selected: selectedExerciseTypeId == null,
+                              selectedTileColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                              onTap: () => Navigator.pop(context, null),
+                            ),
+                            Divider(),
+                            ...exerciseTypes.map((type) {//options of exercise types
+                              return ListTile(
+                                title: Text(type.name),
+                                selected: selectedExerciseTypeId == type.id,
+                                selectedTileColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                                onTap: () => Navigator.pop(context, type.id),
+                              );
+                            }).toList(),
+                          ])),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text('Cancel'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+                if (selected != null) {
+                  setState(() {
+                    selectedExerciseTypeId = selected;
+                    applyFiltersAndSearch();
+                  });
+                }
+              },
+              child: Container(
+                height: 55, padding: EdgeInsets.symmetric(
+                  horizontal: 12,vertical: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        selectedExerciseTypeId == null
+                            ? 'Exercise Type' //if nothing is selected show placeholder
+                            : exerciseTypes.firstWhere(
+                              (t) => t.id == selectedExerciseTypeId,
+                          orElse: () => ExerciseType(id: '', name: '',imageUrl:''), //if nothing found go back
+                        ).name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                    if (selectedExerciseTypeId != null)
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedExerciseTypeId = null;
+                            applyFiltersAndSearch();
+                          });
+                        },
+                        child: Icon(Icons.clear, size: 20),
+                      ),
+                    Icon(Icons.arrow_drop_down, size: 20),
+                  ],
                 ),
               ),
-              icon: selectedExerciseTypeId != null
-                  ? GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedExerciseTypeId = null;
-                          applyFiltersAndSearch();
-                        });
-                      },
-                      child: Icon(Icons.clear),
-                    )
-                  : Icon(Icons.arrow_drop_down),
-
-              items: [
-                DropdownMenuItem<String>(value: null, child: Text('All')),
-                ...exerciseTypes.map(
-                  (t) => DropdownMenuItem(value: t.id, child: Text(t.name)),
-                ),
-              ],
-              onChanged: (v) {
-                setState(() {
-                  selectedExerciseTypeId = v;
-                  applyFiltersAndSearch();
-                });
-              },
             ),
           )]),
     );
