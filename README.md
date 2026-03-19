@@ -65,6 +65,32 @@ Core meFit features include:
    cd meFit
    flutter run
    ```
+ 6. **Run tests(OPTIONAL)**
+   A) Test for creatign a workout  
+   ```bash
+   cd meFit
+   flutter test integration_test/create_workout_test.dart
+   ```
+   B) Test for editing a workout  
+     ```bash
+     cd meFit
+     flutter test integration_test/edit_workout_test.dart
+     ```
+   C) Test for viewing/editing workout preferences 
+   ```bash
+   cd meFit
+   flutter test integration_test/profile_test.dart
+   ```
+   D) Test for viewing streaks/badge 
+     ```bash
+     cd meFit
+     flutter test integration_test/achievements_test.dart
+     ```
+   E) Test for replacing a system workout with an ai suggested workout
+   ```bash
+   cd meFit
+   flutter test integration_test/ai_suggestion_test.dart
+   ```
    
 # Usage
 Once the app is running on the emulator
