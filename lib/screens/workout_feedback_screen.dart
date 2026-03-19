@@ -5,7 +5,7 @@ import 'package:me_fit/models/scheduled_workout.dart';
 import 'package:me_fit/models/workoutExerciseFeedback.dart';
 import 'package:me_fit/models/workoutExercises.dart';
 import 'package:me_fit/screens/custom_workouts.dart';
-import 'package:me_fit/services/acheivement_service.dart';
+import 'package:me_fit/services/achievement_service.dart';
 
 
 import '../models/exercise.dart';

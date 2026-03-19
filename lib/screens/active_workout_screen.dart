@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:me_fit/services/acheivement_service.dart';
+import 'package:me_fit/services/achievement_service.dart';
 import 'package:me_fit/services/authentication_service.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:firestorm/firestorm.dart';

@@ -1,7 +1,7 @@
 import 'package:firestorm/fs/fs.dart';
 import 'package:flutter/material.dart';
 import 'package:me_fit/models/scheduled_workout.dart';
-import 'package:me_fit/services/acheivement_service.dart';
+import 'package:me_fit/services/achievement_service.dart';
 import 'package:me_fit/services/authentication_service.dart';
 import '../components/drawer_menu.dart';
 import '../models/user.dart';
