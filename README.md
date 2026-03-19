@@ -74,20 +74,20 @@ Core meFit features include:
    flutter test integration_test/create_workout_test.dart
    ```
   ### B) Test for editing a workout  
-     ```bash
+   ```bash
      cd meFit
      flutter test integration_test/edit_workout_test.dart
-     ```
+   ```
   ### C) Test for viewing/editing workout preferences 
    ```bash
    cd meFit
    flutter test integration_test/profile_test.dart
    ```
   ### D) Test for viewing streaks/badge 
-     ```bash
+   ```bash
      cd meFit
      flutter test integration_test/achievements_test.dart
-     ```
+   ```
   ### E) Test for replacing a system workout with an ai suggested workout
    ```bash
    cd meFit
