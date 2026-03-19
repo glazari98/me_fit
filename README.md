@@ -55,23 +55,43 @@ Core meFit features include:
    cd meFit
    flutter pub get
    ```
-4. **Install Node.js and Firebase tools for using cloud functions**(Optional)
- ```bash
- cd functions
-npm install
-npm install -g firebase-tools
-firebase login
-firebase init functions
- ```
-5. **Emulator setup**
+4. **Emulator setup**
    - From the right side menu bar select device manager.
    - If a device is already added it will show there, press ▶️. If not press the + sign to add a device.
    - Then from top menu bar make sure main.dart and the emulator device are selected.
      
-6. **Run the app**
+5. **Run the app**
    ```bash
    cd meFit
    flutter run
+   ```
+ ## Testing
+ Run the following integration tests to verify different functionalities of the meFit app:
+
+  ### A) Test for creatign a workout  
+   ```bash
+   cd meFit
+   flutter test integration_test/create_workout_test.dart
+   ```
+  ### B) Test for editing a workout  
+   ```bash
+     cd meFit
+     flutter test integration_test/edit_workout_test.dart
+   ```
+  ### C) Test for viewing/editing workout preferences 
+   ```bash
+   cd meFit
+   flutter test integration_test/profile_test.dart
+   ```
+  ### D) Test for viewing streaks/badge 
+   ```bash
+     cd meFit
+     flutter test integration_test/achievements_test.dart
+   ```
+  ### E) Test for replacing a system workout with an ai suggested workout
+   ```bash
+   cd meFit
+   flutter test integration_test/ai_suggestion_test.dart
    ```
    
 # Usage
@@ -90,6 +110,8 @@ Once the app is running on the emulator
 6. From the side menu, if you choose 'Achievements', you will see the current streak according to consistent weekly completion of workouts and your best streak. Badges displayed in silver are locked and in gold are unlocked. When pressing on a locked badge you can see the requirement to requirement to unlock it.
 7. From the side menu, if you choose 'Statistics', statistics regarding number of workouts, total added duration of completed workouts, total weight lifed, total distance covered and total time doign cardio in the current month will be displayed, if any. Also, a pie chart will b edisplayed showing the most common types of exercises the user does(cardio, stretchign, aerobic, strength,plyometrics). If using the app across months you can see stats for each month inidvidually.
 9. From the side menu, at the very bottom if the user presses 'Profile', they will navigate to a screne with two tabs 'Personal Details' and 'Workout Preferences' tabs. In 'Personal Details' tab the user can edit their account information regarding username, age. weight, height and upload an image they wan tto be displayed as their profile image. In 'Workout Details' tab a user can see their current workout preferences. They can choose the edit those options and save the changed preferences, and from next week, the system generated worout schedule will be according to the new preferences.
+10. A new weekly schedule is generated every Monday at 00:00:00 for every user, however if you want ot test it edit the emulators day to Sunday and create a new user. No workouts will be added, then run the url for the cloud function 'https://generatenextweekworkouts-b7cyap7xga-uc.a.run.app/?secret=g7H2kL9pQ4mR8xW3zN5vB1cF6' to generate a new workout schedule for that week. When the cloud function completes, leave the home screen and renter to see new workout schedule.
+11. To test ai suggestions, first cmplete at least oen workout in the week and  run the cloud function 'https://generateaisuggestions-b7cyap7xga-uc.a.run.app/?secret=ftwe87ftfdc78ewter7tfc98y'. After it runs leave and renter the home screen and your ai suggestion will be visible there.
 
    
    
@@ -97,6 +119,8 @@ Once the app is running on the emulator
 ```text
 me_fit/
 ├── lib/
+│   ├── functions/        # index.js contains impliemntation of the two cloud functions for generatign a new workout schedule and ai suggestions
+│   ├── integration_test/ # Integration tests for screens
 │   ├── components/       # Reusable widgets
 │   ├── data/             # Script for inserting data into database from api
 │   ├── generated/        # Firestorm model serialisation.
@@ -120,7 +144,7 @@ me_fit/
 - App is providing only one AI suggestion every week.
 - Time to generate new weekly workout schedule and ai suggestions may take 30 secs or more according to how many users that actios had to be done. However, that is not generally an issue since those operations are happening at mindnight every Monday, it does not affect the user in some way.
 ## Future improvements and features
-- Connect app with smart watch to track heart rate of user whiel completing the app
+- Connect app with smart watch to track heart rate of user while completing the app
 - Workouts generated will take into account fitness level, gender, weight, height etc.
 - More AI workout suggestions, generated also throughout the week.
 - Gifs or videos to show user how to complete an exercise instead of a text-based instruction.
