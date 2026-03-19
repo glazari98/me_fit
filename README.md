@@ -65,7 +65,7 @@ Core meFit features include:
    cd meFit
    flutter run
    ```
- 6. **Run tests(OPTIONAL)**
+ ## Testing
  Run the following integration tests to verify different functionalities of the meFit app:
 
   ### A) Test for creatign a workout  
