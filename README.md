@@ -55,20 +55,12 @@ Core meFit features include:
    cd meFit
    flutter pub get
    ```
-4. **Install Node.js and Firebase tools for using cloud functions**(Optional)
- ```bash
- cd functions
-npm install
-npm install -g firebase-tools
-firebase login
-firebase init functions
- ```
-5. **Emulator setup**
+4. **Emulator setup**
    - From the right side menu bar select device manager.
    - If a device is already added it will show there, press ▶️. If not press the + sign to add a device.
    - Then from top menu bar make sure main.dart and the emulator device are selected.
      
-6. **Run the app**
+5. **Run the app**
    ```bash
    cd meFit
    flutter run
@@ -90,6 +82,8 @@ Once the app is running on the emulator
 6. From the side menu, if you choose 'Achievements', you will see the current streak according to consistent weekly completion of workouts and your best streak. Badges displayed in silver are locked and in gold are unlocked. When pressing on a locked badge you can see the requirement to requirement to unlock it.
 7. From the side menu, if you choose 'Statistics', statistics regarding number of workouts, total added duration of completed workouts, total weight lifed, total distance covered and total time doign cardio in the current month will be displayed, if any. Also, a pie chart will b edisplayed showing the most common types of exercises the user does(cardio, stretchign, aerobic, strength,plyometrics). If using the app across months you can see stats for each month inidvidually.
 9. From the side menu, at the very bottom if the user presses 'Profile', they will navigate to a screne with two tabs 'Personal Details' and 'Workout Preferences' tabs. In 'Personal Details' tab the user can edit their account information regarding username, age. weight, height and upload an image they wan tto be displayed as their profile image. In 'Workout Details' tab a user can see their current workout preferences. They can choose the edit those options and save the changed preferences, and from next week, the system generated worout schedule will be according to the new preferences.
+10. A new weekly schedule is generated every Monday at 00:00:00 for every user, however if you want ot test it edit the emulators day to Sunday and create a new user. No workouts will be added, then run the url for the cloud function 'https://generatenextweekworkouts-b7cyap7xga-uc.a.run.app/?secret=g7H2kL9pQ4mR8xW3zN5vB1cF6' to generate a new workout schedule for that week. When the cloud function completes, leave the home screen and renter to see new workout schedule.
+11. To test ai suggestions, first cmplete at least oen workout in the week and  run the cloud function 'https://generateaisuggestions-b7cyap7xga-uc.a.run.app/?secret=ftwe87ftfdc78ewter7tfc98y'. After it runs leave and renter the home screen and your ai suggestion will be visible there.
 
    
    
@@ -97,6 +91,8 @@ Once the app is running on the emulator
 ```text
 me_fit/
 ├── lib/
+│   ├── functions/        # index.js contains impliemntation of the two cloud functions for generatign a new workout schedule and ai suggestions
+│   ├── integration_test/ # Integration tests for screens
 │   ├── components/       # Reusable widgets
 │   ├── data/             # Script for inserting data into database from api
 │   ├── generated/        # Firestorm model serialisation.
