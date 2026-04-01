@@ -119,14 +119,13 @@ Once the app is running on the emulator
 ```text
 me_fit/
 ├── lib/
-│   ├── functions/        # index.js contains impliemntation of the two cloud functions for generatign a new workout schedule and ai suggestions
 │   ├── integration_test/ # Integration tests for screens
 │   ├── components/       # Reusable widgets
 │   ├── data/             # Script for inserting data into database from api
 │   ├── generated/        # Firestorm model serialisation.
 │   ├── models/           # Data models
 │   ├── screens/          # UI screens
-│   ├── services/         # Business logic
+│   ├── services/         # Authentication/Achievements logic
 │   ├── theme/            # Project theme configuration
 │   └── main.dart         # Entry point
 ├── assets/
