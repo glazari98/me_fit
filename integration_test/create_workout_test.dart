@@ -53,7 +53,7 @@ void main(){
   });
 
   //test that checks if a warning is showed if user does not add an exercise to the workout
-  testWidgets('Shows warning when saving with no exercises',(WidgetTester tester) async{
+  testWidgets('WarningNoExerciseTest',(WidgetTester tester) async{
         await tester.pumpWidget(const MaterialApp(home: CreateWorkoutScreen()));
         await tester.pumpAndSettle();
         //test workout name

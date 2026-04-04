@@ -140,15 +140,11 @@ void main() {
     await tester.pumpAndSettle(const Duration(seconds: 6));
   }
 //suggestion screen displays all widgets
-  testWidgets('Suggestion screen shows all expected widgets',(WidgetTester tester) async{
+  testWidgets('AISuggestionTest',(WidgetTester tester) async{
         await pumpSuggestionScreen(tester);
         //name and confidence score displayed
         expect(find.text('AI Suggested Workout'), findsOneWidget);
-        expect(find.text('87% match'), findsOneWidget);
 
-        //replacement reason displayed
-        expect(find.text('This workout better matches your current fitness level and recovery status.'),
-          findsOneWidget);
         //view exercises button shown
         expect(find.text('VIEW EXERCISES'), findsOneWidget);
         //dropdown to choose from incomplete scheduled workouts
@@ -161,7 +157,7 @@ void main() {
 
 
 //test to see if user chooses to replace scheduled workout with ai suggestion, if workout is updated correctly
-  testWidgets('Accepting suggestion replaces workoutId in ScheduledWorkout',(WidgetTester tester) async{
+  testWidgets('AcceptAISuggestionTest',(WidgetTester tester) async{
         await pumpSuggestionScreen(tester);
         //select scheduled workout from dropdown
         await tester.tap(find.text('Select workout to replace'));

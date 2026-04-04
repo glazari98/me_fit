@@ -23,7 +23,18 @@ String formatDuration(int seconds) {
   }
   return '${minutes}min ${remainingSeconds}s';
 }
+//calculate pace of user in aerobic exercise according to time for distance covered and distance covered
+String calculatePace(double? distanceKm, int? timeSeconds){
+  if(distanceKm == null || timeSeconds == null || distanceKm == 0){
+    return '--';
+  }
+  final paceSecondsPerKm = timeSeconds / distanceKm;
 
+  final minutes = paceSecondsPerKm ~/ 60;
+  final seconds = (paceSecondsPerKm % 60).round();
+
+  return '$minutes:${seconds.toString().padLeft(2,'0')} min/km';
+}
 String formatDuration2(int seconds) {
   final hours = seconds ~/ 3600;
   final minutes = (seconds % 3600) ~/ 60;

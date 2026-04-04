@@ -88,7 +88,7 @@ void main() {
         await tester.pumpAndSettle(Duration(seconds: 2));
       });
 //achievement screen shows 1 unlocked badge
-  testWidgets('Achievements screen shows 1 unlocked badge',(WidgetTester tester) async{
+  testWidgets('UnlockedBadgeTest',(WidgetTester tester) async{
         await pumpAchievementsScreen(tester);
         final totalBadges = AchievementService.badgeMilestones.length;
         expect(find.text('1/$totalBadges'),findsOneWidget); //total badges shows 1 unlocked

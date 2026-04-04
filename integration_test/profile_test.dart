@@ -143,7 +143,7 @@ void main() {
   });
 
   //go to workout preferences tab and change training goal to power building, and save
-  testWidgets('Change training goal and check changes applied in database',(WidgetTester tester) async{
+  testWidgets('ChangeWorkoutPreferencesTest',(WidgetTester tester) async{
         await pumpProfileAndGoToPreferences(tester);
 
         //tab power building

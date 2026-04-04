@@ -92,7 +92,7 @@ class StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Future<void> processExerciseStats(WorkoutExercises exercise) async {
-    final exerciseData = await FS.get.one<Exercise>(exercise.exerciseId);
+      final exerciseData = await FS.get.one<Exercise>(exercise.exerciseId);
     if (exerciseData == null) return;
 
     final type = getExerciseType(exercise);

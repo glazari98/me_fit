@@ -79,7 +79,7 @@ class SelectExerciseScreenState extends State<SelectExerciseScreen> {
       isLoadingExercises = false;
     });
   }
-//function for searching according name of exercises and keywords
+//function for searching according name of exercises,keywords, body parts and exercise types
   void applyFiltersAndSearch() {
     List<Exercise> temp = allExercises;
 

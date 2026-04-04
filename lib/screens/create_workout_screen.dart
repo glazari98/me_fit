@@ -170,7 +170,7 @@ class CreateWorkoutScreenState extends State<CreateWorkoutScreen> {
       return false;
     }
   }
-  //if user wants to edit an exercise details
+  //dialog when user adds or edits an exercise
   Future<WorkoutExerciseInstance?> showExerciseAlterDialog(
       WorkoutExerciseInstance instance) async {
     final type = instance.exerciseTypeName;

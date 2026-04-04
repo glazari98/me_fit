@@ -146,18 +146,7 @@ class WorkoutFeedbackScreenState extends State<WorkoutFeedbackScreen> {
         southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng));
     mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 20));
   }
-//calculate pace of user in aerobic exercise according to time for distance covered and distance covered
-  String calculatePace(double? distanceKm, int? timeSeconds){
-    if(distanceKm == null || timeSeconds == null || distanceKm == 0){
-      return '--';
-    }
-    final paceSecondsPerKm = timeSeconds / distanceKm;
 
-    final minutes = paceSecondsPerKm ~/ 60;
-    final seconds = (paceSecondsPerKm % 60).round();
-
-    return '$minutes:${seconds.toString().padLeft(2,'0')} min/km';
-  }
   @override
   Widget build(BuildContext context) {
     if(scheduledWorkout == null) {

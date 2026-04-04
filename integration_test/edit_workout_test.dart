@@ -129,7 +129,7 @@ void main() {
         expect(find.byIcon(Icons.delete), findsNWidgets(2));
       });
   //test for edit an exercise and save changes
-  testWidgets('Edit button opens dialog and saves changes',(WidgetTester tester) async{
+  testWidgets('EditWorkoutTest',(WidgetTester tester) async{
         await pumpEditScreen(tester);
         await tester.tap(find.byIcon(Icons.edit).first);
         await tester.pumpAndSettle();
