@@ -10,6 +10,11 @@ void main() {
       final result = isValidEmail(email);
       expect(result, false);
     });
+    test('isValidEmail returns false for invalid email address', () {
+      const email = 'uclanTest@email.com';
+      final result = isValidEmail(email);
+      expect(result, true);
+    });
   });
 
   /*unit test for checking if the normaliseDate function used when a user sets a workout to a date if the datetime is
@@ -31,6 +36,12 @@ void main() {
       final result = calculatePace(distance, timeSeconds);
       expect(result, '6:00 min/km');
     });
+    test('calculatePace returns correct pace for valid distance and time', () {
+      const distance = 5.0;
+      const timeSeconds = 1650; // 25 minutes
+      final result = calculatePace(distance, timeSeconds);
+      expect(result, '5:30 min/km');
+    });
   });
 
 //unit tests for checking correct display of workout duration from seconds to hours:minutes:seconds
@@ -40,5 +51,13 @@ void main() {
       final result = formatDuration2(seconds);
       expect(result, '00:53:20');
     });
+    test('formatDuration2 formats 5235 seconds as "01:27:15"', () {
+      const seconds = 3200;
+      final result = formatDuration2(seconds);
+      expect(result, '01:27:15');
+    });
   });
+
+
+
 }
